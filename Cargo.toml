@@ -1,0 +1,12 @@
+[package]
+name = "drat"
+version = "0.0.1"
+authors = ["Xinyun Wu <xin@snaar.net>"]
+repository = "https://github.com/snaar/drat"
+
+[dependencies]
+clap = "2"
+csv = "1"
+flate2 = "1"
+lzf = "0.3"
+reqwest = "0.8"

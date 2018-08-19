@@ -1,0 +1,11 @@
+[package]
+name = "infistream"
+version = "0.1.0"
+
+[dependencies]
+env_logger = "0.5"
+futures = "0.1"
+actix = "0.7"
+actix-web = "0.7"
+bytes = "0.4"
+flate2 = "1.0"
