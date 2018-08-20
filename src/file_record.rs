@@ -1,5 +1,6 @@
 use csv::{StringRecord, StringRecordsIntoIter};
 use std::io::Read;
+use std::process;
 
 use config::Config;
 use read_filter::{Action, ReadFilter};
@@ -14,7 +15,13 @@ pub struct FileRecord {
 
 impl FileRecord {
     pub fn new(conf: Config, timestamp_column: usize) -> Self {
-        let mut reader = conf.reader().unwrap();
+        let mut reader = match conf.reader() {
+            Ok(r) => r,
+            Err(err) => {
+                werr ! ("Error: {}", err);
+                process::exit(1);
+            },
+        };
         let header = Some(reader.headers().unwrap().clone());
         let mut iterator = reader.into_records();
         let current_row = match iterator.next() {

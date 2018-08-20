@@ -7,6 +7,7 @@ extern crate reqwest;
 
 use clap::{Arg, App};
 
+#[macro_use]
 mod command;
 use command::Command;
 mod read;
