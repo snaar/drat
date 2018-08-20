@@ -45,7 +45,13 @@ impl FileRecord {
             Some(f) => {
                 for mut record in iterator {
                     let read_filter: ReadFilter = *f;
-                    let row = record.unwrap();
+                    let row = match record {
+                        Ok(r) => r,
+                        Err(_e) => {
+                            next_row = None;
+                            break
+                        }
+                    };
                     let filter = read_filter.filter(&row);
                     if filter == Action::Stop {
                         break;
