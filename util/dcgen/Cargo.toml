@@ -1,0 +1,7 @@
+[package]
+name = "dcgen"
+version = "0.1.0"
+
+[dependencies]
+byteorder = "1"
+clap = "2"
