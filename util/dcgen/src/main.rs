@@ -42,7 +42,7 @@ fn write_header(out: &File) {
     write_rows(&out);
 }
 
-fn write_magic(mut out: &File) { out.write_u32::<BigEndian>(0x44434154).unwrap(); }
+fn write_magic(mut out: &File) { out.write_u64::<BigEndian>(0x44434154).unwrap(); }
 fn write_version(mut out: &File) { out.write_u16::<BigEndian>(2).unwrap(); }
 
 fn write_user_header(mut out: &File) {
