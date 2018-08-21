@@ -18,7 +18,7 @@ impl FileRecord {
         let mut reader = match conf.reader() {
             Ok(r) => r,
             Err(err) => {
-                werr ! ("Error: {}", err);
+                werr!("Error: {}", err);
                 process::exit(1);
             },
         };
