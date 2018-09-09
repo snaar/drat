@@ -22,7 +22,7 @@ impl <'a> Args<'a> {
             _ => unreachable!(),
         };
 
-        let config = Config::new(&input, self.delimiter, self.has_headers);
+        let config = Config::new(&input, self.delimiter, self.has_headers, self.timestamp_column);
         Ok(config)
     }
 
@@ -33,7 +33,7 @@ impl <'a> Args<'a> {
         }
 
         let configs = inputs_clone.into_iter()
-            .map(|p| Config::new(&Some(p), self.delimiter, self.has_headers))
+            .map(|p| Config::new(&Some(p), self.delimiter, self.has_headers, self.timestamp_column))
             .collect::<Vec<_>>();
         check_at_most_one_stdin(&*configs)?;
 

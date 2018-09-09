@@ -4,8 +4,8 @@ use result::CliResult;
 
 pub fn run(argv: Args) -> CliResult<()> {
     let reader = ReadFilter::new_from_args(&argv);
-    let config = argv.create_config().unwrap();
+    let mut config = argv.create_config().unwrap();
 
-    reader.read(&config, &argv.output)?;
+    reader.read(&mut config, &argv.output)?;
     Ok(())
 }

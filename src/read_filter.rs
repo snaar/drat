@@ -1,9 +1,8 @@
-use csv::StringRecord;
-use std::process;
-
 use args::Args;
 use config::Config;
+use read::types;
 use result::CliResult;
+use write::{csv_sink, sink::Sink};
 
 #[derive(Debug, Copy, Clone)]
 pub struct ReadFilter {
@@ -19,6 +18,7 @@ pub enum Action {
     Skip,
 }
 
+/* read, filter and output rows */
 impl ReadFilter {
     pub fn new(begin: Option<u64>, end: Option<u64>, timestamp_column: usize) -> Self {
         ReadFilter { begin, end, timestamp_column }
@@ -28,15 +28,7 @@ impl ReadFilter {
         ReadFilter::new(argv.begin, argv.end, argv.timestamp_column)
     }
 
-    pub fn filter(&self, row: &StringRecord) -> Action {
-        let timestamp = match row.get(self.timestamp_column).unwrap().parse::<u64>() {
-            Ok(t) => t,
-            Err(_e) => {
-                eprintln!("\nERROR: Cannot read timestamp. Check if the file has header (if yes add --header).");
-                process::exit(0)
-            }
-        };
-
+    pub fn filter(&self, timestamp: types::Nanos) -> Action {
         if self.end.is_some() && timestamp >= self.end.unwrap() {
             return Action::Stop;
         }
@@ -47,28 +39,28 @@ impl ReadFilter {
         }
     }
 
-    pub fn read(&self, config: &Config, flag_output: &Option<&str>) -> CliResult<()> {
+    pub fn read(&self, config: &mut Config, output: &Option<&str>) -> CliResult<()> {
         let mut reader = config.reader()?;
-        let mut writer = Config::new(
-            flag_output, config.delimiter(), config.has_headers()).writer()?;
+        let mut writer = csv_sink::CSVSink::new(output);
 
         if config.has_headers() {
-            let headers = reader.headers()?;
-            writer.write_record(headers)?;
+            let header = reader.header();
+            writer.write_header(&header);
         }
 
-        for row_result in reader.records() {
-            let row = row_result?;
-            let filter = self.filter(&row);
-
-            if filter == Action::Stop {
-                break;
-            }
-            if filter == Action::Write {
-                writer.write_record(row.iter())?;
+        loop {
+            let next_row = reader.next_row();
+            match next_row {
+                Some(r) => {
+                    match self.filter(r.timestamp) {
+                        Action::Stop => break,
+                        Action::Write => writer.write_row(&r),
+                        Action::Skip => continue,
+                    }
+                }
+                None => break,
             }
         }
-        writer.flush()?;
         Ok(())
     }
 }

@@ -1,20 +1,20 @@
-use csv::{StringRecord, StringRecordsIntoIter};
-use std::io::Read;
 use std::process;
 
+use read::dr;
 use config::Config;
+use read::types::{Row,};
 use read_filter::{Action, ReadFilter};
 
 pub struct FileRecord {
-    header: Option<StringRecord>,
+    reader: Box<dr::Reader+'static>,
+    header: Vec<String>,
     timestamp: u64,
-    current_row: StringRecord,
+    current_row: Option<Row>,
     timestamp_column: usize,
-    iterator: StringRecordsIntoIter<Box<Read>>,
 }
 
 impl FileRecord {
-    pub fn new(conf: Config, timestamp_column: usize) -> Self {
+    pub fn new(mut conf: Config, timestamp_column: usize) -> Self {
         let mut reader = match conf.reader() {
             Ok(r) => r,
             Err(err) => {
@@ -22,18 +22,28 @@ impl FileRecord {
                 process::exit(1);
             },
         };
-        let header = Some(reader.headers().unwrap().clone());
-        let mut iterator = reader.into_records();
-        let current_row = match iterator.next() {
-            Some(r) => r.unwrap(),
-            None => panic!("Empty file!")
+        let header = reader.header().to_owned();
+        let mut current_row = reader.next_row();
+        if current_row.is_none() {
+            panic!("Empty file!")
         };
-        let timestamp = current_row.get(timestamp_column).unwrap().parse::<u64>().unwrap();
 
-        FileRecord { header, timestamp, current_row, timestamp_column, iterator }
+        let timestamp = match current_row {
+            Some(r) => {
+                let timestamp = r.timestamp;
+                current_row = Some(r);
+                timestamp
+            }
+            None => {
+                eprintln!("Error: cannot find timestamp");
+                process::exit(1)
+            }
+        };
+
+        FileRecord { reader, header, timestamp, current_row, timestamp_column }
     }
 
-    pub fn get_header(&self) -> &Option<StringRecord> {
+    pub fn get_header(&self) -> &Vec<String> {
         &self.header
     }
 
@@ -41,48 +51,48 @@ impl FileRecord {
         self.timestamp
     }
 
-    pub fn get_current_row(&self) -> &StringRecord {
+    pub fn get_current_row(&self) -> &Option<Row> {
         &self.current_row
     }
 
     pub fn next(&mut self, filter: &Option<ReadFilter>) -> bool {
         let mut next_row = None;
-        let iterator = &mut self.iterator;
         match filter {
+            None => {
+                next_row = self.reader.next_row();
+            }
             Some(f) => {
-                for mut record in iterator {
-                    let read_filter: ReadFilter = *f;
-                    let row = match record {
-                        Ok(r) => r,
-                        Err(_e) => {
-                            next_row = None;
-                            break
+                let read_filter: ReadFilter = *f;
+                loop {
+                    next_row = self.reader.next_row();
+                    match next_row {
+                        None => break,
+                        Some(r) => {
+                            match read_filter.filter(r.timestamp) {
+                                Action::Stop => {
+                                    next_row = None;
+                                    break
+                                },
+                                Action::Write => {
+                                    next_row = Some(r);
+                                    break
+                                },
+                                Action::Skip => continue,
+                            }
                         }
-                    };
-                    let filter = read_filter.filter(&row);
-                    if filter == Action::Stop {
-                        break;
-                    }
-                    if filter == Action::Write {
-                        next_row = Some(row);
-                        break;
                     }
                 }
             }
+        }
+        match next_row {
+            Some(r) => {
+                self.timestamp = r.timestamp;
+                self.current_row = Some(r);
+                return true
+            }
             None => {
-                next_row = Some(iterator.next().unwrap().unwrap());
+                return false
             }
         }
-        let return_bool = match next_row {
-            Some(i) => {
-                self.current_row = i;
-                self.timestamp = self.current_row.get(self.timestamp_column).unwrap().parse::<u64>().unwrap();
-                true
-            },
-            None => {
-                false
-            }
-        };
-        return_bool
     }
 }

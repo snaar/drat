@@ -5,6 +5,7 @@ authors = ["Xinyun Wu <xin@snaar.net>"]
 repository = "https://github.com/snaar/drat"
 
 [dependencies]
+byteorder = "1"
 clap = "2"
 csv = "1"
 flate2 = "1"

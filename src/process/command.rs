@@ -5,8 +5,7 @@ use std::process;
 use args::Args;
 use result::{CliResult, CliError};
 
-use read;
-use collate;
+use process::{collate, read};
 
 #[derive(Debug)]
 pub enum Command {

@@ -1,3 +1,4 @@
+extern crate byteorder;
 #[macro_use]
 extern crate clap;
 extern crate csv;
@@ -8,17 +9,17 @@ extern crate reqwest;
 use clap::{Arg, App};
 
 #[macro_use]
-mod command;
-use command::Command;
-mod read;
-mod collate;
+mod process;
+use process::command::Command;
 
 mod args;
 mod config;
 mod file_record;
+mod read;
 mod read_filter;
 mod result;
 mod util;
+mod write;
 
 fn main() {
     let matches = App::new("drat")
