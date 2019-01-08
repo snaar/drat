@@ -4,7 +4,7 @@ use read_filter::ReadFilter;
 use result::CliResult;
 use write::{csv_sink, sink::Sink};
 
-pub fn collate(argv: Args) -> CliResult<()> {
+pub fn collate(mut argv: Args) -> CliResult<()> {
     let mut writer = csv_sink::CSVSink::new(&argv.output);
     let configs = argv.create_configs()?;
 

@@ -1,8 +1,10 @@
 use result::{CliResult, CliError};
 use config::Config;
+use input::input_factory::InputFactory;
 
 pub struct Args<'a> {
     pub inputs: Vec<&'a str>,
+    pub input_factories: Vec<Box<InputFactory>>,
     pub begin: Option<u64>,
     pub end: Option<u64>,
     pub timestamp_column: usize,
@@ -12,7 +14,7 @@ pub struct Args<'a> {
 }
 
 impl <'a> Args<'a> {
-    pub fn create_config(&self) -> CliResult<Config> {
+    pub fn create_config(&mut self) -> CliResult<Config> {
         if self.inputs.len() > 1 {
             return Err(CliError::Other("Error: more than one input file specified.".to_owned()));
         }
@@ -22,18 +24,30 @@ impl <'a> Args<'a> {
             _ => unreachable!(),
         };
 
-        let config = Config::new(&input, self.delimiter, self.has_headers, self.timestamp_column);
+        let mut input_factories_copy: Vec<Box<InputFactory>> = Vec::with_capacity(self.input_factories.len());
+        for item in &mut self.input_factories {
+            input_factories_copy.push(item.box_clone());
+        }
+
+        let config =
+            Config::new(&input, self.delimiter, self.has_headers, self.timestamp_column, input_factories_copy);
         Ok(config)
     }
 
-    pub fn create_configs(&self) -> CliResult<Vec<Config>> {
+    pub fn create_configs(&mut self) -> CliResult<Vec<Config>> {
         let mut inputs_clone = self.inputs.clone();
         if inputs_clone.is_empty() {
             inputs_clone.push("-").to_owned(); // stdin
         }
 
+        let mut input_factories_copy: Vec<Box<InputFactory>> = Vec::with_capacity(self.input_factories.len());
+        for item in &mut self.input_factories {
+            input_factories_copy.push(item.box_clone());
+        }
+
         let configs = inputs_clone.into_iter()
-            .map(|p| Config::new(&Some(p), self.delimiter, self.has_headers, self.timestamp_column))
+            .map(move |p|
+                Config::new(&Some(p), self.delimiter, self.has_headers, self.timestamp_column,  input_factories_copy.clone()))
             .collect::<Vec<_>>();
         check_at_most_one_stdin(&*configs)?;
 

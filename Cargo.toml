@@ -11,3 +11,7 @@ csv = "1"
 flate2 = "1"
 lzf = "0.3"
 reqwest = "0.8"
+
+[lib]
+name = "drat_lib"
+path = "src/lib.rs"

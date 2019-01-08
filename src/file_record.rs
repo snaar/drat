@@ -56,7 +56,7 @@ impl FileRecord {
     }
 
     pub fn next(&mut self, filter: &Option<ReadFilter>) -> bool {
-        let mut next_row = None;
+        let mut next_row;
         match filter {
             None => {
                 next_row = self.reader.next_row();

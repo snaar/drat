@@ -21,14 +21,14 @@ pub struct DCReader<R> {
 impl <R: io::Read> DCReader<R> {
     pub fn new(reader: R) -> Self {
         let mut reader = io::BufReader::new(reader);
-        let magic_num = reader.read_u64::<BigEndian>().unwrap();
-        let version = reader.read_u16::<BigEndian>().unwrap();
+        let _magic_num = reader.read_u64::<BigEndian>().unwrap();
+        let _version = reader.read_u16::<BigEndian>().unwrap();
         //TODO check magic and version
 
         // skip user given data
         let user_header_size = reader.read_u32::<BigEndian>().unwrap();
         for _i in 0..user_header_size as usize {
-            reader.read_u8();
+            reader.read_u8().unwrap();
         }
 
         // map for field types

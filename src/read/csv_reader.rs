@@ -1,5 +1,6 @@
 use csv;
 use std::io;
+use std::process;
 
 use read::dr;
 use read::types::{Row, FieldValue, Nanos};
@@ -31,7 +32,13 @@ impl <R: io::Read> CSVReader<R> {
         }
 
         // get the first row without advancing the pointer => to get the number of columns
-        let first_row = reader.records().peekable().next().unwrap().unwrap();
+        let first_row = match reader.records().peekable().next().unwrap() {
+            Ok(r) => r,
+            Err(err) => {
+                werr!("{}", err);
+                process::exit(1);
+            }
+        };
         let mut count = 0;
         for _i in first_row.iter() {
             if count != timestamp_column {

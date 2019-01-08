@@ -52,10 +52,10 @@ impl Sink for CSVSink {
         let mut first = true;
         for field in header {
             if first { first = false; }
-            else { write!(self.writer, ","); } //TODO figure out how to print single char without buffer
+            else { write!(self.writer, ",").unwrap(); } //TODO figure out how to print single char without buffer
 
             write!(self.writer, "{}", field).unwrap();
         }
-        self.writer.write(b"\n");
+        self.writer.write(b"\n").unwrap();
     }
 }
