@@ -1,8 +1,8 @@
-use args::Args;
-use config::Config;
-use read::types;
-use result::CliResult;
-use write::{csv_sink, sink::Sink};
+use crate::args::Args;
+use crate::config::Config;
+use crate::read::types;
+use crate::result::CliResult;
+use crate::write::{csv_sink, sink::Sink};
 
 #[derive(Debug, Copy, Clone)]
 pub struct ReadFilter {

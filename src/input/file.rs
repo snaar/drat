@@ -2,7 +2,7 @@ use std::fs;
 use std::io;
 use std::path::PathBuf;
 
-use input::input_factory::InputFactory;
+use crate::input::input_factory::InputFactory;
 
 #[derive(Clone)]
 pub struct FileInput;

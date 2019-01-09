@@ -2,8 +2,8 @@ use csv;
 use std::io;
 use std::process;
 
-use read::dr;
-use read::types::{Row, FieldValue, Nanos};
+use crate::read::dr;
+use crate::read::types::{Row, FieldValue, Nanos};
 
 pub struct CSVReader<R> {
     reader: csv::Reader<R>,
@@ -20,7 +20,7 @@ impl <R: io::Read> CSVReader<R> {
 
         match reader.has_headers() {
             true => {
-                let mut header_record = reader.headers().unwrap();
+                let header_record = reader.headers().unwrap();
                 header = Vec::with_capacity(header_record.len());
                 for i in header_record {
                     header.push(i.to_string());

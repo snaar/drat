@@ -1,4 +1,4 @@
-use read::types::Row;
+use crate::read::types::Row;
 
 pub trait Reader {
     fn header(&self) -> &Vec<String>;

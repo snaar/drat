@@ -1,6 +1,6 @@
-use result::{CliResult, CliError};
-use config::Config;
-use input::input_factory::InputFactory;
+use crate::result::{CliResult, CliError};
+use crate::config::Config;
+use crate::input::input_factory::InputFactory;
 
 pub struct Args<'a> {
     pub inputs: Vec<&'a str>,
@@ -36,8 +36,8 @@ impl <'a> Args<'a> {
 
     pub fn create_configs(&mut self) -> CliResult<Vec<Config>> {
         let mut inputs_clone = self.inputs.clone();
-        if inputs_clone.is_empty() {
-            inputs_clone.push("-").to_owned(); // stdin
+        if self.inputs.is_empty() {
+            inputs_clone.push("-"); // stdin
         }
 
         let mut input_factories_copy: Vec<Box<InputFactory>> = Vec::with_capacity(self.input_factories.len());

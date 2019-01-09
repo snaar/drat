@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use reqwest::{Url, Client};
 
-use input::input_factory::InputFactory;
+use crate::input::input_factory::InputFactory;
 
 #[derive(Clone)]
 pub struct Http;

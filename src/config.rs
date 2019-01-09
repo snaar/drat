@@ -6,9 +6,9 @@ use csv;
 use flate2::read::GzDecoder;
 use lzf;
 
-use input::input_factory::InputFactory;
-use read::dr;
-use read::{dc_reader, csv_reader};
+use crate::input::input_factory::InputFactory;
+use crate::read::dr;
+use crate::read::{dc_reader, csv_reader};
 
 #[derive(Debug)]
 pub struct Config {
@@ -121,7 +121,7 @@ impl Config {
     pub fn from_reader<R: Read+'static>(&mut self, reader: R) -> io::Result<Box<dr::Reader+'static>> {
         match self.file_type {
             FileType::Csv => {
-                let mut csv_reader_arg = csv::ReaderBuilder::new()
+                let csv_reader_arg = csv::ReaderBuilder::new()
                     .delimiter(self.delimiter)
                     .has_headers(self.has_headers)
                     .from_reader(reader);

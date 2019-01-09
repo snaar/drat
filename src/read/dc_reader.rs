@@ -5,9 +5,9 @@ use std::collections::HashMap;
 use std::io;
 use std::str;
 
-use read::dr;
-use read::types::{FieldType, FieldValue, FieldDescriptor, Row};
-use read::types;
+use crate::read::dr;
+use crate::read::types::{FieldType, FieldValue, FieldDescriptor, Row};
+use crate::read::types;
 
 pub struct DCReader<R> {
     reader: io::BufReader<R>,

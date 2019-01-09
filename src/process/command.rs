@@ -2,10 +2,9 @@
 use std::io;
 use std::process;
 
-use args::Args;
-use result::{CliResult, CliError};
-
-use process::{collate, read};
+use crate::args::Args;
+use crate::result::{CliResult, CliError};
+use crate::process::{collate, read};
 
 #[derive(Debug)]
 pub enum Command {

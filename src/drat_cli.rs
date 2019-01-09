@@ -1,9 +1,10 @@
 use clap::{Arg, App};
+use clap::crate_version;
 
-use args;
-use input::input_factory::InputFactory;
-use process::command::Command;
-use util;
+use crate::args;
+use crate::input::input_factory::InputFactory;
+use crate::process::command::Command;
+use crate::util;
 
 pub fn drat_cli(input_factories: Vec<Box<InputFactory>>) {
     let matches = App::new("drat")

@@ -1,9 +1,9 @@
 use std::process;
 
-use read::dr;
-use config::Config;
-use read::types::{Row,};
-use read_filter::{Action, ReadFilter};
+use crate::read::dr;
+use crate::config::Config;
+use crate::read::types::{Row,};
+use crate::read_filter::{Action, ReadFilter};
 
 pub struct FileRecord {
     reader: Box<dr::Reader+'static>,

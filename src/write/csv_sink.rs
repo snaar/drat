@@ -2,8 +2,8 @@ use std::fs::File;
 use std::io::{self, Write, BufWriter};
 use std::path::PathBuf;
 
-use read::types::{Row, FieldValue};
-use write::sink::Sink;
+use crate::read::types::{Row, FieldValue};
+use crate::write::sink::Sink;
 
 pub struct CSVSink {
     writer: BufWriter<Box<io::Write+'static>>,

@@ -1,4 +1,4 @@
-use read::types::Row;
+use crate::read::types::Row;
 
 //TODO think about preventing calling write_header multiple times via type system
 pub trait Sink {

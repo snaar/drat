@@ -1,8 +1,8 @@
-use args::Args;
-use file_record::FileRecord;
-use read_filter::ReadFilter;
-use result::CliResult;
-use write::{csv_sink, sink::Sink};
+use crate::args::Args;
+use crate::file_record::FileRecord;
+use crate::read_filter::ReadFilter;
+use crate::result::CliResult;
+use crate::write::{csv_sink, sink::Sink};
 
 pub fn collate(mut argv: Args) -> CliResult<()> {
     let mut writer = csv_sink::CSVSink::new(&argv.output);

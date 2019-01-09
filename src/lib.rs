@@ -1,11 +1,3 @@
-extern crate byteorder;
-#[macro_use]
-extern crate clap;
-extern crate csv;
-extern crate flate2;
-extern crate lzf;
-extern crate reqwest;
-
 pub mod input;
 #[macro_use]
 mod process;
