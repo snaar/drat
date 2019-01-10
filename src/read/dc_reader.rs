@@ -3,17 +3,22 @@ extern crate byteorder;
 use byteorder::{BigEndian, ReadBytesExt};
 use std::collections::HashMap;
 use std::io;
+use std::io::Read;
 use std::str;
 
 use crate::read::dr;
 use crate::read::types::{FieldType, FieldValue, FieldDescriptor, Row};
 use crate::read::types;
 
+const MAGIC_NUM: u64 = 0x44434154;
+const VERSION: u16 = 2;
+
 pub struct DCReader<R> {
     reader: io::BufReader<R>,
     header: Vec<String>,
     field_types: Vec<FieldType>,
     field_count: usize,
+    bitset_byte_count: usize,
     current_row: Row,
     map_field_string: HashMap<String, FieldType>,
 }
@@ -21,9 +26,14 @@ pub struct DCReader<R> {
 impl <R: io::Read> DCReader<R> {
     pub fn new(reader: R) -> Self {
         let mut reader = io::BufReader::new(reader);
-        let _magic_num = reader.read_u64::<BigEndian>().unwrap();
-        let _version = reader.read_u16::<BigEndian>().unwrap();
-        //TODO check magic and version
+        let magic_num = reader.read_u64::<BigEndian>().unwrap();
+        if magic_num != MAGIC_NUM {
+            println!("ERROR: wrong magic number -- {}", magic_num);
+        }
+        let version = reader.read_u16::<BigEndian>().unwrap();
+        if version != VERSION {
+            println!("ERROR: wrong version -- {}", version);
+        }
 
         // skip user given data
         let user_header_size = reader.read_u32::<BigEndian>().unwrap();
@@ -37,6 +47,7 @@ impl <R: io::Read> DCReader<R> {
 
         // field descriptor
         let field_count = reader.read_u32::<BigEndian>().unwrap() as usize;
+        let bitset_byte_count = 1 + ((field_count - 1) / 8);
         let mut header: Vec<String> = Vec::with_capacity(field_count);
         let mut field_types: Vec<FieldType> = Vec::with_capacity(field_count);
         let mut field_values: Vec<FieldValue> = Vec::with_capacity(field_count);
@@ -52,7 +63,7 @@ impl <R: io::Read> DCReader<R> {
         let timestamp = 0 as u64;
         let current_row = Row { timestamp, field_values };
 
-        DCReader { reader, header, field_types, field_count, current_row, map_field_string }
+        DCReader { reader, header, field_types, field_count, bitset_byte_count, current_row, map_field_string }
     }
 
     fn next_row(&mut self) -> Option<Row> {
@@ -64,16 +75,14 @@ impl <R: io::Read> DCReader<R> {
         };
 
         // bitset of null values
-        let bitset_byte_count = 1 + ((self.field_count - 1) / 8);
-        let mut bitset_bytes: Vec<u8> = Vec::with_capacity(bitset_byte_count as usize);
-        for _i in 0..bitset_byte_count {
-            bitset_bytes.push(self.reader.read_u8().unwrap()); //TODO read all bytes at once
-        }
+        let mut bitset_bytes: Vec<u8> = vec![0 as u8; self.bitset_byte_count];
+        let bitset_bytes = bitset_bytes.as_mut_slice();
+        self.reader.read_exact(bitset_bytes).unwrap();
 
         // get non-null fields, if null put string "null"
         let mut field_index = 0 as usize;
-        for one_byte in bitset_bytes {
-            let mut current_bitset = one_byte;
+        for i in 0..bitset_bytes.len() {
+            let mut current_bitset = bitset_bytes[i];
 
             for _i in 0..8 {
                 self.current_row.field_values[field_index] = {
@@ -110,12 +119,11 @@ impl <R: io::Read> DCReader<R> {
             }
         };
 
-        let mut string_vec: Vec<u8> = Vec::new();
-        for _i in 0..data_size {
-            string_vec.push(self.reader.read_u8().unwrap()); //TODO read all bytes at once
-        }
+        let mut string: Vec<u8> = vec![0 as u8; data_size as usize];
+        let string = string.as_mut_slice();
+        self.reader.read_exact(string).unwrap();
 
-        str::from_utf8_mut(&mut *string_vec).unwrap().to_string()
+        str::from_utf8_mut(string).unwrap().to_string()
     }
 }
 

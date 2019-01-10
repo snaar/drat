@@ -29,7 +29,7 @@ impl Command {
                 process::exit(1);
             },
             Err(CliError::Io(ref err)) if err.kind() == io::ErrorKind::BrokenPipe => {
-                process::exit(0);
+                process::exit(1);
             },
             Err(CliError::Io(err)) => {
                 werr!("{}", err);

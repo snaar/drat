@@ -34,16 +34,21 @@ impl Sink for CSVSink {
         write!(self.writer, "{}", row.timestamp).unwrap();
         let field_values = &row.field_values;
         for value in field_values {
-            let v = match value {
-                FieldValue::Double(x) => x.to_string(),
-                FieldValue::Float(x) => x.to_string(), //TODO print floats with at least .0
-                FieldValue::Int(x) => x.to_string(),
-                FieldValue::Long(x) => x.to_string(),
-                FieldValue::Short(x) => x.to_string(),
-                FieldValue::String(x) => x.to_string(),
-                FieldValue::None => "".to_string(),
+            match value {
+                FieldValue::Double(x) => {
+                    write!(self.writer, ",").unwrap();
+                    dtoa::write(&mut self.writer, *x).unwrap();
+                },
+                FieldValue::Float(x) => {
+                    write!(self.writer, ",").unwrap();
+                    dtoa::write(&mut self.writer, *x).unwrap();
+                },
+                FieldValue::Int(x) => write!(self.writer, ",{}", x).unwrap(),
+                FieldValue::Long(x) => write!(self.writer, ",{}", x).unwrap(),
+                FieldValue::Short(x) => write!(self.writer, ",{}", x).unwrap(),
+                FieldValue::String(x) => write!(self.writer, ",{}", x).unwrap(),
+                FieldValue::None => write!(self.writer, ",", ).unwrap(),
             };
-            write!(self.writer, ",{}", v).unwrap();
         }
         write!(self.writer, "\n").unwrap();
     }
