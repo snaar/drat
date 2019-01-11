@@ -50,17 +50,12 @@ pub fn collate(mut argv: Args) -> CliResult<()> {
     Ok(())
 }
 
-//TODO find a way to do it with lambda?
 fn get_min_index(file_records: &Vec<FileRecord>) -> usize {
-    let mut min: (usize, u64) = (0, 0 as u64); // (index, row)
-    let mut i = 0;
-    for record in file_records {
-        if i == 0 || (record.get_timestamp() < min.1) {
-            min.0 = i;
-            min.1 = record.get_timestamp();
-        }
-        i += 1;
-    }
+    let min =
+        file_records.iter()
+                    .enumerate()
+                    .min_by(|&(_, i1), &(_, i2)|
+                            i1.get_timestamp().cmp(&i2.get_timestamp())).unwrap();
     min.0
 }
 

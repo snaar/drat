@@ -1,9 +1,8 @@
-extern crate byteorder;
-
 use byteorder::{BigEndian, ReadBytesExt};
 use std::collections::HashMap;
 use std::io;
 use std::io::Read;
+use std::process;
 use std::str;
 
 use crate::read::dr;
@@ -13,17 +12,22 @@ use crate::read::types;
 const MAGIC_NUM: u64 = 0x44434154;
 const VERSION: u16 = 2;
 
-pub struct DCReader<R> {
+// map for field types
+lazy_static! {
+    static ref FIELD_STRING_MAP: HashMap<&'static str, FieldType> = types::creat_field_string_map();
+}
+
+pub struct DCReader<'a, R> {
     reader: io::BufReader<R>,
     header: Vec<String>,
     field_types: Vec<FieldType>,
     field_count: usize,
     bitset_byte_count: usize,
     current_row: Row,
-    map_field_string: HashMap<String, FieldType>,
+    map_field_string: &'a HashMap<&'static str, FieldType>,
 }
 
-impl <R: io::Read> DCReader<R> {
+impl <'a, R: io::Read> DCReader<'a, R> {
     pub fn new(reader: R) -> Self {
         let mut reader = io::BufReader::new(reader);
         let magic_num = reader.read_u64::<BigEndian>().unwrap();
@@ -41,9 +45,7 @@ impl <R: io::Read> DCReader<R> {
             reader.read_u8().unwrap();
         }
 
-        // map for field types
-        //TODO don't create new map for every file, create it once per program
-        let map_field_string = types::create_field_string_map();
+        let map_field_string = &FIELD_STRING_MAP;
 
         // field descriptor
         let field_count = reader.read_u32::<BigEndian>().unwrap() as usize;
@@ -88,6 +90,16 @@ impl <R: io::Read> DCReader<R> {
                 self.current_row.field_values[field_index] = {
                     if current_bitset & 1 == 0 { // not null
                         match self.field_types[field_index] {
+                            FieldType::Boolean => {
+                                println!("ERROR: boolean field type is not supported");
+                                process::exit(1);
+                            },
+                            FieldType::Byte => FieldValue::Byte(self.reader.read_u8().unwrap()),
+                            FieldType::ByteBuf => {
+                                println!("ERROR: ByteBuffer field type is not supported");
+                                process::exit(1);
+                            },
+                            FieldType::Char => FieldValue::Char(self.reader.read_u16::<BigEndian>().unwrap()),
                             FieldType::Double => FieldValue::Double(self.reader.read_f64::<BigEndian>().unwrap()),
                             FieldType::Float => FieldValue::Float(self.reader.read_f32::<BigEndian>().unwrap()),
                             FieldType::Int => FieldValue::Int(self.reader.read_i32::<BigEndian>().unwrap()),
@@ -127,13 +139,13 @@ impl <R: io::Read> DCReader<R> {
     }
 }
 
-impl <R: io::Read> io::Read for DCReader<R> {
+impl <'a, R: io::Read> io::Read for DCReader<'a, R> {
     fn read(&mut self, into: &mut [u8]) -> io::Result<usize> {
         self.reader.read(into)
     }
 }
 
-impl <R: io::Read> dr::Reader for DCReader<R> {
+impl <'a, R: io::Read> dr::Reader for DCReader<'a, R> {
     fn header(&self) -> &Vec<String> {
         &self.header
     }

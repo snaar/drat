@@ -7,6 +7,10 @@ pub type Nanos = u64;
 
 #[derive(PartialEq, Clone)]
 pub enum FieldValue {
+    Boolean(bool),
+    Byte(u8),
+    ByteBuf(Vec<u8>),
+    Char(u16),
     Double(f64),
     Float(f32),
     Int(i32),
@@ -18,6 +22,10 @@ pub enum FieldValue {
 
 #[derive(PartialEq, Eq, Hash, Clone, Debug)]
 pub enum FieldType {
+    Boolean,
+    Byte,
+    ByteBuf,
+    Char,
     Double,
     Float,
     Int,
@@ -26,14 +34,18 @@ pub enum FieldType {
     String,
 }
 
-pub fn create_field_string_map() -> HashMap<String, FieldType> {
+pub fn creat_field_string_map() -> HashMap<&'static str, FieldType> {
     let mut map = HashMap::new();
-    map.insert("D".to_string(), FieldType::Double);
-    map.insert("".to_string(), FieldType::Float);
-    map.insert("I".to_string(), FieldType::Int);
-    map.insert("".to_string(), FieldType::Long);
-    map.insert("".to_string(), FieldType::Short);
-    map.insert("Ljava.lang.String;".to_string(), FieldType::String);
+    map.insert("Z", FieldType::Boolean);
+    map.insert("B", FieldType::Byte);
+    map.insert("Ljava.lang.ByteBuffer;", FieldType::ByteBuf);
+    map.insert("C", FieldType::Char);
+    map.insert("D", FieldType::Double);
+    map.insert("F", FieldType::Float);
+    map.insert("I", FieldType::Int);
+    map.insert("J", FieldType::Long);
+    map.insert("S", FieldType::Short);
+    map.insert("Ljava.lang.String;", FieldType::String);
     map
 }
 
