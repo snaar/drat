@@ -9,8 +9,8 @@ use drat_lib::drat_cli::drat_cli;
 fn main() {
     let http: Http = Http;
     let file: FileInput = FileInput;
-    let mut vec: Vec<Box<InputFactory>> = Vec::new();
-    vec.push(Box::new(http));
-    vec.push(Box::new(file));
+    let vec: Vec<Box<InputFactory>> = vec![
+        Box::new(http),
+        Box::new(file)];
     drat_cli(vec);
 }

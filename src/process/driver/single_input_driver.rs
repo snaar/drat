@@ -1,15 +1,8 @@
 use crate::args::Args;
-use crate::config::Config;
-use crate::read::types;
+use crate::source_config::SourceConfig;
+use crate::dr::{types, dr};
 use crate::result::CliResult;
-use crate::write::{csv_sink, sink::Sink};
-
-#[derive(Debug, Copy, Clone)]
-pub struct ReadFilter {
-    begin: Option<u64>,
-    end: Option<u64>,
-    timestamp_column: usize,
-}
+use crate::write::factory;
 
 #[derive(PartialEq)]
 pub enum Action {
@@ -18,14 +11,20 @@ pub enum Action {
     Skip,
 }
 
+#[derive(Debug, Copy, Clone)]
+pub struct SingleInputDriver {
+    begin: Option<u64>,
+    end: Option<u64>,
+}
+
 /* read, filter and output rows */
-impl ReadFilter {
-    pub fn new(begin: Option<u64>, end: Option<u64>, timestamp_column: usize) -> Self {
-        ReadFilter { begin, end, timestamp_column }
+impl SingleInputDriver {
+    pub fn new(begin: Option<u64>, end: Option<u64>) -> Self {
+        SingleInputDriver { begin, end }
     }
 
     pub fn new_from_args(argv: &Args) -> Self {
-        ReadFilter::new(argv.begin, argv.end, argv.timestamp_column)
+        SingleInputDriver::new(argv.begin, argv.end)
     }
 
     pub fn filter(&self, timestamp: types::Nanos) -> Action {
@@ -39,17 +38,12 @@ impl ReadFilter {
         }
     }
 
-    pub fn read(&self, config: &mut Config, output: &Option<&str>) -> CliResult<()> {
-        let mut reader = config.reader()?;
-        let mut writer = csv_sink::CSVSink::new(output);
-
-        if config.has_headers() {
-            let header = reader.header();
-            writer.write_header(&header);
-        }
+    pub fn read(&self, config: &mut SourceConfig, output: &Option<&str>) -> CliResult<()> {
+        let mut source: Box<dr::Source+'static> = config.get_reader();
+        let mut writer: Box<dr::Sink> = factory::new_sink(output, &mut source.header(), config.get_csv_config());
 
         loop {
-            let next_row = reader.next_row();
+            let next_row = source.next_row();
             match next_row {
                 Some(r) => {
                     match self.filter(r.timestamp) {

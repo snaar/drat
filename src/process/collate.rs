@@ -1,37 +1,30 @@
 use crate::args::Args;
-use crate::file_record::FileRecord;
-use crate::read_filter::ReadFilter;
+use crate::dr::dr;
+use crate::process::driver::single_input_driver::SingleInputDriver;
+use crate::process::driver::file_record::FileRecord;
 use crate::result::CliResult;
-use crate::write::{csv_sink, sink::Sink};
+use crate::write;
 
 pub fn collate(mut argv: Args) -> CliResult<()> {
-    let mut writer = csv_sink::CSVSink::new(&argv.output);
     let configs = argv.create_configs()?;
 
     // used to filter timestamps
-    let read_filter;
+    let input_driver;
     if argv.begin.is_some() || argv.end.is_some() {
-        read_filter = Some(ReadFilter::new_from_args(&argv));
+        input_driver = Some(SingleInputDriver::new_from_args(&argv));
     } else {
-        read_filter = None;
+        input_driver = None;
     }
 
     // creates file record for each file and add to vector
     let mut file_records = Vec::with_capacity(configs.len());
     for c in configs {
-        file_records.push(FileRecord::new(c, argv.timestamp_column));
+        file_records.push(FileRecord::new(c));
     }
 
     // sort, merge, and output
-    if argv.has_headers && file_records.len() > 0 {
-        let header = file_records[0].get_header();
-        match header.len() {
-            0 => println!("No header found."),
-            _ => {
-                writer.write_header(header);
-            }
-        };
-    }
+    let header = file_records[0].get_header();
+    let mut writer: Box<dr::Sink+'static> = write::factory::new_sink(&argv.output, header, &argv.csv_config);
 
     let mut record_len = file_records.len();
     while record_len > 0 {
@@ -40,7 +33,7 @@ pub fn collate(mut argv: Args) -> CliResult<()> {
         writer.write_row(&row);
 
         loop {
-            if !file_records[index].next(&read_filter) {
+            if !file_records[index].next(&input_driver) {
                 file_records.remove(index);
             }
             break;
@@ -51,11 +44,11 @@ pub fn collate(mut argv: Args) -> CliResult<()> {
 }
 
 fn get_min_index(file_records: &Vec<FileRecord>) -> usize {
-    let min =
-        file_records.iter()
-                    .enumerate()
-                    .min_by(|&(_, i1), &(_, i2)|
-                            i1.get_timestamp().cmp(&i2.get_timestamp())).unwrap();
+    let min = file_records
+        .iter()
+        .enumerate()
+        .min_by(|&(_, i1), &(_, i2)|
+            i1.get_timestamp().cmp(&i2.get_timestamp())).unwrap();
     min.0
 }
 

@@ -1,28 +1,19 @@
 use std::process;
 
-use crate::read::dr;
-use crate::config::Config;
-use crate::read::types::{Row,};
-use crate::read_filter::{Action, ReadFilter};
+use crate::dr::dr;
+use crate::dr::types::Row;
+use crate::source_config::SourceConfig;
+use crate::process::driver::single_input_driver::{Action, SingleInputDriver};
 
 pub struct FileRecord {
-    reader: Box<dr::Reader+'static>,
-    header: Vec<String>,
+    reader: Box<dr::Source+'static>,
     timestamp: u64,
     current_row: Option<Row>,
-    timestamp_column: usize,
 }
 
 impl FileRecord {
-    pub fn new(mut conf: Config, timestamp_column: usize) -> Self {
-        let mut reader = match conf.reader() {
-            Ok(r) => r,
-            Err(err) => {
-                werr!("Error: {}", err);
-                process::exit(1);
-            },
-        };
-        let header = reader.header().to_owned();
+    pub fn new(mut conf: SourceConfig) -> Self {
+        let mut reader: Box<dr::Source+'static> = conf.get_reader();
         let mut current_row = reader.next_row();
         if current_row.is_none() {
             panic!("Empty file!")
@@ -40,11 +31,11 @@ impl FileRecord {
             }
         };
 
-        FileRecord { reader, header, timestamp, current_row, timestamp_column }
+        FileRecord { reader, timestamp, current_row }
     }
 
-    pub fn get_header(&self) -> &Vec<String> {
-        &self.header
+    pub fn get_header(&self) -> &dr::Header {
+        &self.reader.header()
     }
 
     pub fn get_timestamp(&self) -> u64 {
@@ -55,20 +46,20 @@ impl FileRecord {
         &self.current_row
     }
 
-    pub fn next(&mut self, filter: &Option<ReadFilter>) -> bool {
+    pub fn next(&mut self, input_driver: &Option<SingleInputDriver>) -> bool {
         let mut next_row;
-        match filter {
+        match input_driver {
             None => {
                 next_row = self.reader.next_row();
             }
-            Some(f) => {
-                let read_filter: ReadFilter = *f;
+            Some(d) => {
+                let driver: SingleInputDriver = *d;
                 loop {
                     next_row = self.reader.next_row();
                     match next_row {
                         None => break,
                         Some(r) => {
-                            match read_filter.filter(r.timestamp) {
+                            match driver.filter(r.timestamp) {
                                 Action::Stop => {
                                     next_row = None;
                                     break

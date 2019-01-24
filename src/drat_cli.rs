@@ -4,7 +4,8 @@ use clap::crate_version;
 use crate::args;
 use crate::input::input_factory::InputFactory;
 use crate::process::command::Command;
-use crate::util;
+use crate::source_config;
+use crate::util::csv_util;
 
 pub fn drat_cli(input_factories: Vec<Box<InputFactory>>) {
     let matches = App::new("drat")
@@ -13,38 +14,38 @@ pub fn drat_cli(input_factories: Vec<Box<InputFactory>>) {
         .arg(Arg::with_name("begin")
             .short("b")
             .long("begin")
-            .help("Set begin timestamp (inclusive)")
+            .help("set begin timestamp (inclusive)")
             .takes_value(true)
             .value_name("TIMESTAMP"))
         .arg(Arg::with_name("end")
             .short("e")
             .long("end")
-            .help("Set end timestamp (exclusive)")
+            .help("set end timestamp (exclusive)")
             .takes_value(true)
             .value_name("TIMESTAMP"))
         .arg(Arg::with_name("timestamp_column")
             .short("t")
             .long("timestamp-column")
-            .help("Specify the timestamp column [default: 0]")
+            .help("csv only: specify the timestamp column [default: 0]")
             .takes_value(true)
             .value_name("ARG"))
         .arg(Arg::with_name("INPUT")
-            .help("Sets the input files to use; \n\
+            .help("sets the input files to use; \n\
             if missing, stdin will be used")
             .multiple(true))
         .arg(Arg::with_name("has_headers")
             .long("has-headers")
-            .help("Input files have headers"))
+            .help("csv only: input files have headers"))
         .arg(Arg::with_name("output")
             .long("output")
             .short("o")
-            .help("Output to a file")
+            .help("output to a file")
             .takes_value(true)
             .value_name("FILE"))
         .arg(Arg::with_name("delimiter")
             .long("delimiter")
             .short("d")
-            .help("Field/column delimiter")
+            .help("csv only: field/column delimiter")
             .takes_value(true)
             .default_value(",")
             .value_name("ARG"))
@@ -69,19 +70,17 @@ pub fn drat_cli(input_factories: Vec<Box<InputFactory>>) {
 
     let output = matches.value_of("output");
     let has_headers = matches.is_present("has_headers");
-
     let delimiter = matches.value_of("delimiter").unwrap();
-    let delimiter = util::parse_into_delimiter(delimiter).unwrap();
+    let delimiter = csv_util::parse_into_delimiter(delimiter).unwrap();
+    let csv_config = source_config::CSVConfig::new(delimiter, has_headers, timestamp_column);
 
     let argv = args::Args {
         inputs,
         input_factories,
         begin,
         end,
-        timestamp_column,
         output,
-        has_headers,
-        delimiter,
+        csv_config,
     };
 
     match argv.inputs.len() {

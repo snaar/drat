@@ -1,24 +1,16 @@
-use std::io::{self, Read};
+use std::fmt;
+use std::io;
 use std::ops::Deref;
 use std::path::PathBuf;
+use std::process;
 
 use csv;
 use flate2::read::GzDecoder;
 use lzf;
 
+use crate::dr::dr;
 use crate::input::input_factory::InputFactory;
-use crate::read::dr;
-use crate::read::{dc_reader, csv_reader};
-
-#[derive(Debug)]
-pub struct Config {
-    path: Option<PathBuf>, // 'None' implies stdin
-    delimiter: u8,
-    has_headers: bool,
-    timestamp_column: usize,
-    file_type: FileType,
-    input_factories: Vec<Box<InputFactory>>,
-}
+use crate::read::{csv_reader, dc_reader};
 
 #[derive(Debug)]
 enum FileType {
@@ -26,43 +18,76 @@ enum FileType {
     Dc,
 }
 
-impl Config {
-    pub fn new(path: &Option<&str>, delimiter: u8, has_headers: bool,
-               timestamp_column: usize, input_factories: Vec<Box<InputFactory>>) -> Config {
-        let path = match *path {
-            None => None,
-            Some(ref s) if s.deref() == "-".to_owned() => None,
-            Some(ref s) => Some(PathBuf::from(s)),
-        };
-        let file_type = FileType::Csv;
-        Config {
-            path,
-            delimiter,
-            has_headers,
-            timestamp_column,
-            file_type,
-            input_factories: input_factories,
-        }
-    }
+#[derive(Clone)]
+pub struct CSVConfig {
+    delimiter: u8,
+    has_headers: bool,
+    timestamp_column_index: usize,
+}
 
-    pub fn delimiter(&self) -> u8 {
-        self.delimiter
+impl CSVConfig {
+    pub fn new(delimiter: u8, has_headers: bool, timestamp_column_index: usize) -> Self {
+        CSVConfig { delimiter, has_headers, timestamp_column_index }
     }
 
     pub fn has_headers(&self) -> bool {
         self.has_headers
     }
 
+    pub fn delimiter(&self) -> u8 {
+        self.delimiter
+    }
+}
+
+impl fmt::Debug for CSVConfig {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "delimiter: {:?}, has headers: {:?}", self.delimiter, self.has_headers)
+    }
+}
+
+#[derive(Debug)]
+pub struct SourceConfig {
+    path: Option<PathBuf>, // 'None' implies stdin. TODO: maybe use custom enum instead of commenting?
+    input_factories: Vec<Box<InputFactory>>,
+    file_type: FileType, // TODO: refactor the dr::Source factory functions below and get rid of this variable
+    csv_config: CSVConfig,
+}
+
+impl SourceConfig {
+    pub fn new(path: &Option<&str>, input_factories: Vec<Box<InputFactory>>, csv_config: CSVConfig) -> Self {
+        let path = match *path {
+            None => None,
+            Some(ref s) if s.deref() == "-".to_owned() => None,
+            Some(ref s) => Some(PathBuf::from(s)),
+        };
+        let file_type = FileType::Csv;
+        SourceConfig { path, input_factories, file_type, csv_config }
+    }
+
+    pub fn get_csv_config(&self) -> &CSVConfig {
+        &self.csv_config
+    }
+
     pub fn is_stdin(&self) -> bool {
         self.path.is_none()
     }
 
-    pub fn reader(&mut self) -> io::Result<Box<dr::Reader+'static>> {
-        let io_reader = self.io_reader()?;
-        Ok(self.from_reader(io_reader)?)
+    pub fn get_reader(&mut self) -> Box<dr::Source+'static> {
+        match self.reader() {
+            Ok(r) => r,
+            Err(err) => {
+                werr!("Error: {}", err);
+                process::exit(1);
+            },
+        }
     }
 
-    pub fn io_reader(&mut self) -> io::Result<Box<io::Read+'static>> {
+    pub fn reader(&mut self) -> io::Result<Box<dr::Source+'static>> {
+        let io_reader = self.get_io_reader()?;
+        Ok(self.generate_source(io_reader)?)
+    }
+
+    fn get_io_reader(&mut self) -> io::Result<Box<io::Read+'static>> {
         let path = self.path.clone();
         match path {
             None => {
@@ -96,7 +121,7 @@ impl Config {
         }
     }
 
-    pub fn get_file_reader<R: Read+'static>(&mut self, reader: R, path: &PathBuf) -> Box<io::Read+'static> {
+    fn get_file_reader<R: io::Read+'static>(&mut self, reader: R, path: &PathBuf) -> Box<io::Read+'static> {
         match path.extension().unwrap().to_str().unwrap() {
             "gz" => {
                 let decoder = GzDecoder::new(reader);
@@ -118,14 +143,15 @@ impl Config {
         }
     }
 
-    pub fn from_reader<R: Read+'static>(&mut self, reader: R) -> io::Result<Box<dr::Reader+'static>> {
+    fn generate_source<R: io::Read+'static>(&mut self, reader: R) -> io::Result<Box<dr::Source+'static>> {
         match self.file_type {
             FileType::Csv => {
                 let csv_reader_arg = csv::ReaderBuilder::new()
-                    .delimiter(self.delimiter)
-                    .has_headers(self.has_headers)
+                    .delimiter(self.csv_config.delimiter())
+                    .has_headers(self.csv_config.has_headers())
                     .from_reader(reader);
-                Ok(Box::new(csv_reader::CSVReader::new(csv_reader_arg, 0)))
+                Ok(Box::new(csv_reader::CSVReader::new(
+                    csv_reader_arg, self.csv_config.timestamp_column_index)))
 
             },
             FileType::Dc => {
@@ -134,3 +160,4 @@ impl Config {
         }
     }
 }
+

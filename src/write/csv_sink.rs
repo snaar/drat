@@ -3,17 +3,22 @@ use std::io::{self, Write, BufWriter};
 use std::path::PathBuf;
 use std::process;
 
-use crate::read::types::{Row, FieldValue};
-use crate::write::sink::Sink;
+use crate::dr::dr;
+use crate::dr::types::{FieldValue, Row};
 
 pub struct CSVSink {
     writer: BufWriter<Box<io::Write+'static>>,
 }
 
 impl CSVSink {
-    pub fn new(path: &Option<&str>) -> Self {
-        let writer = BufWriter::new(CSVSink::into_writer(path).unwrap());
-        CSVSink{ writer }
+    pub fn new(path: &Option<&str>, header: &dr::Header, has_header: bool) -> Self {
+        let mut writer = BufWriter::new(CSVSink::into_writer(path).unwrap());
+
+        if has_header {
+            CSVSink::write_header(&mut writer, header)
+        }
+        CSVSink { writer }
+
     }
 
     fn into_writer(path: &Option<&str>) -> io::Result<Box<io::Write>> {
@@ -28,21 +33,38 @@ impl CSVSink {
             }
         }
     }
+
+    //TODO names/types?
+    fn write_header(writer: &mut BufWriter<Box<io::Write+'static>>, header: &dr::Header) {
+        let field_name = header.get_field_names().clone();
+        let mut first = true;
+        for name in field_name {
+            if first {
+                write!(writer, "{}", name).unwrap();
+                first = false;
+            } else {
+                write!(writer, ",{}", name).unwrap();
+            }
+        }
+        write!(writer, "\n").unwrap();
+    }
 }
 
-impl Sink for CSVSink {
+impl dr::Sink for CSVSink {
     fn write_row (&mut self, row: &Row) {
         write!(self.writer, "{}", row.timestamp).unwrap();
         let field_values = &row.field_values;
         for value in field_values {
             match value {
-                FieldValue::Boolean(x) => {
-                    println!("ERROR: boolean field type is not supported for writing CSV file");
+                FieldValue::Boolean(_x) => {
+                    println!();
+                    println!("Error: boolean field type is not supported for writing CSV file");
                     process::exit(1);
                 },
                 FieldValue::Byte(x) => write!(self.writer, ",{}", x).unwrap(),
-                FieldValue::ByteBuf(x) => {
-                    println!("ERROR: ByteBuffer field type is not supported for writing CSV file");
+                FieldValue::ByteBuf(_x) => {
+                    println!();
+                    println!("Error: ByteBuffer field type is not supported for writing CSV file");
                     process::exit(1);
                 },
                 FieldValue::Char(x) => write!(self.writer, ",{}", x).unwrap(),
@@ -64,16 +86,7 @@ impl Sink for CSVSink {
         write!(self.writer, "\n").unwrap();
     }
 
-    fn write_header(&mut self, header: &Vec<String>) {
-        let mut first = true;
-        for field in header {
-            if first {
-                write!(self.writer, "{}", field).unwrap();
-                first = false;
-            } else {
-                write!(self.writer, ",{}", field).unwrap();
-            }
-        }
-        self.writer.write(b"\n").unwrap();
+    fn boxed(&self) -> Box<&dr::Sink> {
+        Box::new(self)
     }
 }
