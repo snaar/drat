@@ -8,6 +8,7 @@ use std::process;
 use crate::util::dc_util;
 use crate::dr::dr;
 use crate::dr::types::{Row, FieldValue, FieldType};
+use crate::result::CliResult;
 
 // map for field types
 lazy_static! {
@@ -20,7 +21,7 @@ pub struct DCSink {
 }
 
 impl DCSink {
-    pub fn new(path: &Option<&str>, header: &dr::Header) -> Self {
+    pub fn new(path: &Option<String>, header: &dr::Header) -> Self {
         let writer = BufWriter::new(DCSink::into_writer(path).unwrap());
         let bitset_bytes = dc_util::get_bitset_bytes(header.get_field_types().len()-1);
         let mut dc_sink = DCSink { writer, bitset_bytes };
@@ -29,7 +30,7 @@ impl DCSink {
         dc_sink
     }
 
-    fn into_writer(path: &Option<&str>) -> io::Result<Box<io::Write>> {
+    fn into_writer(path: &Option<String>) -> io::Result<Box<io::Write>> {
         match path {
             None => {
                 Ok(Box::new(io::stdout()))
@@ -72,7 +73,7 @@ impl DCSink {
         // write field names (if available) and types as SizedStrings
         let has_field_name = field_names.len() >= 1;
         if has_field_name && field_names.len() != field_types.len() {
-            println!("Error: number of field name and number of field types does not match");
+            eprintln!("Error: number of field name and number of field types does not match");
             process::exit(1);
         }
         for i in 0..field_types.len() {
@@ -90,12 +91,12 @@ impl DCSink {
         let field_string_map = &FIELD_STRING_MAP_TYPE;
         let type_string = match field_types {
             FieldType::Boolean => {
-                println!("Error: boolean field type is not supported");
+                eprintln!("Error: boolean field type is not supported");
                 process::exit(1);
             },
             FieldType::Byte => field_string_map.get(&FieldType::Byte),
             FieldType::ByteBuf => {
-                println!("Error: ByteBuffer field type is not supported");
+                eprintln!("Error: ByteBuffer field type is not supported");
                 process::exit(1);
             },
             FieldType::Char => field_string_map.get(&FieldType::Char),
@@ -109,7 +110,7 @@ impl DCSink {
         match type_string {
             Some(t) => dc_util::write_sized_string(&mut dc_sink.writer, t),
             None => {
-                println!("Error: field type missing");
+                eprintln!("Error: field type missing");
                 process::exit(1)
             }
         }
@@ -161,7 +162,7 @@ impl dr::Sink for DCSink {
                 },
                 FieldValue::Byte(x) => self.writer.write_u8(*x).unwrap(),
                 FieldValue::ByteBuf(_x) => {
-                    println!("Error: ByteBuffer field type is not supported for writing DC file");
+                    eprintln!("Error: ByteBuffer field type is not supported for writing DC file");
                     process::exit(1);
                 },
                 FieldValue::Char(x) => self.writer.write_u16::<BigEndian>(*x).unwrap(),
@@ -174,6 +175,11 @@ impl dr::Sink for DCSink {
                 FieldValue::None => continue,
             };
         }
+    }
+
+    fn flush(&mut self) -> CliResult<()> {
+        self.writer.flush();
+        Ok(())
     }
 
     fn boxed(&self) -> Box<&dr::Sink> {

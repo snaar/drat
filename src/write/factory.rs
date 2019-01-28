@@ -5,7 +5,7 @@ use crate::source_config::CSVConfig;
 use crate::write::csv_sink;
 use crate::write::dc_sink;
 
-pub fn new_sink(output: &Option<&str>, header: &dr::Header, csv_config: &CSVConfig) -> Box<dr::Sink+'static> {
+pub fn new_sink(output: Option<String>, header: &dr::Header, csv_config: &CSVConfig) -> Box<dr::Sink+'static> {
     let writer: Box<dr::Sink+'static>;
     match output {
         Some(p) => {

@@ -1,6 +1,11 @@
 use std::fmt;
 
 use crate::dr::types::{FieldType, Row};
+use crate::result::CliResult;
+
+pub trait DRDriver {
+    fn drive(&mut self);
+}
 
 pub trait Source {
     fn header(&self) -> &Header;
@@ -17,6 +22,7 @@ impl fmt::Debug for Source {
 //TODO think about preventing calling write_header multiple times via type system
 pub trait Sink {
     fn write_row(&mut self, row: &Row);
+    fn flush(&mut self) -> CliResult<()>;
     fn boxed(&self) -> Box<&Sink>;
 }
 

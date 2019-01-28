@@ -28,6 +28,6 @@ impl InputFactory for FileInput {
     }
 
     fn factory_name(&self) -> &str {
-        "File input"
+        "file"
     }
 }

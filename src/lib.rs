@@ -1,16 +1,15 @@
 #[macro_use]
 extern crate lazy_static;
 
-pub mod dr;
-pub mod input;
-pub mod util;
 #[macro_use]
-mod process;
-mod read;
-mod write;
+mod result;
 
 mod args;
 pub mod drat_cli;
-mod result;
+pub mod dr;
+pub mod input;
+pub mod util;
+mod process;
+mod read;
 mod source_config;
-
+mod write;

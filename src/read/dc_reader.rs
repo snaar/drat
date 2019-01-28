@@ -27,11 +27,11 @@ impl <R: io::Read> DCReader<R> {
         let mut reader = io::BufReader::new(reader);
         let magic_num = reader.read_u64::<BigEndian>().unwrap();
         if &magic_num != &dc_util::MAGIC_NUM {
-            println!("Error: wrong magic number -- {}", magic_num);
+            eprintln!("Error: wrong magic number -- {}", magic_num);
         }
         let version = reader.read_u16::<BigEndian>().unwrap();
         if &version != &dc_util::VERSION {
-            println!("Error: wrong version -- {}", version);
+            eprintln!("Error: wrong version -- {}", version);
         }
 
         // skip user given data
@@ -85,12 +85,12 @@ impl <R: io::Read> DCReader<R> {
                     if current_bitset & 1 == 0 { // not null
                         match self.header.get_field_types()[field_index] {
                             FieldType::Boolean => {
-                                println!("Error: boolean field type is not supported");
+                                eprintln!("Error: boolean field type is not supported");
                                 process::exit(1);
                             },
                             FieldType::Byte => FieldValue::Byte(self.reader.read_u8().unwrap()),
                             FieldType::ByteBuf => {
-                                println!("Error: ByteBuffer field type is not supported");
+                                eprintln!("Error: ByteBuffer field type is not supported");
                                 process::exit(1);
                             },
                             FieldType::Char => FieldValue::Char(self.reader.read_u16::<BigEndian>().unwrap()),

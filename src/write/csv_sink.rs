@@ -5,23 +5,22 @@ use std::process;
 
 use crate::dr::dr;
 use crate::dr::types::{FieldValue, Row};
+use crate::result::CliResult;
 
 pub struct CSVSink {
     writer: BufWriter<Box<io::Write+'static>>,
 }
 
 impl CSVSink {
-    pub fn new(path: &Option<&str>, header: &dr::Header, has_header: bool) -> Self {
+    pub fn new(path: &Option<String>, header: &dr::Header, has_header: bool) -> Self {
         let mut writer = BufWriter::new(CSVSink::into_writer(path).unwrap());
-
         if has_header {
             CSVSink::write_header(&mut writer, header)
         }
         CSVSink { writer }
-
     }
 
-    fn into_writer(path: &Option<&str>) -> io::Result<Box<io::Write>> {
+    fn into_writer(path: &Option<String>) -> io::Result<Box<io::Write>> {
         match path {
             None => {
                 Ok(Box::new(io::stdout()))
@@ -57,14 +56,12 @@ impl dr::Sink for CSVSink {
         for value in field_values {
             match value {
                 FieldValue::Boolean(_x) => {
-                    println!();
-                    println!("Error: boolean field type is not supported for writing CSV file");
+                    eprintln!("Error: boolean field type is not supported for writing CSV file");
                     process::exit(1);
                 },
                 FieldValue::Byte(x) => write!(self.writer, ",{}", x).unwrap(),
                 FieldValue::ByteBuf(_x) => {
-                    println!();
-                    println!("Error: ByteBuffer field type is not supported for writing CSV file");
+                    eprintln!("Error: ByteBuffer field type is not supported for writing CSV file");
                     process::exit(1);
                 },
                 FieldValue::Char(x) => write!(self.writer, ",{}", x).unwrap(),
@@ -85,6 +82,12 @@ impl dr::Sink for CSVSink {
         }
         write!(self.writer, "\n").unwrap();
     }
+
+    fn flush(&mut self) -> CliResult<()> {
+        self.writer.flush();
+        Ok(())
+    }
+
 
     fn boxed(&self) -> Box<&dr::Sink> {
         Box::new(self)

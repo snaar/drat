@@ -1,12 +1,29 @@
-use crate::args::Args;
-use crate::process::driver::single_input_driver::SingleInputDriver;
-use crate::result::CliResult;
+use crate::args;
+use crate::dr::dr;
+use crate::process::driver::input_driver;
+use crate::result::{self, CliResult};
 
-pub fn run(mut argv: Args) -> CliResult<()> {
-    let input_driver = SingleInputDriver::new_from_args(&argv);
-    let output: Option<&str> = argv.output.clone();
-    let mut config = argv.create_config().unwrap();
-    input_driver.read(&mut config, &output)?;
+pub struct Read {
+    source: Box<dr::Source+'static >,
+    writer: Box<dr::Sink>,
+    date_range: args::DataRange,
+}
 
-    Ok(())
+impl Read {
+    pub fn new(source: Box<dr::Source + 'static>, writer: Box<dr::Sink>, date_range: args::DataRange) -> Self {
+        Read { source, writer, date_range }
+    }
+
+    fn read(&mut self) -> CliResult<()> {
+        input_driver::pump_rows(&self.date_range, &mut self.source, &mut self.writer)?;
+
+        self.writer.flush();
+        Ok(())
+    }
+}
+
+impl dr::DRDriver for Read {
+    fn drive(&mut self) {
+        result::handle_drive_error(self.read());
+    }
 }

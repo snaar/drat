@@ -54,7 +54,7 @@ pub struct SourceConfig {
 }
 
 impl SourceConfig {
-    pub fn new(path: &Option<&str>, input_factories: Vec<Box<InputFactory>>, csv_config: CSVConfig) -> Self {
+    pub fn new(path: &Option<String>, input_factories: Vec<Box<InputFactory>>, csv_config: CSVConfig) -> Self {
         let path = match *path {
             None => None,
             Some(ref s) if s.deref() == "-".to_owned() => None,
@@ -76,7 +76,7 @@ impl SourceConfig {
         match self.reader() {
             Ok(r) => r,
             Err(err) => {
-                werr!("Error: {}", err);
+                write_error!("Error: {}", err);
                 process::exit(1);
             },
         }

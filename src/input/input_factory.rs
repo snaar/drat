@@ -2,13 +2,6 @@ use std::fmt;
 use std::io;
 use std::path::PathBuf;
 
-//pub enum InputResult {
-//    WrongFactory,
-//    CannotOpen,
-//    Empty,
-//    Ok(Box<io::Read+'static>),
-//}
-
 pub trait InputFactory {
     fn can_open(&self, path: &PathBuf) -> bool;
     fn open(&self, path: &PathBuf) -> io::Result<Box<io::Read+'static>>;

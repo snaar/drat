@@ -34,7 +34,7 @@ impl <R: io::Read> CSVReader<R> {
         let first_row = match reader.records().next().unwrap() {
             Ok(r) => r,
             Err(err) => {
-                werr!("{}", err);
+                write_error!("{}", err);
                 process::exit(1);
             }
         };
@@ -57,7 +57,13 @@ impl <R: io::Read> CSVReader<R> {
         let mut current_column = 0;
         for i in next_record.iter() {
             if current_column == self.timestamp_column {
-                self.next_row.timestamp = i.parse::<Nanos>().unwrap();
+                self.next_row.timestamp = match i.parse::<Nanos>() {
+                    Ok(t) => t,
+                    Err(e) => {
+                        write_error!("error updating row in csv_reader: {} \n", e);
+                        process::exit(1);
+                    }
+                }
             }
             self.next_row.field_values[current_column] = FieldValue::String(i.to_string());
             current_column += 1;

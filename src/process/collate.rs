@@ -1,57 +1,58 @@
-use crate::args::Args;
+use crate::args;
 use crate::dr::dr;
-use crate::process::driver::single_input_driver::SingleInputDriver;
-use crate::process::driver::file_record::FileRecord;
-use crate::result::CliResult;
-use crate::write;
+use crate::process::driver::single_file_record::SingleFileRecord;
+use crate::result::{self, CliResult};
 
-pub fn collate(mut argv: Args) -> CliResult<()> {
-    let configs = argv.create_configs()?;
+pub struct Collate {
+    sources: Vec<Box<dr::Source+'static>>,
+    writer: Box<dr::Sink>,
+    date_range: args::DataRange,
+}
 
-    // used to filter timestamps
-    let input_driver;
-    if argv.begin.is_some() || argv.end.is_some() {
-        input_driver = Some(SingleInputDriver::new_from_args(&argv));
-    } else {
-        input_driver = None;
+impl Collate {
+    pub fn new(sources: Vec<Box<dr::Source+'static>>, writer: Box<dr::Sink>, date_range: args::DataRange) -> Self {
+        Collate { sources, writer, date_range }
     }
 
-    // creates file record for each file and add to vector
-    let mut file_records = Vec::with_capacity(configs.len());
-    for c in configs {
-        file_records.push(FileRecord::new(c));
-    }
-
-    // sort, merge, and output
-    let header = file_records[0].get_header();
-    let mut writer: Box<dr::Sink+'static> = write::factory::new_sink(&argv.output, header, &argv.csv_config);
-
-    let mut record_len = file_records.len();
-    while record_len > 0 {
-        let index = get_min_index(&file_records);
-        let row = file_records[index].get_current_row().clone().unwrap();
-        writer.write_row(&row);
-
-        loop {
-            if !file_records[index].next(&input_driver) {
-                file_records.remove(index);
-            }
-            break;
+    fn collate(&mut self) -> CliResult<()> {
+        // creates file record for each file and add to vector
+        let mut file_records = Vec::with_capacity(self.sources.len());
+        for source in &mut self.sources {
+            file_records.push(SingleFileRecord::new(source));
         }
-        record_len = file_records.len();
+
+        // sort, merge, and output
+        let mut record_len = file_records.len();
+        while record_len > 0 {
+            let index = Self::get_min_index(&file_records);
+            let row = file_records[index].get_current_row().clone().unwrap();
+            self.writer.write_row(&row);
+
+            loop {
+                if !file_records[index].next(&self.date_range) {
+                    file_records.remove(index);
+                }
+                break;
+            }
+            record_len = file_records.len();
+        }
+
+        self.writer.flush();
+        Ok(())
     }
-    Ok(())
+
+    fn get_min_index(file_records: &Vec<SingleFileRecord>) -> usize {
+        let min = file_records
+            .iter()
+            .enumerate()
+            .min_by(|&(_, i1), &(_, i2)|
+                i1.get_timestamp().cmp(&i2.get_timestamp())).unwrap();
+        min.0
+    }
 }
 
-fn get_min_index(file_records: &Vec<FileRecord>) -> usize {
-    let min = file_records
-        .iter()
-        .enumerate()
-        .min_by(|&(_, i1), &(_, i2)|
-            i1.get_timestamp().cmp(&i2.get_timestamp())).unwrap();
-    min.0
-}
-
-pub fn run(argv: Args) -> CliResult<()> {
-    collate(argv)
+impl dr::DRDriver for Collate {
+    fn drive(&mut self) {
+        result::handle_drive_error(self.collate())
+    }
 }

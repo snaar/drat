@@ -2,23 +2,31 @@ use crate::result::{CliResult, CliError};
 use crate::source_config::{CSVConfig, SourceConfig};
 use crate::input::input_factory::InputFactory;
 
-pub struct Args<'a> {
-    pub inputs: Vec<&'a str>,
-    pub input_factories: Vec<Box<InputFactory>>,
+pub struct DataRange {
     pub begin: Option<u64>,
     pub end: Option<u64>,
-    pub output: Option<&'a str>,
+}
+
+pub struct CliArgs {
+    pub inputs: Vec<String>,
+    pub output: Option<String>,
+    pub data_range: DataRange,
     pub csv_config: CSVConfig,
 }
 
-impl <'a> Args<'a> {
+pub struct Args {
+    pub cli_args: CliArgs,
+    pub input_factories: Vec<Box<InputFactory>>,
+}
+
+impl Args {
     pub fn create_config(&mut self) -> CliResult<SourceConfig> {
-        if self.inputs.len() > 1 {
+        if self.cli_args.inputs.len() > 1 {
             return Err(CliError::Other("Error: more than one input file specified.".to_owned()));
         }
-        let input: Option<&str> = match self.inputs.len() {
+        let input: Option<String> = match self.cli_args.inputs.len() {
             0 => None,
-            1 => Some(self.inputs.get(0).unwrap()),
+            1 => Some(self.cli_args.inputs.get(0).unwrap().to_string()),
             _ => unreachable!(),
         };
 
@@ -26,15 +34,15 @@ impl <'a> Args<'a> {
         for item in &mut self.input_factories {
             input_factories_copy.push(item.box_clone());
         }
-        let config = SourceConfig::new(&input, input_factories_copy, self.csv_config.clone());
+        let config = SourceConfig::new(&input, input_factories_copy, self.cli_args.csv_config.clone());
 
         Ok(config)
     }
 
     pub fn create_configs(&mut self) -> CliResult<Vec<SourceConfig>> {
-        let mut inputs_clone = self.inputs.clone();
-        if self.inputs.is_empty() {
-            inputs_clone.push("-"); // stdin
+        let mut inputs_clone = self.cli_args.inputs.clone();
+        if self.cli_args.inputs.is_empty() {
+            inputs_clone.push("-".to_string()); // stdin
         }
 
         let mut input_factories_copy: Vec<Box<InputFactory>> = Vec::with_capacity(self.input_factories.len());
@@ -44,7 +52,7 @@ impl <'a> Args<'a> {
 
         let configs = inputs_clone.into_iter()
             .map(move |p|
-                SourceConfig::new(&Some(p), input_factories_copy.clone(), self.csv_config.clone()))
+                SourceConfig::new(&Some(p), input_factories_copy.clone(), self.cli_args.csv_config.clone()))
             .collect::<Vec<_>>();
         check_at_most_one_stdin(&*configs)?;
 
