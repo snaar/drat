@@ -17,7 +17,7 @@ impl Read {
     fn read(&mut self) -> CliResult<()> {
         input_driver::pump_rows(&self.date_range, &mut self.source, &mut self.writer)?;
 
-        self.writer.flush();
+        self.writer.flush()?;
         Ok(())
     }
 }

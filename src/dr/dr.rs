@@ -21,7 +21,7 @@ impl fmt::Debug for Source {
 
 //TODO think about preventing calling write_header multiple times via type system
 pub trait Sink {
-    fn write_row(&mut self, row: &Row);
+    fn write_row(&mut self, row: &Row) -> CliResult<()>;
     fn flush(&mut self) -> CliResult<()>;
     fn boxed(&self) -> Box<&Sink>;
 }

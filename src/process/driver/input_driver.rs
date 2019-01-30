@@ -12,9 +12,9 @@ pub fn pump_rows(data_range: &DataRange, source: &mut Box<dr::Source+'static>, w
             Some(r) => {
                 match filter::filter_data_range(data_range, r.timestamp) {
                     filter::Action::Stop => break,
-                    filter::Action::Write => writer.write_row(&r),
+                    filter::Action::Write => writer.write_row(&r)?,
                     filter::Action::Skip => continue,
-                }
+                };
             }
             None => break,
         }

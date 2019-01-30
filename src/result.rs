@@ -13,6 +13,7 @@ pub enum CliError {
     Flag(clap::Error),
     Csv(csv::Error),
     Io(io::Error),
+    Data(String),
     Other(String),
 }
 
@@ -22,6 +23,7 @@ impl fmt::Display for CliError {
             CliError::Flag(ref e) => { e.fmt(f) }
             CliError::Csv(ref e) => { e.fmt(f) }
             CliError::Io(ref e) => { e.fmt(f) }
+            CliError::Data(ref s) => { f.write_str(&**s) }
             CliError::Other(ref s) => { f.write_str(&**s) }
         }
     }
@@ -85,6 +87,10 @@ pub fn handle_drive_error(cli_result: CliResult<()>) {
             write_error!("{}", err);
             process::exit(1);
         },
+        Err(CliError::Data(msg)) => {
+            write_error!("{}", msg);
+            process::exit(1);
+        }
         Err(CliError::Other(msg)) => {
             write_error!("{}", msg);
             process::exit(1);

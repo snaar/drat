@@ -26,7 +26,7 @@ impl Collate {
         while record_len > 0 {
             let index = Self::get_min_index(&file_records);
             let row = file_records[index].get_current_row().clone().unwrap();
-            self.writer.write_row(&row);
+            self.writer.write_row(&row)?;
 
             loop {
                 if !file_records[index].next(&self.date_range) {
@@ -37,7 +37,7 @@ impl Collate {
             record_len = file_records.len();
         }
 
-        self.writer.flush();
+        self.writer.flush()?;
         Ok(())
     }
 
