@@ -6,7 +6,7 @@ use std::process;
 use std::str;
 
 use crate::util::dc_util;
-use crate::dr::dr;
+use crate::dr::dr::{Header, Source};
 use crate::dr::types::{FieldType, FieldValue, Row};
 
 // map for field types
@@ -16,7 +16,7 @@ lazy_static! {
 
 pub struct DCReader<R> {
     reader: io::BufReader<R>,
-    header: dr::Header,
+    header: Header,
     field_count: usize,
     bitset_byte_count: usize,
     current_row: Row,
@@ -27,11 +27,11 @@ impl <R: io::Read> DCReader<R> {
         let mut reader = io::BufReader::new(reader);
         let magic_num = reader.read_u64::<BigEndian>().unwrap();
         if &magic_num != &dc_util::MAGIC_NUM {
-            eprintln!("Error: wrong magic number -- {}", magic_num);
+            write_error!("Error: wrong magic number -- {}", magic_num);
         }
         let version = reader.read_u16::<BigEndian>().unwrap();
         if &version != &dc_util::VERSION {
-            eprintln!("Error: wrong version -- {}", version);
+            write_error!("Error: wrong version -- {}", version);
         }
 
         // skip user given data
@@ -48,15 +48,20 @@ impl <R: io::Read> DCReader<R> {
         let mut field_names: Vec<String> = Vec::with_capacity(field_count);
         let mut field_types: Vec<FieldType> = Vec::with_capacity(field_count);
         let mut field_values: Vec<FieldValue> = Vec::with_capacity(field_count);
-        for _i in 0..field_count {
+        for i in 0..field_count {
             let field_descriptor = dc_util::FieldDescriptor::new(&mut reader);
-            field_names.push(field_descriptor.get_name().to_string());
+            let mut name = field_descriptor.get_name().to_string();
+            // if field name is not given, assign default name - "col_x"
+            if name.is_empty() {
+                name= format!("col_{}", i);
+            }
+            field_names.push(name);
             field_types.push(map_field_string.get(field_descriptor.get_type_string()).unwrap().clone());
             field_values.push(FieldValue::None);
         }
 
         // Header
-        let header: dr::Header = dr::Header::new(field_names, field_types);
+        let header: Header = Header::new(field_names, field_types);
 
         // Row
         let timestamp = 0 as u64;
@@ -85,12 +90,12 @@ impl <R: io::Read> DCReader<R> {
                     if current_bitset & 1 == 0 { // not null
                         match self.header.get_field_types()[field_index] {
                             FieldType::Boolean => {
-                                eprintln!("Error: boolean field type is not supported");
+                                write_error!("Error: boolean field type is not supported");
                                 process::exit(1);
                             },
                             FieldType::Byte => FieldValue::Byte(self.reader.read_u8().unwrap()),
                             FieldType::ByteBuf => {
-                                eprintln!("Error: ByteBuffer field type is not supported");
+                                write_error!("Error: ByteBuffer field type is not supported");
                                 process::exit(1);
                             },
                             FieldType::Char => FieldValue::Char(self.reader.read_u16::<BigEndian>().unwrap()),
@@ -135,8 +140,8 @@ impl <R: io::Read> io::Read for DCReader<R> {
     }
 }
 
-impl <R: io::Read> dr::Source for DCReader<R> {
-    fn header(&self) -> &dr::Header {
+impl <R: io::Read> Source for DCReader<R> {
+    fn header(&self) -> &Header {
         &self.header
     }
 

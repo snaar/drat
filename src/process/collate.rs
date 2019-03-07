@@ -1,16 +1,16 @@
 use crate::args;
-use crate::dr::dr;
+use crate::dr::dr::{DataSink, DRDriver, Source};
 use crate::process::driver::single_file_record::SingleFileRecord;
 use crate::result::{self, CliResult};
 
 pub struct Collate {
-    sources: Vec<Box<dr::Source+'static>>,
-    writer: Box<dr::Sink>,
+    sources: Vec<Box<Source+'static>>,
+    writer: Box<DataSink>,
     date_range: args::DataRange,
 }
 
 impl Collate {
-    pub fn new(sources: Vec<Box<dr::Source+'static>>, writer: Box<dr::Sink>, date_range: args::DataRange) -> Self {
+    pub fn new(sources: Vec<Box<Source+'static>>, writer: Box<dyn DataSink>, date_range: args::DataRange) -> Self {
         Collate { sources, writer, date_range }
     }
 
@@ -26,7 +26,7 @@ impl Collate {
         while record_len > 0 {
             let index = Self::get_min_index(&file_records);
             let row = file_records[index].get_current_row().clone().unwrap();
-            self.writer.write_row(&row)?;
+            self.writer.write_row(row)?;
 
             loop {
                 if !file_records[index].next(&self.date_range) {
@@ -51,7 +51,7 @@ impl Collate {
     }
 }
 
-impl dr::DRDriver for Collate {
+impl DRDriver for Collate {
     fn drive(&mut self) {
         result::handle_drive_error(self.collate())
     }

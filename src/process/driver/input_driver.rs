@@ -4,15 +4,15 @@ use crate::dr::types::Row;
 use crate::process::driver::filter::{self, Action};
 use crate::result::CliResult;
 
-/* read, filter and output rows */
-pub fn pump_rows(data_range: &DataRange, source: &mut Box<dr::Source+'static>, writer: &mut Box<dr::Sink>) -> CliResult<()> {
+/* read, filter (by timestamp) and output rows */
+pub fn pump_rows(data_range: &DataRange, source: &mut Box<dr::Source+'static>, writer: &mut Box<dr::DataSink>) -> CliResult<()> {
     loop {
         let next_row = source.next_row();
         match next_row {
             Some(r) => {
                 match filter::filter_data_range(data_range, r.timestamp) {
                     filter::Action::Stop => break,
-                    filter::Action::Write => writer.write_row(&r)?,
+                    filter::Action::Write => writer.write_row(r)?,
                     filter::Action::Skip => continue,
                 };
             }

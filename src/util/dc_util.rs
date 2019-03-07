@@ -18,6 +18,11 @@ pub fn get_bitset_bytes(field_count: usize) -> usize {
     1+((field_count-1)/8)
 }
 
+// map for field types
+lazy_static! {
+    pub static ref FIELD_STRING_MAP_TYPE: HashMap<FieldType, &'static str> = creat_field_string_map_type();
+}
+
 pub fn creat_field_string_map_name() -> HashMap<&'static str, FieldType> {
     let mut map = HashMap::new();
     map.insert("Z", FieldType::Boolean);

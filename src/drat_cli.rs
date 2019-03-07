@@ -3,8 +3,9 @@ use clap::crate_version;
 
 use crate::args;
 use crate::dr::dr;
+use crate::dr::types::FieldValue;
 use crate::input::input_factory::InputFactory;
-use crate::process::{collate, read};
+use crate::process::{collate, filters, read};
 use crate::source_config;
 use crate::util::csv_util;
 use crate::write::factory;
@@ -12,7 +13,7 @@ use crate::write::factory;
 pub fn drat_cli(input_factories: Vec<Box<InputFactory>>) {
     let cli_args = parse_cli_args();
     let args = args::Args { cli_args, input_factories };
-    let mut driver = setup_graph(args);
+    let mut driver = setup_graph_with_filters(args);
     driver.drive();
 }
 
@@ -103,13 +104,12 @@ pub fn parse_cli_args() -> args::CliArgs {
 
 pub fn setup_graph(mut args: args::Args) -> Box<dr::DRDriver> {
     let output = args.cli_args.output.clone();
-    let csv_config = args.cli_args.csv_config.clone();
 
     match args.cli_args.inputs.len() {
         0 | 1 => { // read
-            let source: Box<dr::Source+'static> = args.create_config().unwrap().reader().unwrap();
-            let writer: Box<dr::Sink> = factory::new_sink(output, &mut source.header(), &csv_config);
-            Box::new(read::Read::new(source, writer, args.cli_args.data_range))
+            let source: Box<dr::Source + 'static> = args.create_config().unwrap().reader().unwrap();
+            let data_sink = factory::new_header_sink(output).write_header(&mut source.header());
+            Box::new(read::Read::new(source, data_sink, args.cli_args.data_range))
         }
         _ => { // collate
             let source_configs = args.create_configs().unwrap();
@@ -118,8 +118,38 @@ pub fn setup_graph(mut args: args::Args) -> Box<dr::DRDriver> {
                 sources.push(s.reader().unwrap());
             }
             let header = sources[0].header();
-            let writer: Box<dr::Sink> = factory::new_sink(output, header, &csv_config);
-            Box::new(collate::Collate::new(sources, writer, args.cli_args.data_range))
+            let data_sink = factory::new_header_sink(output).write_header(header);
+            Box::new(collate::Collate::new(sources, data_sink, args.cli_args.data_range))
+        }
+    }
+}
+
+pub fn setup_graph_with_filters(mut args: args::Args) -> Box<dr::DRDriver> {
+    let output = args.cli_args.output.clone();
+
+    match args.cli_args.inputs.len() {
+        0 | 1 => { // read
+            let source: Box<dr::Source+'static> = args.create_config().unwrap().reader().unwrap();
+            let header_sink_writer = factory::new_header_sink(output);
+            let column_string = "col_0".to_string();
+            let column_string_2 = "col_2".to_string();
+            let value = "5".to_string();
+            let header_sink_filter = filters::row_filter_greater_value::RowFilterGreaterValue::new(header_sink_writer, column_string, FieldValue::String(value));
+            let header_sink_filter = Box::new(header_sink_filter) as Box<dyn dr::HeaderSink>;
+            let header_sink_delete = filters::column_filter_delete_col::ColumnFilterDelete::new(header_sink_filter, column_string_2);
+            let header_sink_delete = Box::new(header_sink_delete) as Box<dyn dr::HeaderSink>;
+            let data_sink = header_sink_delete.write_header(&mut source.header());
+            Box::new(read::Read::new(source, data_sink, args.cli_args.data_range))
+        }
+        _ => { // collate
+            let source_configs = args.create_configs().unwrap();
+            let mut sources: Vec<Box<dr::Source+'static>> = Vec::with_capacity(source_configs.len());
+            for mut s in source_configs {
+                sources.push(s.reader().unwrap());
+            }
+            let header = sources[0].header();
+            let data_sink = factory::new_header_sink(output).write_header(header);
+            Box::new(collate::Collate::new(sources, data_sink, args.cli_args.data_range))
         }
     }
 }

@@ -1,5 +1,4 @@
 extern crate drat_lib;
-use dtoa;
 
 use drat_lib::input::input_factory::InputFactory;
 use drat_lib::input::file::FileInput;

@@ -1,16 +1,16 @@
 use crate::args;
-use crate::dr::dr;
+use crate::dr::dr::{DataSink, DRDriver, Source};
 use crate::process::driver::input_driver;
 use crate::result::{self, CliResult};
 
 pub struct Read {
-    source: Box<dr::Source+'static >,
-    writer: Box<dr::Sink>,
+    source: Box<Source+'static >,
+    writer: Box<DataSink>,
     date_range: args::DataRange,
 }
 
 impl Read {
-    pub fn new(source: Box<dr::Source + 'static>, writer: Box<dr::Sink>, date_range: args::DataRange) -> Self {
+    pub fn new(source: Box<Source + 'static>, writer: Box<dyn DataSink>, date_range: args::DataRange) -> Self {
         Read { source, writer, date_range }
     }
 
@@ -22,7 +22,7 @@ impl Read {
     }
 }
 
-impl dr::DRDriver for Read {
+impl DRDriver for Read {
     fn drive(&mut self) {
         result::handle_drive_error(self.read());
     }

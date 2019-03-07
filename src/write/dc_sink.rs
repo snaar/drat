@@ -1,19 +1,13 @@
 use byteorder::{BigEndian, WriteBytesExt};
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, Write, BufWriter};
 use std::path::PathBuf;
 use std::process;
 
 use crate::util::dc_util;
-use crate::dr::dr;
+use crate::dr::dr::{Header, HeaderSink, DataSink};
 use crate::dr::types::{Row, FieldValue, FieldType};
 use crate::result::{CliError, CliResult};
-
-// map for field types
-lazy_static! {
-    static ref FIELD_STRING_MAP_TYPE: HashMap<FieldType, &'static str> = dc_util::creat_field_string_map_type();
-}
 
 pub struct DCSink {
     writer: BufWriter<Box<io::Write+'static>>,
@@ -21,13 +15,9 @@ pub struct DCSink {
 }
 
 impl DCSink {
-    pub fn new(path: &Option<String>, header: &dr::Header) -> Self {
+    pub fn new(path: &Option<String>) -> Self {
         let writer = BufWriter::new(DCSink::into_writer(path).unwrap());
-        let bitset_bytes = dc_util::get_bitset_bytes(header.get_field_types().len()-1);
-        let mut dc_sink = DCSink { writer, bitset_bytes };
-        Self::write_header(&mut dc_sink, header);
-
-        dc_sink
+        DCSink { writer, bitset_bytes: 0 }
     }
 
     fn into_writer(path: &Option<String>) -> io::Result<Box<io::Write>> {
@@ -43,7 +33,7 @@ impl DCSink {
         }
     }
 
-    fn write_header(mut dc_sink: &mut DCSink, header: &dr::Header) {
+    fn write_header(mut dc_sink: &mut DCSink, header: &mut Header) {
         DCSink::write_magic(&mut dc_sink);
         DCSink::write_version(&mut dc_sink);
         DCSink::write_empty_user_data(&mut dc_sink);
@@ -62,7 +52,7 @@ impl DCSink {
         dc_sink.writer.write_u32::<BigEndian>(0).unwrap();
     }
 
-    fn write_field_descriptors(dc_sink: &mut DCSink, header: &dr::Header) {
+    fn write_field_descriptors(dc_sink: &mut DCSink, header: &mut Header) {
         let field_types = header.get_field_types();
         let field_names = header.get_field_names();
         let field_count = field_types.len();
@@ -70,26 +60,21 @@ impl DCSink {
         // write field count
         dc_sink.writer.write_u32::<BigEndian>(field_count as u32).unwrap();
 
-        // write field names (if available) and types as SizedStrings
-        let has_field_name = field_names.len() >= 1;
-        if has_field_name && field_names.len() != field_types.len() {
+        // write field names and types as SizedStrings
+        if field_names.len() != field_types.len() {
             write_error!("Error: number of field name and number of field types does not match");
             process::exit(1);
         }
         for i in 0..field_types.len() {
-            let name = match has_field_name {
-                true => &field_names[i],
-                false => "",
-            };
-            dc_util::write_sized_string(&mut dc_sink.writer, name);
+            dc_util::write_sized_string(&mut dc_sink.writer, &field_names[i]);
             DCSink::write_field_type(dc_sink, &field_types[i]);
             DCSink::write_display_hint(dc_sink, dc_util::DisplayHint::None);
         }
     }
 
-    fn write_field_type(dc_sink: &mut DCSink, field_types: &FieldType) {
-        let field_string_map = &FIELD_STRING_MAP_TYPE;
-        let type_string = match field_types {
+    fn write_field_type(dc_sink: &mut DCSink, field_type: &FieldType) {
+        let field_string_map = &dc_util::FIELD_STRING_MAP_TYPE;
+        let type_string = match field_type {
             FieldType::Boolean => {
                 write_error!("Error: boolean field type is not supported");
                 process::exit(1);
@@ -125,8 +110,18 @@ impl DCSink {
     }
 }
 
-impl dr::Sink for DCSink {
-    fn write_row (&mut self, row: &Row) -> CliResult<()> {
+impl HeaderSink for DCSink {
+    fn write_header(mut self: Box<Self>, header: &Header) -> Box<dyn DataSink> {
+        let mut header = header.clone();
+        Self::write_header(&mut self, &mut header);
+        let bitset_bytes = dc_util::get_bitset_bytes(header.get_field_types().len()-1);
+        self.bitset_bytes = bitset_bytes;
+        self.boxed()
+    }
+}
+
+impl DataSink for DCSink {
+    fn write_row (&mut self, row: Row) -> CliResult<()> {
         // write timestamp
         self.writer.write_u64::<BigEndian>(row.timestamp).unwrap();
 
@@ -173,7 +168,6 @@ impl dr::Sink for DCSink {
                 FieldValue::None => continue,
             };
         }
-
         Ok(())
     }
 
@@ -182,7 +176,7 @@ impl dr::Sink for DCSink {
         Ok(())
     }
 
-    fn boxed(&self) -> Box<&dr::Sink> {
+    fn boxed(self) -> Box<DataSink> {
         Box::new(self)
     }
 }

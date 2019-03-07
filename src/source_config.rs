@@ -152,7 +152,6 @@ impl SourceConfig {
                     .from_reader(reader);
                 Ok(Box::new(csv_reader::CSVReader::new(
                     csv_reader_arg, self.csv_config.timestamp_column_index)))
-
             },
             FileType::Dc => {
                 Ok(Box::new(dc_reader::DCReader::new(reader)))
@@ -160,4 +159,3 @@ impl SourceConfig {
         }
     }
 }
-
