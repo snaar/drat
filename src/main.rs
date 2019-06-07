@@ -4,6 +4,7 @@ use drat_lib::input::input_factory::InputFactory;
 use drat_lib::input::file::FileInput;
 use drat_lib::input::http::Http;
 use drat_lib::drat_cli::drat_cli;
+use drat_lib::drat_manual_example::drat_manual;
 
 fn main() {
     let http: Http = Http;
@@ -11,5 +12,6 @@ fn main() {
     let vec: Vec<Box<InputFactory>> = vec![
         Box::new(http),
         Box::new(file)];
-    drat_cli(vec);
+//    drat_cli(vec);
+    drat_manual(vec);
 }

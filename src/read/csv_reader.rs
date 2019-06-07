@@ -2,8 +2,8 @@ use csv;
 use std::io;
 use std::process;
 
-use crate::dr::dr::{Header, Source};
-use crate::dr::types::{FieldType, FieldValue, Nanos, Row};
+use crate::dr::dr::Source;
+use crate::dr::types::{FieldType, FieldValue, Header, Nanos, Row};
 
 pub struct CSVReader<R> {
     reader: csv::Reader<R>,
@@ -26,10 +26,7 @@ impl <R: io::Read> CSVReader<R> {
         // get first row and initialize next_row
         let first_row = match reader.records().next().unwrap() {
             Ok(r) => r,
-            Err(err) => {
-                write_error!("{}", err);
-                process::exit(1);
-            }
+            Err(err) => write_error!("{}", err),
         };
         let field_count = first_row.len();
         // if field name is not given, assign default name - "col_x"
@@ -58,10 +55,7 @@ impl <R: io::Read> CSVReader<R> {
             if current_column == self.timestamp_column {
                 self.next_row.timestamp = match i.parse::<Nanos>() {
                     Ok(t) => t,
-                    Err(e) => {
-                        write_error!("Error: cannot update row in csv_reader: {} \n", e);
-                        process::exit(1);
-                    }
+                    Err(e) => write_error!("Error: cannot update row in csv_reader: {} \n", e),
                 }
             }
             self.next_row.field_values[current_column] = FieldValue::String(i.to_string());

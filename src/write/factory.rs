@@ -1,11 +1,11 @@
 use std::process;
 
-use crate::dr::dr;
+use crate::dr::dr::HeaderSink;
 use crate::write::csv_sink;
 use crate::write::dc_sink;
 
-pub fn new_header_sink(output: Option<String>) -> Box<dr::HeaderSink +'static> {
-    let writer: Box<dr::HeaderSink +'static>;
+pub fn new_header_sink(output: Option<String>) -> Box<dyn HeaderSink +'static> {
+    let writer: Box<dyn HeaderSink +'static>;
     match output {
         Some(p) => {
             if p.ends_with("csv") {

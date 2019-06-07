@@ -69,6 +69,7 @@ macro_rules! write_error {
     ($($arg:tt)*) => ({
         use std::io::Write;
         (writeln!(&mut ::std::io::stderr(), $($arg)*)).unwrap();
+        process::exit(1);
     });
 }
 
@@ -76,24 +77,11 @@ pub fn handle_drive_error(cli_result: CliResult<()>) {
     match cli_result {
         Ok(()) => process::exit(0),
         Err(CliError::Flag(err)) => err.exit(),
-        Err(CliError::Csv(err)) => {
-            write_error!("{}", err);
-            process::exit(1);
-        },
+        Err(CliError::Csv(err)) => write_error!("{}", err),
         Err(CliError::Io(ref err)) if err.kind() == io::ErrorKind::BrokenPipe => {
-            process::exit(1);
         },
-        Err(CliError::Io(err)) => {
-            write_error!("{}", err);
-            process::exit(1);
-        },
-        Err(CliError::Data(msg)) => {
-            write_error!("{}", msg);
-            process::exit(1);
-        }
-        Err(CliError::Other(msg)) => {
-            write_error!("{}", msg);
-            process::exit(1);
-        },
+        Err(CliError::Io(err)) => write_error!("{}", err),
+        Err(CliError::Data(msg)) => write_error!("{}", msg),
+        Err(CliError::Other(msg)) => write_error!("{}", msg),
     }
 }

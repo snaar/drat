@@ -1,4 +1,4 @@
-use crate::result::{CliResult, CliError};
+use crate::result::CliResult;
 use crate::source_config::{CSVConfig, SourceConfig};
 use crate::input::input_factory::InputFactory;
 
@@ -20,23 +20,11 @@ pub struct Args {
 }
 
 impl Args {
-    pub fn create_config(&mut self) -> CliResult<SourceConfig> {
-        if self.cli_args.inputs.len() > 1 {
-            return Err(CliError::Other("Error: more than one input file specified.".to_owned()));
-        }
-        let input: Option<String> = match self.cli_args.inputs.len() {
-            0 => None,
-            1 => Some(self.cli_args.inputs.get(0).unwrap().to_string()),
-            _ => unreachable!(),
-        };
-
-        let mut input_factories_copy: Vec<Box<InputFactory>> = Vec::with_capacity(self.input_factories.len());
-        for item in &mut self.input_factories {
-            input_factories_copy.push(item.box_clone());
-        }
-        let config = SourceConfig::new(&input, input_factories_copy, self.cli_args.csv_config.clone());
-
-        Ok(config)
+    pub fn new(inputs: Vec<String>, output: Option<String>, begin: Option<u64>, end: Option<u64>,
+                                    csv_config: CSVConfig, input_factories: Vec<Box<InputFactory>>) -> Self {
+        let data_range = DataRange { begin, end };
+        let cli_args = CliArgs { inputs, output, data_range,  csv_config };
+        Args { cli_args, input_factories}
     }
 
     pub fn create_configs(&mut self) -> CliResult<Vec<SourceConfig>> {

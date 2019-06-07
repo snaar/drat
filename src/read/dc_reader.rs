@@ -6,8 +6,8 @@ use std::process;
 use std::str;
 
 use crate::util::dc_util;
-use crate::dr::dr::{Header, Source};
-use crate::dr::types::{FieldType, FieldValue, Row};
+use crate::dr::dr::Source;
+use crate::dr::types::{FieldType, FieldValue, Header, Row};
 
 // map for field types
 lazy_static! {
@@ -88,16 +88,10 @@ impl <R: io::Read> DCReader<R> {
             for _j in 0..8 {
                 self.current_row.field_values[field_index] = {
                     if current_bitset & 1 == 0 { // not null
-                        match self.header.get_field_types()[field_index] {
-                            FieldType::Boolean => {
-                                write_error!("Error: boolean field type is not supported");
-                                process::exit(1);
-                            },
+                        match self.header.field_types()[field_index] {
+                            FieldType::Boolean => write_error!("Error: boolean field type is not supported"),
                             FieldType::Byte => FieldValue::Byte(self.reader.read_u8().unwrap()),
-                            FieldType::ByteBuf => {
-                                write_error!("Error: ByteBuffer field type is not supported");
-                                process::exit(1);
-                            },
+                            FieldType::ByteBuf => write_error!("Error: ByteBuffer field type is not supported"),
                             FieldType::Char => FieldValue::Char(self.reader.read_u16::<BigEndian>().unwrap()),
                             FieldType::Double => FieldValue::Double(self.reader.read_f64::<BigEndian>().unwrap()),
                             FieldType::Float => FieldValue::Float(self.reader.read_f32::<BigEndian>().unwrap()),

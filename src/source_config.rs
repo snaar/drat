@@ -56,9 +56,9 @@ pub struct SourceConfig {
 impl SourceConfig {
     pub fn new(path: &Option<String>, input_factories: Vec<Box<InputFactory>>, csv_config: CSVConfig) -> Self {
         let path = match *path {
-            None => None,
             Some(ref s) if s.deref() == "-".to_owned() => None,
             Some(ref s) => Some(PathBuf::from(s)),
+            None => None,
         };
         let file_type = FileType::Csv;
         SourceConfig { path, input_factories, file_type, csv_config }
@@ -75,10 +75,7 @@ impl SourceConfig {
     pub fn get_reader(&mut self) -> Box<dr::Source+'static> {
         match self.reader() {
             Ok(r) => r,
-            Err(err) => {
-                write_error!("Error: {}", err);
-                process::exit(1);
-            },
+            Err(err) => write_error!("Error: {}", err),
         }
     }
 

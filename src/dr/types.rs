@@ -3,6 +3,41 @@ use std::process;
 pub type Nanos = u64;
 
 #[derive(Clone)]
+pub struct Header {
+    field_names: Vec<String>,
+    field_types: Vec<FieldType>
+}
+
+impl PartialEq for Header {
+    fn eq(&self, other: &Header) -> bool {
+        self.field_names().eq(other.field_names()) &&
+            self.field_types().eq(other.field_types())
+    }
+}
+
+impl Header {
+    pub fn new(field_names: Vec<String>, field_types: Vec<FieldType>) -> Self {
+        Header { field_names, field_types }
+    }
+
+    pub fn field_names(&self) -> &Vec<String> {
+        &self.field_names
+    }
+
+    pub fn field_types(&self) -> &Vec<FieldType> {
+        &self.field_types
+    }
+
+    pub fn field_names_mut(&mut self) -> &mut Vec<String> {
+        &mut self.field_names
+    }
+
+    pub fn field_types_mut(&mut self) -> &mut Vec<FieldType> {
+        &mut self.field_types
+    }
+}
+
+#[derive(Clone)]
 pub enum FieldValue {
     Boolean(bool),
     Byte(u8),
@@ -20,30 +55,23 @@ pub enum FieldValue {
 impl PartialOrd for FieldValue {
     fn partial_cmp(&self, other: &FieldValue) -> Option<Ordering> {
         match (self, other) {
-            (FieldValue::Boolean(_x), FieldValue::Boolean(_y)) => {
-                write_error!("Error: boolean field type is not supported");
-                process::exit(1)
-            }
+            (FieldValue::Boolean(_x), FieldValue::Boolean(_y)) => write_error!("Error: boolean field type is not supported"),
             (FieldValue::Byte(x), FieldValue::Byte(y)) => Some(x.cmp(y)),
-            (FieldValue::ByteBuf(_x), FieldValue::ByteBuf(_y)) => {
-                write_error!("Error: ByteBuffer field type is not supported");
-                process::exit(1)
-            }
+            (FieldValue::ByteBuf(_x), FieldValue::ByteBuf(_y)) => write_error!("Error: ByteBuffer field type is not supported"),
             (FieldValue::Char(x), FieldValue::Char(y)) => Some(x.cmp(y)),
             (FieldValue::Double(x), FieldValue::Double(y)) => x.partial_cmp(y),
             (FieldValue::Float(x), FieldValue::Float(y)) => x.partial_cmp(y),
             (FieldValue::Int(x), FieldValue::Int(y)) => Some(x.cmp(y)),
             (FieldValue::Long(x), FieldValue::Long(y)) => Some(x.cmp(y)),
             (FieldValue::Short(x), FieldValue::Short(y)) => Some(x.cmp(y)),
-            (FieldValue::String(x), FieldValue::String(y)) => Some(x.cmp(y)),
-            (FieldValue::None, FieldValue::None) => {
-                write_error!("Error: cannot compare different field types");
-                process::exit(1)
+            (FieldValue::String(x), FieldValue::String(y)) => {
+                // TODO: better cmp
+                let x: f64 = x.parse().unwrap();
+                let y: f64 = y.parse().unwrap();
+                x.partial_cmp(&y)
             },
-            _ => {
-                write_error!("Error: cannot compare different field types");
-                process::exit(1)
-            },
+            (FieldValue::None, FieldValue::None) => write_error!("Error: cannot compare different field types"),
+            _ => write_error!("Error: cannot compare different field types"),
         }
     }
 }
@@ -51,15 +79,9 @@ impl PartialOrd for FieldValue {
 impl PartialEq for FieldValue {
     fn eq(&self, other: &FieldValue) -> bool {
         match (self, other) {
-            (FieldValue::Boolean(_x), FieldValue::Boolean(_y)) => {
-                write_error!("Error: boolean field type is not supported");
-                process::exit(1)
-            }
+            (FieldValue::Boolean(_x), FieldValue::Boolean(_y)) => write_error!("Error: boolean field type is not supported"),
             (FieldValue::Byte(x), FieldValue::Byte(y)) => x == y,
-            (FieldValue::ByteBuf(_x), FieldValue::ByteBuf(_y)) => {
-                write_error!("Error: ByteBuffer field type is not supported");
-                process::exit(1)
-            }
+            (FieldValue::ByteBuf(_x), FieldValue::ByteBuf(_y)) => write_error!("Error: ByteBuffer field type is not supported"),
             (FieldValue::Char(x), FieldValue::Char(y)) => x == y,
             (FieldValue::Double(x), FieldValue::Double(y)) => x == y,
             (FieldValue::Float(x), FieldValue::Float(y)) => x == y,

@@ -5,9 +5,10 @@ use std::path::PathBuf;
 use std::process;
 
 use crate::util::dc_util;
-use crate::dr::dr::{Header, HeaderSink, DataSink};
-use crate::dr::types::{Row, FieldValue, FieldType};
-use crate::result::{CliError, CliResult};
+use crate::dr::dr::{DataSink, HeaderSink};
+use crate::dr::graph::PinId;
+use crate::dr::types::{FieldType, FieldValue, Header, Row};
+use crate::result::CliResult;
 
 pub struct DCSink {
     writer: BufWriter<Box<io::Write+'static>>,
@@ -53,8 +54,8 @@ impl DCSink {
     }
 
     fn write_field_descriptors(dc_sink: &mut DCSink, header: &mut Header) {
-        let field_types = header.get_field_types();
-        let field_names = header.get_field_names();
+        let field_types = header.field_types();
+        let field_names = header.field_names();
         let field_count = field_types.len();
 
         // write field count
@@ -63,7 +64,6 @@ impl DCSink {
         // write field names and types as SizedStrings
         if field_names.len() != field_types.len() {
             write_error!("Error: number of field name and number of field types does not match");
-            process::exit(1);
         }
         for i in 0..field_types.len() {
             dc_util::write_sized_string(&mut dc_sink.writer, &field_names[i]);
@@ -75,15 +75,9 @@ impl DCSink {
     fn write_field_type(dc_sink: &mut DCSink, field_type: &FieldType) {
         let field_string_map = &dc_util::FIELD_STRING_MAP_TYPE;
         let type_string = match field_type {
-            FieldType::Boolean => {
-                write_error!("Error: boolean field type is not supported");
-                process::exit(1);
-            },
+            FieldType::Boolean => write_error!("Error: boolean field type is not supported"),
             FieldType::Byte => field_string_map.get(&FieldType::Byte),
-            FieldType::ByteBuf => {
-                write_error!("Error: ByteBuffer field type is not supported");
-                process::exit(1);
-            },
+            FieldType::ByteBuf => write_error!("Error: ByteBuffer field type is not supported"),
             FieldType::Char => field_string_map.get(&FieldType::Char),
             FieldType::Double => field_string_map.get(&FieldType::Double),
             FieldType::Float => field_string_map.get(&FieldType::Float),
@@ -94,10 +88,7 @@ impl DCSink {
         };
         match type_string {
             Some(t) => dc_util::write_sized_string(&mut dc_sink.writer, t),
-            None => {
-                write_error!("Error: field type missing");
-                process::exit(1)
-            }
+            None => write_error!("Error: field type missing"),
         }
     }
 
@@ -111,17 +102,16 @@ impl DCSink {
 }
 
 impl HeaderSink for DCSink {
-    fn write_header(mut self: Box<Self>, header: &Header) -> Box<dyn DataSink> {
-        let mut header = header.clone();
-        Self::write_header(&mut self, &mut header);
-        let bitset_bytes = dc_util::get_bitset_bytes(header.get_field_types().len()-1);
+    fn process_header(mut self: Box<Self>, header: &mut Header) -> Box<dyn DataSink> {
+        Self::write_header(&mut self, header);
+        let bitset_bytes = dc_util::get_bitset_bytes(header.field_types().len()-1);
         self.bitset_bytes = bitset_bytes;
         self.boxed()
     }
 }
 
 impl DataSink for DCSink {
-    fn write_row (&mut self, row: Row) -> CliResult<()> {
+    fn write_row(&mut self, row: Row) -> Option<Row> {
         // write timestamp
         self.writer.write_u64::<BigEndian>(row.timestamp).unwrap();
 
@@ -151,24 +141,24 @@ impl DataSink for DCSink {
         // write row values
         for value in field_values {
             match value {
-                FieldValue::Boolean(_x) => {
-                    return Err(CliError::Data("Error: Boolean field type is not supported for writing DC file".to_string()));
-                },
+                FieldValue::Boolean(_x) => write_error!("Error: Boolean field type is not supported for writing DC file"),
                 FieldValue::Byte(x) => self.writer.write_u8(*x).unwrap(),
-                FieldValue::ByteBuf(_x) => {
-                    return Err(CliError::Data("Error: ByteBuffer field type is not supported for writing DC file".to_string()));
-                },
+                FieldValue::ByteBuf(_x) => write_error!("Error: ByteBuffer field type is not supported for writing DC file"),
                 FieldValue::Char(x) => self.writer.write_u16::<BigEndian>(*x).unwrap(),
                 FieldValue::Double(x) => self.writer.write_f64::<BigEndian>(*x).unwrap(),
                 FieldValue::Float(x) => self.writer.write_f32::<BigEndian>(*x).unwrap(),
                 FieldValue::Int(x) => self.writer.write_i32::<BigEndian>(*x).unwrap(),
                 FieldValue::Long(x) => self.writer.write_i64::<BigEndian>(*x).unwrap(),
                 FieldValue::Short(x) => self.writer.write_i16::<BigEndian>(*x).unwrap(),
-                FieldValue::String(x) => dc_util::write_string_value(&mut self.writer, x),
+                FieldValue::String(x) => dc_util::write_string_value(&mut self.writer, &x),
                 FieldValue::None => continue,
             };
         }
-        Ok(())
+        None
+    }
+
+    fn write_row_to_pin(&mut self, _pin_id: PinId, row: Row) -> Option<Row> {
+        self.write_row(row)
     }
 
     fn flush(&mut self) -> CliResult<()> {
