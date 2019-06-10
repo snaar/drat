@@ -3,7 +3,7 @@ use clap::crate_version;
 
 use crate::args;
 use crate::dr::dr::{DRDriver, Source};
-use crate::dr::graph::{Chain, HeaderGraph, Node};
+use crate::dr::graph::{HeaderChain, HeaderGraph, HeaderNode};
 use crate::dr::types::Header;
 use crate::input::input_factory::InputFactory;
 use crate::driver::driver::Driver;
@@ -118,8 +118,8 @@ pub fn setup_graph(mut args: args::Args) -> Box<DRDriver> {
     let output = args.cli_args.output.clone();
 
     let header_sink = factory::new_header_sink(output);
-    let node = Node::HeaderSink(header_sink);
-    let chain = Chain::new(vec![node]);
+    let node = HeaderNode::HeaderSink(header_sink);
+    let chain = HeaderChain::new(vec![node]);
 
     let graph = HeaderGraph::new(vec![chain]);
     Box::new(Driver::new(sources, graph, args.cli_args.data_range, headers))

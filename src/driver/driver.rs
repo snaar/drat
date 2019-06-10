@@ -1,7 +1,7 @@
 use std::process;
 use crate::args;
 use crate::dr::dr::{DRDriver, Source};
-use crate::dr::graph::{ChainId, DataGraph, HeaderGraph, Node, NodeId, PinId};
+use crate::dr::graph::{ChainId, DataGraph, HeaderGraph, DataNode, NodeId, PinId};
 use crate::dr::types::{Header, Row};
 use crate::driver::source_row_buffer::SourceRowBuffer;
 use crate::result::{self, CliResult};
@@ -72,7 +72,7 @@ impl Driver {
         let chain = self.data_graph.get_mut_chain(chain_id);
         while node_id < chain.nodes().len() {
             match chain.node(node_id) {
-                Node::DataSink(sink) => {
+                DataNode::DataSink(sink) => {
                     match sink.write_row_to_pin(pin_id, row) {
                         Some(r) => {
                             row = r;
@@ -81,15 +81,14 @@ impl Driver {
                         None => break
                     }
                 }
-                Node::Merge(new_chain_id, new_pin_id) => {
+                DataNode::Merge(new_chain_id, new_pin_id) => {
                     chain_id = *new_chain_id;
                     node_id = 0;
                     pin_id = *new_pin_id;
                     self.process_row(chain_id, node_id, pin_id, row)?;
                     break
                 }
-                Node::Split(..) => write_error!("Error: Split hasn't been implemented yet."),
-                _ => ()
+                DataNode::Split(..) => write_error!("Error: Split hasn't been implemented yet."),
             }
         }
         Ok(())
@@ -103,16 +102,15 @@ impl Driver {
                 break
             }
             match chain.node(node_id) {
-                Node::DataSink(sink) => {
+                DataNode::DataSink(sink) => {
                     sink.flush()?;
                     node_id += 1
                 },
-                Node::Merge(new_chain_id, _pin_id) => {
+                DataNode::Merge(new_chain_id, _pin_id) => {
                     chain_id = *new_chain_id;
                     node_id = 0
                 },
-                Node::Split(..) => write_error!("Error: Split hasn't been implemented yet."),
-                _ => write_error!("Error: HeaderSinks should not appear in DataGraph.")
+                DataNode::Split(..) => write_error!("Error: Split hasn't been implemented yet."),
             }
         }
         Ok(())

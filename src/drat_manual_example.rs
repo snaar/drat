@@ -2,7 +2,7 @@ use clap::crate_version;
 
 use crate::args;
 use crate::dr::dr::{DRDriver, Source};
-use crate::dr::graph::{Chain, HeaderGraph, Node, PinsWithoutHeader};
+use crate::dr::graph::{HeaderChain, HeaderGraph, HeaderNode, PinsWithoutHeader};
 use crate::dr::types::{FieldValue, Header};
 use crate::input::input_factory::InputFactory;
 use crate::driver::{driver::Driver, merge_join::MergeJoin};
@@ -56,21 +56,21 @@ pub fn setup_graph_with_filters(mut args: args::Args, column_string: String, val
 
     // source chain 1
     let filter_greater_value = RowFilterGreaterValue::new(column_string, FieldValue::String(value));
-    let node_1 = Node::HeaderSink(filter_greater_value);
-    let node_2 = Node::Merge(2, 0);
-    let chain_1 = Chain::new(vec![node_1, node_2]);
+    let node_1 = HeaderNode::HeaderSink(filter_greater_value);
+    let node_2 = HeaderNode::Merge(2, 0);
+    let chain_1 = HeaderChain::new(vec![node_1, node_2]);
 
     // source chain 2
-    let node_3 = Node::Merge(2, 1);
-    let chain_2 = Chain::new(vec![node_3]);
+    let node_3 = HeaderNode::Merge(2, 1);
+    let chain_2 = HeaderChain::new(vec![node_3]);
 
     // merge/sink chain 3
     let merge = MergeJoin::new(2);
     let pin_without_header = PinsWithoutHeader {counter: merge.pin_num()};
-    let node_4 = Node::MuxHeaderSink(merge, pin_without_header);
+    let node_4 = HeaderNode::MuxHeaderSink(merge, pin_without_header);
     let header_sink = factory::new_header_sink(output);
-    let node_5 = Node::HeaderSink(header_sink);
-    let chain_3 = Chain::new(vec![node_4, node_5]);
+    let node_5 = HeaderNode::HeaderSink(header_sink);
+    let chain_3 = HeaderChain::new(vec![node_4, node_5]);
 
     let graph = HeaderGraph::new(vec![chain_1, chain_2, chain_3]);
     Box::new(Driver::new(sources, graph, args.cli_args.data_range, headers))
@@ -90,8 +90,8 @@ pub fn setup_graph_without_filter(mut args: args::Args) -> Box<DRDriver> {
     let output = None;
 
     let header_sink = factory::new_header_sink(output);
-    let node = Node::HeaderSink(header_sink);
-    let chain = Chain::new(vec![node]);
+    let node = HeaderNode::HeaderSink(header_sink);
+    let chain = HeaderChain::new(vec![node]);
 
     let graph = HeaderGraph::new(vec![chain]);
     Box::new(Driver::new(sources, graph, args.cli_args.data_range, headers))
