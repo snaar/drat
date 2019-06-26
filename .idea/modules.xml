@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/drat.iml" filepath="$PROJECT_DIR$/.idea/drat.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/chopper.iml" filepath="$PROJECT_DIR$/.idea/chopper.iml" />
     </modules>
   </component>
 </project>
