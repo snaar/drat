@@ -1,5 +1,8 @@
 use std::cmp::Ordering;
-use std::process;
+use std::fmt;
+
+use crate::error::Error;
+
 pub type Nanos = u64;
 
 #[derive(Clone)]
@@ -55,9 +58,11 @@ pub enum FieldValue {
 impl PartialOrd for FieldValue {
     fn partial_cmp(&self, other: &FieldValue) -> Option<Ordering> {
         match (self, other) {
-            (FieldValue::Boolean(_x), FieldValue::Boolean(_y)) => write_error!("Error: boolean field type is not supported"),
+            (FieldValue::Boolean(_x), FieldValue::Boolean(_y)) =>
+                Error::from("FieldValue -- boolean field type is not supported").exit(),
             (FieldValue::Byte(x), FieldValue::Byte(y)) => Some(x.cmp(y)),
-            (FieldValue::ByteBuf(_x), FieldValue::ByteBuf(_y)) => write_error!("Error: ByteBuffer field type is not supported"),
+            (FieldValue::ByteBuf(_x), FieldValue::ByteBuf(_y)) =>
+                Error::from("FieldValue -- ByteBuffer field type is not supported").exit(),
             (FieldValue::Char(x), FieldValue::Char(y)) => Some(x.cmp(y)),
             (FieldValue::Double(x), FieldValue::Double(y)) => x.partial_cmp(y),
             (FieldValue::Float(x), FieldValue::Float(y)) => x.partial_cmp(y),
@@ -70,8 +75,9 @@ impl PartialOrd for FieldValue {
                 let y: f64 = y.parse().unwrap();
                 x.partial_cmp(&y)
             },
-            (FieldValue::None, FieldValue::None) => write_error!("Error: cannot compare different field types"),
-            _ => write_error!("Error: cannot compare different field types"),
+            (FieldValue::None, FieldValue::None) => Some(Ordering::Equal),
+            _ => Error::from(
+                format!("FieldValue -- cannot compare different field types - {} {}", self, other)).exit(),
         }
     }
 }
@@ -79,9 +85,11 @@ impl PartialOrd for FieldValue {
 impl PartialEq for FieldValue {
     fn eq(&self, other: &FieldValue) -> bool {
         match (self, other) {
-            (FieldValue::Boolean(_x), FieldValue::Boolean(_y)) => write_error!("Error: boolean field type is not supported"),
+            (FieldValue::Boolean(_x), FieldValue::Boolean(_y)) =>
+                Error::from("FieldValue -- boolean field type is not supported").exit(),
             (FieldValue::Byte(x), FieldValue::Byte(y)) => x == y,
-            (FieldValue::ByteBuf(_x), FieldValue::ByteBuf(_y)) => write_error!("Error: ByteBuffer field type is not supported"),
+            (FieldValue::ByteBuf(_x), FieldValue::ByteBuf(_y)) =>
+                Error::from("FieldValue -- ByteBuffer field type is not supported").exit(),
             (FieldValue::Char(x), FieldValue::Char(y)) => x == y,
             (FieldValue::Double(x), FieldValue::Double(y)) => x == y,
             (FieldValue::Float(x), FieldValue::Float(y)) => x == y,
@@ -91,6 +99,26 @@ impl PartialEq for FieldValue {
             (FieldValue::String(x), FieldValue::String(y)) => x.eq(y),
             (FieldValue::None, FieldValue::None) => true,
             _ => false,
+        }
+    }
+}
+
+impl fmt::Display for FieldValue {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &self {
+            FieldValue::Boolean(_x) =>
+                Error::from("FieldValue -- boolean field type is not supported").exit(),
+            FieldValue::Byte(x) => f.write_str(format!("byte[{}]", x).as_str()),
+            FieldValue::ByteBuf(_x) =>
+                Error::from("FieldValue -- ByteBuffer field type is not supported").exit(),
+            FieldValue::Char(x) => f.write_str(format!("char[{}]", x).as_str()),
+            FieldValue::Double(x) => f.write_str(format!("double[{}]", x).as_str()),
+            FieldValue::Float(x) => f.write_str(format!("float[{}]", x).as_str()),
+            FieldValue::Int(x) => f.write_str(format!("int[{}]", x).as_str()),
+            FieldValue::Long(x) => f.write_str(format!("long[{}]", x).as_str()),
+            FieldValue::Short(x) => f.write_str(format!("short[{}]", x).as_str()),
+            FieldValue::String(x) => f.write_str(format!("string[{}]", x.as_str()).as_str()),
+            FieldValue::None => f.write_str(""),
         }
     }
 }

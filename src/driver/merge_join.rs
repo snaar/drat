@@ -1,8 +1,7 @@
-use std::process;
-use crate::dr::dr::{DataSink, MuxHeaderSink};
-use crate::dr::graph::PinId;
+use crate::dr::dr::{DataSink, MergeHeaderSink};
+use crate::dr::header_graph::{NumOfHeaderToProcess, PinId};
 use crate::dr::types::{Header, Row};
-use crate::result::{CliResult};
+use crate::error::{CliResult, Error};
 
 pub struct MergeJoin {
     input_pin_num: usize,
@@ -10,27 +9,29 @@ pub struct MergeJoin {
 }
 
 impl MergeJoin {
-    pub fn new(input_num: usize) -> Box<dyn MuxHeaderSink> {
-        let merge = MergeJoin { input_pin_num: input_num, header: None };
-        Box::new(merge) as Box<dyn MuxHeaderSink>
+    pub fn new(input_pin_num: usize) -> CliResult<Box<dyn MergeHeaderSink>> {
+        if input_pin_num <= 0 {
+            return Err(Error::from("MergeJoin -- number of inputs must be at least 1"));
+        }
+        let merge = MergeJoin { input_pin_num, header: None };
+        Ok(Box::new(merge) as Box<dyn MergeHeaderSink>)
     }
 
-    fn add_header(&mut self, header: &Header) -> CliResult<()> {
+    fn add_header(&mut self, header: &Header) {
         self.header = Some(header.clone());
-        Ok(())
     }
 }
 
-impl MuxHeaderSink for MergeJoin {
+impl MergeHeaderSink for MergeJoin {
     fn check_header(&mut self, _pin_id: PinId, header: &Header) -> CliResult<()> {
         match &self.header {
             Some(h) => {
                 // TODO: without cloning?
                 if !header.eq(h) {
-                    write_error!("Error: wrong header passed to MuxHeaderSink.");
+                    return Err(Error::from("MuxHeaderSink -- wrong header"));
                 }
             }
-            None => self.add_header(header)?
+            None => self.add_header(header)
         }
         Ok(())
     }
@@ -39,20 +40,25 @@ impl MuxHeaderSink for MergeJoin {
         self.header.take().unwrap()
     }
 
-    fn get_data_sink(self: Box<Self>) -> Box<dyn DataSink> {
+    fn get_data_sink(self: Box<Self>) -> CliResult<Box<dyn DataSink>> {
         if self.header.is_some() {
-            write_error!("Error: MergeJoin -- all the headers must be processed before returning DataSink");
+            return Err(Error::from(
+                "MuxHeaderSink -- all the headers must be processed before returning DataSink"));
         }
-        self.boxed()
+        Ok(self.boxed())
     }
 
     fn pin_num(&self) -> usize {
         self.input_pin_num
     }
+
+    fn num_of_header_to_process(&self) -> NumOfHeaderToProcess {
+        NumOfHeaderToProcess { counter: self.pin_num() }
+    }
 }
 
 impl DataSink for MergeJoin {
-    fn write_row_to_pin(&mut self, _pin_id: PinId, row: Row) -> Option<Row> {
+    fn write_row_to_pin(&mut self, _pin_id: PinId, row: Row) -> CliResult<Option<Row>> {
         self.write_row(row)
     }
 

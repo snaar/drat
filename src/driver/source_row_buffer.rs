@@ -1,10 +1,9 @@
-use std::process;
-
 use crate::args::DataRange;
 use crate::dr::dr::Source;
-use crate::dr::graph::ChainId;
+use crate::dr::header_graph::ChainId;
 use crate::dr::types::Nanos;
 use crate::dr::types::Row;
+use crate::error::{CliResult, Error};
 
 pub struct SourceRowBuffer {
     source: Box<Source+'static>,
@@ -14,22 +13,21 @@ pub struct SourceRowBuffer {
 }
 
 impl SourceRowBuffer {
-    pub fn new(mut source: Box<Source+'static>, chain_id: ChainId) -> Self {
-        let mut row = source.next_row();
+    pub fn new(mut source: Box<Source+'static>, chain_id: ChainId) -> CliResult<Self> {
+        let mut row = source.next_row()?;
         if row.is_none() {
-            panic!("Empty file!")
+            return Err(Error::from("SourceRowBuffer -- empty file"))
         };
 
         let timestamp = match row {
             Some(r) => {
                 let timestamp = r.timestamp;
-                println!("timestamp: {}", timestamp);
                 row = Some(r);
                 timestamp
             }
-            None => write_error!("Error: cannot find timestamp")
+            None => return Err(Error::from("SourceRowBuffer -- cannot find timestamp"))
         };
-        SourceRowBuffer { source, chain_id, timestamp, row }
+        Ok(SourceRowBuffer { source, chain_id, timestamp, row })
     }
 
     pub fn timestamp(&self) -> u64 {
@@ -49,15 +47,15 @@ impl SourceRowBuffer {
         self.row = Some(next_row);
     }
 
-    pub fn next(&mut self, data_range: &DataRange) -> bool {
-        let next_row = match_next_row(&mut self.source, &data_range);
+    pub fn has_next(&mut self, data_range: &DataRange) -> CliResult<bool> {
+        let next_row = match_next_row(&mut self.source, &data_range)?;
         match next_row {
             Some(r) => {
                 self.update_record(r);
-                true
+                Ok(true)
             }
             None => {
-                false
+                Ok(false)
             }
         }
     }
@@ -80,10 +78,10 @@ fn filter_data_range(data_range: &DataRange, timestamp: Nanos) -> Action {
     }
 }
 
-fn match_next_row(source: &mut Box<Source+'static>, data_range: &DataRange) -> Option<Row> {
+fn match_next_row(source: &mut Box<Source+'static>, data_range: &DataRange) -> CliResult<Option<Row>> {
     let mut next_row: Option<Row> = None;
     loop {
-        match source.next_row() {
+        match source.next_row()? {
             Some(r) => {
                 match filter_data_range(data_range, r.timestamp) {
                     Action::Stop => {
@@ -99,5 +97,5 @@ fn match_next_row(source: &mut Box<Source+'static>, data_range: &DataRange) -> O
             None => break,
         }
     }
-    next_row
+    Ok(next_row)
 }

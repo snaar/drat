@@ -1,8 +1,7 @@
-use std::process;
 use crate::dr::dr::{DataSink, HeaderSink};
-use crate::dr::graph::PinId;
+use crate::dr::header_graph::PinId;
 use crate::dr::types::{Header, Row};
-use crate::result::{CliResult};
+use crate::error::{CliResult, Error};
 
 pub struct ColumnFilterDeleteConfig {
     column_name: String,
@@ -21,7 +20,7 @@ impl ColumnFilterDelete {
 
 impl HeaderSink for ColumnFilterDeleteConfig {
     // TODO: figure out better way to remove elements
-    fn process_header(self: Box<Self>, header: &mut Header) -> Box<dyn DataSink> {
+    fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DataSink>> {
         let field_names = header.field_names();
         let mut i = 0;
         while i != field_names.len() {
@@ -31,21 +30,21 @@ impl HeaderSink for ColumnFilterDeleteConfig {
                 header.field_types_mut().remove(i);
                 // return data filter with the column index
                 let data_sink = ColumnFilterDelete { column_index: i };
-                return data_sink.boxed()
+                return Ok(data_sink.boxed())
             }
             i += 1;
         }
-        write_error!("Error: field name -- {} not found for RowFilterEqualValue", self.column_name)
+        Err(Error::from(format!("ColumnFilterDeleteConfig -- field name - {} not found", self.column_name)))
     }
 }
 
 impl DataSink for ColumnFilterDelete {
-    fn write_row(&mut self, mut row: Row) -> Option<Row> {
+    fn write_row(&mut self, mut row: Row) -> CliResult<Option<Row>> {
         row.field_values.remove(self.column_index);
-        Some(row)
+        Ok(Some(row))
     }
 
-    fn write_row_to_pin(&mut self, _pin_id: PinId, row: Row) -> Option<Row> {
+    fn write_row_to_pin(&mut self, _pin_id: PinId, row: Row) -> CliResult<Option<Row>> {
         self.write_row(row)
     }
 

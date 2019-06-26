@@ -1,10 +1,10 @@
-use std::process;
 use crate::args;
 use crate::dr::dr::{DRDriver, Source};
-use crate::dr::graph::{ChainId, DataGraph, HeaderGraph, DataNode, NodeId, PinId};
+use crate::dr::header_graph::{ChainId, HeaderGraph, NodeId, PinId};
+use crate::dr::data_graph::{DataGraph, DataNode};
 use crate::dr::types::{Header, Row};
 use crate::driver::source_row_buffer::SourceRowBuffer;
-use crate::result::{self, CliResult};
+use crate::error::{self, CliResult, Error};
 
 pub struct Driver {
     sources: Vec<Box<Source>>,
@@ -13,17 +13,21 @@ pub struct Driver {
 }
 
 impl Driver {
-    pub fn new(sources: Vec<Box<Source>>, header_graph: HeaderGraph, date_range: args::DataRange, headers: Vec<Header>) -> Self {
-        let data_graph = header_graph.process_header(headers);
-        Driver { sources, data_graph, date_range }
+    pub fn new(sources: Vec<Box<Source>>, header_graph: HeaderGraph,
+               date_range: args::DataRange, headers: Vec<Header>) -> CliResult<Self> {
+
+        if sources.len() > header_graph.len() {
+            return Err(Error::from(
+                "Driver -- not enough header chains for sources. \
+                each source should have at least one corresponding sink."));
+        }
+        let data_graph = header_graph.process_header(headers)?;
+        Ok(Driver { sources, data_graph, date_range })
     }
 
     // all the sources are processed at the same time, but a row with min timestamp is output first.
     fn drive(&mut self) -> CliResult<()> {
-        if self.sources.len() > self.data_graph.len() {
-            write_error!("Error: GenericDriver - the number of sources and the number of sinks don't match.");
-        }
-        let mut row_buffers = self.get_row_buffers();
+        let mut row_buffers = self.get_row_buffers()?;
 
         // sort and output
         let mut buffer_len = row_buffers.len();
@@ -33,12 +37,12 @@ impl Driver {
             let next_row_buffer = &mut row_buffers[buffer_index];
             let row = next_row_buffer.row().clone().unwrap();
             let chain_id = next_row_buffer.chain_id();
-            self.process_row(chain_id, 0, 0, row)?;
+            Self::process_row(&mut self.data_graph, chain_id, 0, 0, row)?;
 
             // remove the row buffer if it reaches the end of the file
             loop {
-                if !row_buffers[buffer_index].next(&self.date_range) {
-                    self.flush(chain_id)?;
+                if !row_buffers[buffer_index].has_next(&self.date_range)? {
+                    self.flush(chain_id, 0)?;
                     row_buffers.remove(buffer_index);
                 }
                 break;
@@ -49,13 +53,13 @@ impl Driver {
         Ok(())
     }
 
-    fn get_row_buffers(&mut self) -> Vec<SourceRowBuffer> {
+    fn get_row_buffers(&mut self) -> CliResult<Vec<SourceRowBuffer>> {
         let mut row_buffers: Vec<SourceRowBuffer> = Vec::with_capacity(self.sources.len());
         for i in 0..self.sources.len() {
             let source = self.sources.pop().unwrap();
-            row_buffers.push(SourceRowBuffer::new(source, i));
+            row_buffers.push(SourceRowBuffer::new(source, i)?);
         }
-        row_buffers
+        Ok(row_buffers)
     }
 
     // index of the row buffer that has a row with min timestamp
@@ -68,12 +72,14 @@ impl Driver {
         min.0
     }
 
-    fn process_row(&mut self, mut chain_id: ChainId, mut node_id: NodeId, mut pin_id: PinId, mut row: Row) -> CliResult<()> {
-        let chain = self.data_graph.get_mut_chain(chain_id);
+    fn process_row(data_graph: &mut DataGraph, mut chain_id: ChainId,
+                   mut node_id: NodeId, mut pin_id: PinId, mut row: Row) -> CliResult<()> {
+
+        let chain = data_graph.get_mut_chain(chain_id);
         while node_id < chain.nodes().len() {
             match chain.node(node_id) {
                 DataNode::DataSink(sink) => {
-                    match sink.write_row_to_pin(pin_id, row) {
+                    match sink.write_row_to_pin(pin_id, row)? {
                         Some(r) => {
                             row = r;
                             node_id += 1;
@@ -85,22 +91,27 @@ impl Driver {
                     chain_id = *new_chain_id;
                     node_id = 0;
                     pin_id = *new_pin_id;
-                    self.process_row(chain_id, node_id, pin_id, row)?;
+                    Self::process_row(data_graph, chain_id, node_id, pin_id, row)?;
                     break
                 }
-                DataNode::Split(..) => write_error!("Error: Split hasn't been implemented yet."),
+                DataNode::Split(chain_ids) => {
+                    if pin_id < chain_ids.len() {
+                        let new_chain_id = chain_ids[pin_id];
+                        pin_id += 1;
+                        Self::process_row(data_graph, new_chain_id, 0, pin_id, row.clone())?;
+                        Self::process_row(data_graph, chain_id, 0, pin_id, row.clone())?;
+                    }
+                    break
+                },
             }
         }
         Ok(())
     }
 
-    pub fn flush(&mut self, mut chain_id: ChainId) -> CliResult<()> {
+    pub fn flush(&mut self, mut chain_id: ChainId, mut pin_id: PinId) -> CliResult<()> {
         let mut node_id = 0;
-        loop {
-            let chain = self.data_graph.get_mut_chain(chain_id);
-            if chain.nodes().len() <= node_id {
-                break
-            }
+        let chain = self.data_graph.get_mut_chain(chain_id);
+        while chain.nodes().len() > node_id {
             match chain.node(node_id) {
                 DataNode::DataSink(sink) => {
                     sink.flush()?;
@@ -108,9 +119,18 @@ impl Driver {
                 },
                 DataNode::Merge(new_chain_id, _pin_id) => {
                     chain_id = *new_chain_id;
-                    node_id = 0
+                    self.flush(chain_id, 0)?;
+                    break
                 },
-                DataNode::Split(..) => write_error!("Error: Split hasn't been implemented yet."),
+                DataNode::Split(chain_ids) => {
+                    if pin_id < chain_ids.len() {
+                        let new_chain_id = chain_ids[pin_id];
+                        pin_id += 1;
+                        self.flush(new_chain_id,0)?;
+                        self.flush(chain_id,pin_id)?;
+                    }
+                    break
+                },
             }
         }
         Ok(())
@@ -119,6 +139,6 @@ impl Driver {
 
 impl DRDriver for Driver {
     fn drive(&mut self) {
-        result::handle_drive_error(self.drive())
+        error::handle_drive_error(self.drive())
     }
 }

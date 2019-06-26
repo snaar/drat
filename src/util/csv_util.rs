@@ -1,20 +1,21 @@
-pub fn parse_into_delimiter(str: &str) -> Result<u8, String> {
+use crate::error::{CliResult, Error};
+
+pub fn parse_into_delimiter(str: &str) -> CliResult<u8> {
     /* Code in this function was adapted from public domain xsv project. */
     match &*str {
         r"\t" => Ok(b'\t'),
         s => {
             if s.len() != 1 {
-                let msg = format!(
-                    "Error: specified delimiter '{}' is not a single ASCII character.", s);
-                return Err(msg);
+                return Err(Error::from(
+                    format!("Error: specified delimiter '{}' is not a single ASCII character.", s)))
             }
             let c = s.chars().next().unwrap();
             if c.is_ascii() {
                 Ok(c as u8)
             } else {
-                let msg = format!(
-                    "Error: specified delimiter '{}' is not an ASCII character.", c);
-                Err(msg)
+
+                Err(Error::from(
+                    format!("Error: specified delimiter '{}' is not an ASCII character.", c)))
             }
         }
     }

@@ -1,10 +1,10 @@
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::collections::HashMap;
 use std::io::{self, Write, BufWriter};
-use std::process;
 use std::string::String;
 
 use crate::dr::types::{FieldType};
+use crate::error::{CliResult, Error};
 
 pub const MAGIC_NUM: u64 = 0x44434154;
 pub const VERSION: u16 = 2;
@@ -20,7 +20,8 @@ pub fn get_bitset_bytes(field_count: usize) -> usize {
 
 // map for field types
 lazy_static! {
-    pub static ref FIELD_STRING_MAP_TYPE: HashMap<FieldType, &'static str> = creat_field_string_map_type();
+    pub static ref FIELD_STRING_MAP_TYPE: HashMap<FieldType, &'static str>
+                                        = creat_field_string_map_type();
 }
 
 pub fn creat_field_string_map_name() -> HashMap<&'static str, FieldType> {
@@ -60,20 +61,18 @@ pub struct FieldDescriptor {
 }
 
 impl FieldDescriptor {
-    pub fn new<R: io::BufRead>(mut reader: R) -> Self {
-        let name = Self::get_sized_string(&mut reader);
-        let type_string = Self::get_sized_string(&mut reader);
+    pub fn new<R: io::BufRead>(mut reader: R) -> CliResult<Self> {
+        let name = Self::get_sized_string(&mut reader)?;
+        let type_string = Self::get_sized_string(&mut reader)?;
 
-        let display_hint = match reader.read_i32::<BigEndian>().unwrap() {
+        let display_hint = match reader.read_i32::<BigEndian>()? {
             -1 => DisplayHint::None,
             0 => DisplayHint::Timestamp,
-            _ => {
-                println!("Error: missing display hint");
-                process::exit(1);
-            }
+            _ =>
+                return Err(Error::Custom("FieldDescriptor -- missing display hint".to_owned()))
         };
 
-        FieldDescriptor { name, type_string, display_hint }
+        Ok(FieldDescriptor { name, type_string, display_hint })
     }
 
     pub fn get_name(&self) -> &str {
@@ -88,30 +87,32 @@ impl FieldDescriptor {
         &self.display_hint
     }
 
-    fn get_sized_string<R: io::BufRead>(mut rdr: R) -> String {
-        let size = rdr.read_u32::<BigEndian>().unwrap();
+    fn get_sized_string<R: io::BufRead>(mut rdr: R) -> CliResult<String> {
+        let size = rdr.read_u32::<BigEndian>()?;
         let mut string_bytes: Vec<u8> = Vec::with_capacity(size as usize);
         for _i in 0..size as usize {
-            string_bytes.push(rdr.read_u8().unwrap());
+            string_bytes.push(rdr.read_u8()?);
         }
-        String::from_utf8(string_bytes).unwrap().to_string()
+        Ok(String::from_utf8(string_bytes).unwrap().to_string())
     }
 }
 
-pub fn write_sized_string(writer: &mut BufWriter<Box<io::Write+'static>>, string: &str) {
+pub fn write_sized_string(writer: &mut BufWriter<Box<io::Write+'static>>, string: &str) -> CliResult<()> {
     let bytes = string.as_bytes();
-    writer.write_u32::<BigEndian>(bytes.len() as u32).unwrap();
-    writer.write_all(bytes).unwrap();
+    writer.write_u32::<BigEndian>(bytes.len() as u32)?;
+    writer.write_all(bytes)?;
+    Ok(())
 }
 
-pub fn write_string_value(writer: &mut BufWriter<Box<io::Write+'static>>, value: &str) {
+pub fn write_string_value(writer: &mut BufWriter<Box<io::Write+'static>>, value: &str) -> CliResult<()> {
     let bytes = value.as_bytes();
     match bytes.len() {
-        x if x <= std::i16::MAX as usize => writer.write_i16::<BigEndian>(bytes.len() as i16).unwrap(),
+        x if x <= std::i16::MAX as usize => writer.write_i16::<BigEndian>(bytes.len() as i16)?,
         _ => {
-            writer.write_i16::<BigEndian>(-1).unwrap();
-            writer.write_u32::<BigEndian>(bytes.len() as u32).unwrap();
+            writer.write_i16::<BigEndian>(-1)?;
+            writer.write_u32::<BigEndian>(bytes.len() as u32)?;
         }
     }
-    writer.write_all(bytes).unwrap();
+    writer.write_all(bytes)?;
+    Ok(())
 }

@@ -1,8 +1,8 @@
 use std::fmt;
 
-use crate::dr::graph::PinId;
+use crate::dr::header_graph::{ChainId, NumOfHeaderToProcess, PinId};
 use crate::dr::types::{Header, Row};
-use crate::result::CliResult;
+use crate::error::CliResult;
 
 pub trait DRDriver {
     fn drive(&mut self);
@@ -10,7 +10,7 @@ pub trait DRDriver {
 
 pub trait Source {
     fn header(&self) -> &Header;
-    fn next_row(&mut self) -> Option<Row>;
+    fn next_row(&mut self) -> CliResult<Option<Row>>;
 }
 
 //TODO better debug format?
@@ -21,27 +21,36 @@ impl fmt::Debug for Source {
 }
 
 pub trait HeaderSink {
-    fn process_header(self: Box<Self>, header: &mut Header) -> Box<dyn DataSink>;
+    fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DataSink>>;
 }
 
 pub trait DataSink {
-    fn write_row(&mut self, row: Row) -> Option<Row> {
-        Some(row)
+    fn write_row(&mut self, row: Row) -> CliResult<Option<Row>> {
+        Ok(Some(row))
     }
-    fn write_row_to_pin(&mut self, _pin_id: PinId, row: Row) -> Option<Row> {
-        //TODO: check pin_id?
+
+    fn write_row_to_pin(&mut self, _pin_id: PinId, row: Row) -> CliResult<Option<Row>> {
         self.write_row(row)
     }
+
     fn flush(&mut self) -> CliResult<()>;
+
     fn finish(self: Box<Self>) -> CliResult<()> {
         Ok(())
     }
+
     fn boxed(self) -> Box<dyn DataSink>;
 }
 
-pub trait MuxHeaderSink {
-    fn check_header(&mut self, pin_id: PinId, header: & Header) -> CliResult<()>;
+pub trait MergeHeaderSink {
+    fn check_header(&mut self, pin_id: PinId, header: &Header) -> CliResult<()>;
     fn process_header(&mut self) -> Header;
-    fn get_data_sink(self: Box<Self>) -> Box<dyn DataSink>;
+    fn get_data_sink(self: Box<Self>) -> CliResult<Box<dyn DataSink>>;
     fn pin_num(&self) -> usize;
+    fn num_of_header_to_process(&self) -> NumOfHeaderToProcess;
+}
+
+pub trait SplitHeaderSink {
+    fn chain_ids(&mut self) -> &mut Vec<ChainId>;
+    fn num_of_header_to_process(&self) -> NumOfHeaderToProcess;
 }

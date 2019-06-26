@@ -1,9 +1,9 @@
 use csv;
 use std::io;
-use std::process;
 
 use crate::dr::dr::Source;
 use crate::dr::types::{FieldType, FieldValue, Header, Nanos, Row};
+use crate::error::CliResult;
 
 pub struct CSVReader<R> {
     reader: csv::Reader<R>,
@@ -14,20 +14,17 @@ pub struct CSVReader<R> {
 }
 
 impl <R: io::Read> CSVReader<R> {
-    pub fn new(mut reader: csv::Reader<R>, timestamp_column: usize) -> Self {
+    pub fn new(mut reader: csv::Reader<R>, timestamp_column: usize) -> CliResult<Self> {
         // get field names if available
         let mut field_names: Vec<String> = Vec::new();
         if reader.has_headers() {
-            let header_record = reader.headers().unwrap();
+            let header_record = reader.headers()?;
             for i in header_record {
                 field_names.push(i.to_string());
             }
         }
         // get first row and initialize next_row
-        let first_row = match reader.records().next().unwrap() {
-            Ok(r) => r,
-            Err(err) => write_error!("{}", err),
-        };
+        let first_row = reader.records().next().unwrap()?;
         let field_count = first_row.len();
         // if field name is not given, assign default name - "col_x"
         if !reader.has_headers() {
@@ -44,36 +41,34 @@ impl <R: io::Read> CSVReader<R> {
         let mut csv_reader = CSVReader { reader, header, timestamp_column, next_row, has_next_row: true };
 
         // update next_row with first row
-        csv_reader.update_row(first_row);
+        csv_reader.update_row(first_row)?;
 
-        csv_reader
+        Ok(csv_reader)
     }
 
-    fn update_row(&mut self, next_record: csv::StringRecord) {
+    fn update_row(&mut self, next_record: csv::StringRecord) -> CliResult<()> {
         let mut current_column = 0;
         for i in next_record.iter() {
             if current_column == self.timestamp_column {
-                self.next_row.timestamp = match i.parse::<Nanos>() {
-                    Ok(t) => t,
-                    Err(e) => write_error!("Error: cannot update row in csv_reader: {} \n", e),
-                }
+                self.next_row.timestamp = i.parse::<Nanos>().unwrap();
             }
             self.next_row.field_values[current_column] = FieldValue::String(i.to_string());
             current_column += 1;
         }
+        Ok(())
     }
 
-    fn next_row(&mut self) -> Option<Row> {
+    fn next_row(&mut self) -> CliResult<Option<Row>> {
         if !self.has_next_row {
-            return None
+            return Ok(None)
         }
 
         let current_row = self.next_row.clone();
         match self.reader.records().next() {
-            Some(r) => self.update_row(r.unwrap()),
+            Some(r) => self.update_row(r?)?,
             None => self.has_next_row = false,
         }
-        Some(current_row)
+        Ok(Some(current_row))
     }
 }
 
@@ -82,7 +77,7 @@ impl <R: io::Read> Source for CSVReader<R> {
         &self.header
     }
 
-    fn next_row(&mut self) -> Option<Row> {
+    fn next_row(&mut self) -> CliResult<Option<Row>> {
         self.next_row()
     }
 }

@@ -1,25 +1,25 @@
 use clap::{Arg, App};
 use clap::crate_version;
 
-use crate::args;
+use crate::args::{Args, CliArgs, DataRange};
 use crate::dr::dr::{DRDriver, Source};
-use crate::dr::graph::{HeaderChain, HeaderGraph, HeaderNode};
+use crate::dr::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use crate::dr::types::Header;
+use crate::error::CliResult;
 use crate::input::input_factory::InputFactory;
 use crate::driver::driver::Driver;
-use crate::filter::row_filter_greater_value::RowFilterGreaterValue;
-use crate::source_config;
-use crate::util::csv_util;
+use crate::source_config::{self, CSVConfig};
 use crate::write::factory;
 
-pub fn drat_cli(input_factories: Vec<Box<InputFactory>>) {
-    let cli_args = parse_cli_args();
-    let args = args::Args { cli_args, input_factories };
-    let mut driver = setup_graph(args);
+pub fn drat_cli(input_factories: Vec<Box<InputFactory>>) -> CliResult<()> {
+    let cli_args = parse_cli_args()?;
+    let args = Args {cli_args, input_factories};
+    let mut driver = setup_graph(args)?;
     driver.drive();
+    Ok(())
 }
 
-pub fn parse_cli_args() -> args::CliArgs {
+pub fn parse_cli_args() -> CliResult<CliArgs> {
     let matches = App::new("drat")
         .version(crate_version!())
         .about("drat is a simple streaming time series tool")
@@ -35,10 +35,10 @@ pub fn parse_cli_args() -> args::CliArgs {
             .help("set end timestamp (exclusive)")
             .takes_value(true)
             .value_name("TIMESTAMP"))
-        .arg(Arg::with_name("timestamp_column")
+        .arg(Arg::with_name("timestamp_column_index")
             .short("t")
-            .long("timestamp-column")
-            .help("csv only: specify the timestamp column [default: 0]")
+            .long("timestamp-column-index")
+            .help("csv only: specify the timestamp column index [default: 0]")
             .takes_value(true)
             .value_name("ARG"))
         .arg(Arg::with_name("input")
@@ -71,8 +71,8 @@ pub fn parse_cli_args() -> args::CliArgs {
         None => None,
         Some(e) => Some(e.parse::<u64>().unwrap())
     };
-    let timestamp_column: usize = match matches.value_of("timestamp_column") {
-        None => 0,
+    let timestamp_column_index: usize = match matches.value_of("timestamp_column_index") {
+        None => source_config::TIMESTAMP_COL_DEFAULT,
         Some(t) => t.parse::<usize>().unwrap()
     };
     let inputs = match matches.values_of("input") {
@@ -92,24 +92,22 @@ pub fn parse_cli_args() -> args::CliArgs {
     };
     let has_headers = matches.is_present("has_headers");
     let delimiter = matches.value_of("delimiter").unwrap();
-    let delimiter = csv_util::parse_into_delimiter(delimiter).unwrap();
-    let csv_config = source_config::CSVConfig::new(delimiter, has_headers, timestamp_column);
-    let data_range = args::DataRange { begin, end };
+    let csv_config = CSVConfig::new(delimiter, has_headers, timestamp_column_index)?;
 
-    args::CliArgs {
+    Ok(CliArgs {
         inputs,
-        data_range,
+        data_range: DataRange {begin, end},
         output,
         csv_config,
-    }
+    })
 }
 
-pub fn setup_graph(mut args: args::Args) -> Box<DRDriver> {
-    let source_configs = args.create_configs().unwrap();
-    let mut sources: Vec<Box<Source+'static>> = Vec::with_capacity(source_configs.len());
+pub fn setup_graph(mut args: Args) -> CliResult<Box<DRDriver>> {
+    let source_configs = args.create_configs()?;
+    let mut sources: Vec<Box<Source>> = Vec::with_capacity(source_configs.len());
     let mut headers: Vec<Header> = Vec::with_capacity(source_configs.len());
     for mut s in source_configs {
-        let source = s.reader().unwrap();
+        let source = s.reader()?;
         headers.push(source.header().clone());
         sources.push(source);
     }
@@ -117,10 +115,10 @@ pub fn setup_graph(mut args: args::Args) -> Box<DRDriver> {
     // sink writer
     let output = args.cli_args.output.clone();
 
-    let header_sink = factory::new_header_sink(output);
+    let header_sink = factory::new_header_sink(output)?;
     let node = HeaderNode::HeaderSink(header_sink);
     let chain = HeaderChain::new(vec![node]);
 
     let graph = HeaderGraph::new(vec![chain]);
-    Box::new(Driver::new(sources, graph, args.cli_args.data_range, headers))
+    Ok(Box::new(Driver::new(sources, graph, args.cli_args.data_range, headers)?))
 }

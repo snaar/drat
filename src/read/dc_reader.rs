@@ -1,17 +1,17 @@
 use byteorder::{BigEndian, ReadBytesExt};
 use std::collections::HashMap;
-use std::io;
-use std::io::Read;
-use std::process;
+use std::io::{self, Read};
 use std::str;
 
 use crate::util::dc_util;
 use crate::dr::dr::Source;
 use crate::dr::types::{FieldType, FieldValue, Header, Row};
+use crate::error::{CliResult, Error};
 
 // map for field types
 lazy_static! {
-    static ref FIELD_STRING_MAP_NAME: HashMap<&'static str, FieldType> = dc_util::creat_field_string_map_name();
+    static ref FIELD_STRING_MAP_NAME: HashMap<&'static str, FieldType>
+                                      = dc_util::creat_field_string_map_name();
 }
 
 pub struct DCReader<R> {
@@ -23,25 +23,27 @@ pub struct DCReader<R> {
 }
 
 impl <R: io::Read> DCReader<R> {
-    pub fn new(reader: R) -> Self {
+    pub fn new(reader: R) -> CliResult<Self> {
         let mut reader = io::BufReader::new(reader);
-        let magic_num = reader.read_u64::<BigEndian>().unwrap();
+
+        let magic_num = reader.read_u64::<BigEndian>()?;
         if &magic_num != &dc_util::MAGIC_NUM {
-            write_error!("Error: wrong magic number -- {}", magic_num);
+            return Err(Error::from(format!("DCReader -- wrong magic number - {}", magic_num)))
         }
-        let version = reader.read_u16::<BigEndian>().unwrap();
+
+        let version = reader.read_u16::<BigEndian>()?;
         if &version != &dc_util::VERSION {
-            write_error!("Error: wrong version -- {}", version);
+            return Err(Error::from(format!("DCReader -- wrong version - {}", version)))
         }
 
         // skip user given data
-        let user_header_size = reader.read_u32::<BigEndian>().unwrap();
+        let user_header_size = reader.read_u32::<BigEndian>()?;
         for _i in 0..user_header_size as usize {
-            reader.read_u8().unwrap();
+            reader.read_u8()?;
         }
 
         let map_field_string = &FIELD_STRING_MAP_NAME;
-        let field_count = reader.read_u32::<BigEndian>().unwrap() as usize;
+        let field_count = reader.read_u32::<BigEndian>()? as usize;
         let bitset_byte_count = dc_util::get_bitset_bytes(field_count);
 
         // field descriptor (header)
@@ -49,7 +51,7 @@ impl <R: io::Read> DCReader<R> {
         let mut field_types: Vec<FieldType> = Vec::with_capacity(field_count);
         let mut field_values: Vec<FieldValue> = Vec::with_capacity(field_count);
         for i in 0..field_count {
-            let field_descriptor = dc_util::FieldDescriptor::new(&mut reader);
+            let field_descriptor = dc_util::FieldDescriptor::new(&mut reader)?;
             let mut name = field_descriptor.get_name().to_string();
             // if field name is not given, assign default name - "col_x"
             if name.is_empty() {
@@ -67,19 +69,19 @@ impl <R: io::Read> DCReader<R> {
         let timestamp = 0 as u64;
         let current_row = Row { timestamp, field_values };
 
-        DCReader { reader, header, field_count, bitset_byte_count, current_row }
+        Ok(DCReader { reader, header, field_count, bitset_byte_count, current_row })
     }
 
-    fn next_row(&mut self) -> Option<Row> {
+    fn next_row(&mut self) -> CliResult<Option<Row>> {
         match self.reader.read_u64::<BigEndian>() {
             Ok(i) => self.current_row.timestamp = i,
-            Err(_e) => return None,
+            Err(_e) => return Ok(None),
         };
 
         // bitset of null values
         let mut bitset_bytes: Vec<u8> = vec![0 as u8; self.bitset_byte_count];
         let bitset_bytes = bitset_bytes.as_mut_slice();
-        self.reader.read_exact(bitset_bytes).unwrap();
+        self.reader.read_exact(bitset_bytes)?;
 
         // get non-null fields, if null put string "null"
         let mut field_index = 0 as usize;
@@ -89,16 +91,18 @@ impl <R: io::Read> DCReader<R> {
                 self.current_row.field_values[field_index] = {
                     if current_bitset & 1 == 0 { // not null
                         match self.header.field_types()[field_index] {
-                            FieldType::Boolean => write_error!("Error: boolean field type is not supported"),
-                            FieldType::Byte => FieldValue::Byte(self.reader.read_u8().unwrap()),
-                            FieldType::ByteBuf => write_error!("Error: ByteBuffer field type is not supported"),
-                            FieldType::Char => FieldValue::Char(self.reader.read_u16::<BigEndian>().unwrap()),
-                            FieldType::Double => FieldValue::Double(self.reader.read_f64::<BigEndian>().unwrap()),
-                            FieldType::Float => FieldValue::Float(self.reader.read_f32::<BigEndian>().unwrap()),
-                            FieldType::Int => FieldValue::Int(self.reader.read_i32::<BigEndian>().unwrap()),
-                            FieldType::Long => FieldValue::Long(self.reader.read_i64::<BigEndian>().unwrap()),
-                            FieldType::Short => FieldValue::Short(self.reader.read_i16::<BigEndian>().unwrap()),
-                            FieldType::String => FieldValue::String(self.read_string().to_owned()),
+                            FieldType::Boolean =>
+                                return Err(Error::from("DCReader -- boolean field type is not supported")),
+                            FieldType::Byte => FieldValue::Byte(self.reader.read_u8()?),
+                            FieldType::ByteBuf =>
+                                return Err(Error::from("DCReader -- ByteBuffer field type is not supported")),
+                            FieldType::Char => FieldValue::Char(self.reader.read_u16::<BigEndian>()?),
+                            FieldType::Double => FieldValue::Double(self.reader.read_f64::<BigEndian>()?),
+                            FieldType::Float => FieldValue::Float(self.reader.read_f32::<BigEndian>()?),
+                            FieldType::Int => FieldValue::Int(self.reader.read_i32::<BigEndian>()?),
+                            FieldType::Long => FieldValue::Long(self.reader.read_i64::<BigEndian>()?),
+                            FieldType::Short => FieldValue::Short(self.reader.read_i16::<BigEndian>()?),
+                            FieldType::String => FieldValue::String(self.read_string()?.to_owned()),
                         }
                     } else {
                         FieldValue::None
@@ -111,20 +115,20 @@ impl <R: io::Read> DCReader<R> {
                 current_bitset = current_bitset >> 1;
             }
         }
-        Some(self.current_row.clone())
+        Ok(Some(self.current_row.clone()))
     }
 
-    fn read_string(&mut self) -> String {
-        let data_size_short = self.reader.read_i16::<BigEndian>().unwrap();
+    fn read_string(&mut self) -> CliResult<String> {
+        let data_size_short = self.reader.read_i16::<BigEndian>()?;
         let data_size = match data_size_short {
-            -1 => self.reader.read_u32::<BigEndian>().unwrap(),
+            -1 => self.reader.read_u32::<BigEndian>()?,
             _ => data_size_short as u32,
         };
         let mut string: Vec<u8> = vec![0; data_size as usize];
         let string = string.as_mut_slice();
-        self.reader.read_exact(string).unwrap();
+        self.reader.read_exact(string)?;
 
-        str::from_utf8_mut(string).unwrap().to_string()
+        Ok(str::from_utf8_mut(string).unwrap().to_string())
     }
 }
 
@@ -139,7 +143,7 @@ impl <R: io::Read> Source for DCReader<R> {
         &self.header
     }
 
-    fn next_row(&mut self) -> Option<Row> {
+    fn next_row(&mut self) -> CliResult<Option<Row>> {
         self.next_row()
     }
 }
