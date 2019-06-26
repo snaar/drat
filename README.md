@@ -1,4 +1,4 @@
-drat is a simple streaming time series inspection and manipulation tool
+chopper is a simple streaming time series inspection and manipulation tool
 
 ##### Goals
 1. Primary use case - ad-hoc usage by humans.
