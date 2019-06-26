@@ -1,9 +1,9 @@
 [package]
-name = "drat"
+name = "chopper"
 version = "0.0.1"
 authors = ["Xinyun Wu <xin@snaar.net>"]
 edition = "2018"
-repository = "https://github.com/snaar/drat"
+repository = "https://github.com/snaar/chopper"
 
 [dependencies]
 byteorder = "1"
@@ -16,5 +16,9 @@ lzf = "0.3"
 reqwest = "0.8"
 
 [lib]
-name = "drat_lib"
+name = "chopper_lib"
 path = "src/lib.rs"
+
+[[bin]]
+name = "chop"
+path = "src/main.rs"

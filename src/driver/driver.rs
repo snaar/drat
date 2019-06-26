@@ -1,8 +1,8 @@
 use crate::args;
-use crate::dr::dr::{DRDriver, Source};
-use crate::dr::header_graph::{ChainId, HeaderGraph, NodeId, PinId};
-use crate::dr::data_graph::{DataGraph, DataNode};
-use crate::dr::types::{Header, Row};
+use crate::chopper::chopper::{DRDriver, Source};
+use crate::chopper::header_graph::{ChainId, HeaderGraph, NodeId, PinId};
+use crate::chopper::data_graph::{DataGraph, DataNode};
+use crate::chopper::types::{Header, Row};
 use crate::driver::source_row_buffer::SourceRowBuffer;
 use crate::error::{self, CliResult, Error};
 

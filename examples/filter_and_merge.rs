@@ -1,16 +1,16 @@
-use drat_lib::args;
-use drat_lib::dr::dr::{DRDriver, Source};
-use drat_lib::dr::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
-use drat_lib::dr::types::{FieldValue, Header};
-use drat_lib::driver::merge_join::MergeJoin;
-use drat_lib::error::{self, CliResult};
-use drat_lib::input::input_factory::InputFactory;
-use drat_lib::input::file::FileInput;
-use drat_lib::input::http::Http;
-use drat_lib::driver::driver::Driver;
-use drat_lib::filter::row_filter_equal_value::RowFilterEqualValue;
-use drat_lib::filter::row_filter_greater_value::RowFilterGreaterValue;
-use drat_lib::write::factory;
+use chopper_lib::args;
+use chopper_lib::chopper::chopper::{DRDriver, Source};
+use chopper_lib::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
+use chopper_lib::chopper::types::{FieldValue, Header};
+use chopper_lib::driver::merge_join::MergeJoin;
+use chopper_lib::error::{self, CliResult};
+use chopper_lib::input::input_factory::InputFactory;
+use chopper_lib::input::file::FileInput;
+use chopper_lib::input::http::Http;
+use chopper_lib::driver::driver::Driver;
+use chopper_lib::filter::row_filter_equal_value::RowFilterEqualValue;
+use chopper_lib::filter::row_filter_greater_value::RowFilterGreaterValue;
+use chopper_lib::write::factory;
 
 fn main() {
     let http: Http = Http;

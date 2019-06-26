@@ -1,8 +1,8 @@
 use csv;
 use std::io;
 
-use crate::dr::dr::Source;
-use crate::dr::types::{FieldType, FieldValue, Header, Nanos, Row};
+use crate::chopper::chopper::Source;
+use crate::chopper::types::{FieldType, FieldValue, Header, Nanos, Row};
 use crate::error::CliResult;
 
 pub struct CSVReader<R> {

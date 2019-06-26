@@ -1,8 +1,8 @@
 use crate::args::DataRange;
-use crate::dr::dr::Source;
-use crate::dr::header_graph::ChainId;
-use crate::dr::types::Nanos;
-use crate::dr::types::Row;
+use crate::chopper::chopper::Source;
+use crate::chopper::header_graph::ChainId;
+use crate::chopper::types::Nanos;
+use crate::chopper::types::Row;
 use crate::error::{CliResult, Error};
 
 pub struct SourceRowBuffer {

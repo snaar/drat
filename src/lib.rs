@@ -3,8 +3,8 @@ extern crate lazy_static;
 
 #[macro_use]
 pub mod args;
-pub mod drat_cli;
-pub mod dr;
+pub mod chopper;
+pub mod chopper_cli;
 pub mod error;
 pub mod input;
 pub mod util;

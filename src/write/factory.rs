@@ -1,4 +1,4 @@
-use crate::dr::dr::HeaderSink;
+use crate::chopper::chopper::HeaderSink;
 use crate::error::{CliResult, Error};
 use crate::write::csv_sink;
 use crate::write::dc_sink;

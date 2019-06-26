@@ -1,6 +1,6 @@
-use crate::dr::data_graph::{DataGraph, DataNode};
-use crate::dr::dr::{HeaderSink, MergeHeaderSink, SplitHeaderSink};
-use crate::dr::types::Header;
+use crate::chopper::data_graph::{DataGraph, DataNode};
+use crate::chopper::chopper::{HeaderSink, MergeHeaderSink, SplitHeaderSink};
+use crate::chopper::types::Header;
 use crate::error::{CliResult, Error};
 
 pub type ChainId = usize;

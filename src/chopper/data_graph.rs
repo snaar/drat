@@ -1,4 +1,4 @@
-use crate::dr::dr::DataSink;
+use crate::chopper::chopper::DataSink;
 use crate::error::{CliResult, Error};
 
 pub type ChainId = usize;

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::io::{self, Write, BufWriter};
 use std::string::String;
 
-use crate::dr::types::{FieldType};
+use crate::chopper::types::{FieldType};
 use crate::error::{CliResult, Error};
 
 pub const MAGIC_NUM: u64 = 0x44434154;

@@ -4,8 +4,8 @@ use std::io::{self, Read};
 use std::str;
 
 use crate::util::dc_util;
-use crate::dr::dr::Source;
-use crate::dr::types::{FieldType, FieldValue, Header, Row};
+use crate::chopper::chopper::Source;
+use crate::chopper::types::{FieldType, FieldValue, Header, Row};
 use crate::error::{CliResult, Error};
 
 // map for field types

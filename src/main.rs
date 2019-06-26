@@ -1,10 +1,10 @@
-extern crate drat_lib;
+extern crate chopper_lib;
 
-use drat_lib::drat_cli::drat_cli;
-use drat_lib::error;
-use drat_lib::input::input_factory::InputFactory;
-use drat_lib::input::file::FileInput;
-use drat_lib::input::http::Http;
+use chopper_lib::chopper_cli::chopper_cli;
+use chopper_lib::error;
+use chopper_lib::input::input_factory::InputFactory;
+use chopper_lib::input::file::FileInput;
+use chopper_lib::input::http::Http;
 
 fn main() {
     let http: Http = Http;
@@ -12,5 +12,5 @@ fn main() {
     let vec: Vec<Box<InputFactory>> = vec![
         Box::new(http),
         Box::new(file)];
-    error::handle_drive_error(drat_cli(vec));
+    error::handle_drive_error(chopper_cli(vec));
 }

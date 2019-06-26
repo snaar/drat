@@ -7,7 +7,7 @@ use csv;
 use flate2::read::GzDecoder;
 use lzf;
 
-use crate::dr::dr;
+use crate::chopper::chopper;
 use crate::error::{CliResult, Error};
 use crate::input::input_factory::InputFactory;
 use crate::read::{csv_reader, dc_reader};
@@ -59,7 +59,7 @@ impl fmt::Debug for CSVConfig {
 pub struct SourceConfig {
     path: Option<PathBuf>, // 'None' implies stdin. TODO: maybe use custom enum instead of commenting?
     input_factories: Vec<Box<InputFactory>>,
-    file_type: FileType, // TODO: refactor the dr::Source factory functions below and get rid of this variable
+    file_type: FileType, // TODO: refactor the chopper::Source factory functions below and get rid of this variable
     csv_config: CSVConfig,
 }
 
@@ -82,7 +82,7 @@ impl SourceConfig {
         self.path.is_none()
     }
 
-    pub fn reader(&mut self) -> CliResult<Box<dr::Source+'static>> {
+    pub fn reader(&mut self) -> CliResult<Box<chopper::Source+'static>> {
         let io_reader = self.get_io_reader()?;
         Ok(self.generate_source(io_reader)?)
     }
@@ -144,7 +144,7 @@ impl SourceConfig {
         }
     }
 
-    fn generate_source<R: io::Read+'static>(&mut self, reader: R) -> CliResult<Box<dr::Source+'static>> {
+    fn generate_source<R: io::Read+'static>(&mut self, reader: R) -> CliResult<Box<chopper::Source+'static>> {
         match self.file_type {
             FileType::Csv => {
                 let csv_reader_arg = csv::ReaderBuilder::new()

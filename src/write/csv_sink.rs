@@ -2,9 +2,9 @@ use std::fs::File;
 use std::io::{self, BufWriter, Write};
 use std::path::PathBuf;
 
-use crate::dr::dr::{DataSink, HeaderSink};
-use crate::dr::header_graph::PinId;
-use crate::dr::types::{FieldType, FieldValue, Header, Row};
+use crate::chopper::chopper::{DataSink, HeaderSink};
+use crate::chopper::header_graph::PinId;
+use crate::chopper::types::{FieldType, FieldValue, Header, Row};
 use crate::error::{CliResult, Error};
 use crate::util::dc_util;
 

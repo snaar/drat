@@ -2,16 +2,16 @@ use clap::{Arg, App};
 use clap::crate_version;
 
 use crate::args::{Args, CliArgs, DataRange};
-use crate::dr::dr::{DRDriver, Source};
-use crate::dr::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
-use crate::dr::types::Header;
+use crate::chopper::chopper::{DRDriver, Source};
+use crate::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
+use crate::chopper::types::Header;
 use crate::error::CliResult;
 use crate::input::input_factory::InputFactory;
 use crate::driver::driver::Driver;
 use crate::source_config::{self, CSVConfig};
 use crate::write::factory;
 
-pub fn drat_cli(input_factories: Vec<Box<InputFactory>>) -> CliResult<()> {
+pub fn chopper_cli(input_factories: Vec<Box<InputFactory>>) -> CliResult<()> {
     let cli_args = parse_cli_args()?;
     let args = Args {cli_args, input_factories};
     let mut driver = setup_graph(args)?;

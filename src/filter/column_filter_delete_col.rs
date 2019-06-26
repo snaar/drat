@@ -1,6 +1,6 @@
-use crate::dr::dr::{DataSink, HeaderSink};
-use crate::dr::header_graph::PinId;
-use crate::dr::types::{Header, Row};
+use crate::chopper::chopper::{DataSink, HeaderSink};
+use crate::chopper::header_graph::PinId;
+use crate::chopper::types::{Header, Row};
 use crate::error::{CliResult, Error};
 
 pub struct ColumnFilterDeleteConfig {

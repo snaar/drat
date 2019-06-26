@@ -1,8 +1,8 @@
 use std::cmp::Ordering;
 
-use crate::dr::dr::{DataSink, HeaderSink};
-use crate::dr::header_graph::PinId;
-use crate::dr::types::{FieldValue, Header, Row};
+use crate::chopper::chopper::{DataSink, HeaderSink};
+use crate::chopper::header_graph::PinId;
+use crate::chopper::types::{FieldValue, Header, Row};
 use crate::error::{CliResult, Error};
 
 pub struct RowFilterGreaterValueConfig {
