@@ -68,8 +68,7 @@ impl FieldDescriptor {
         let display_hint = match reader.read_i32::<BigEndian>()? {
             -1 => DisplayHint::None,
             0 => DisplayHint::Timestamp,
-            _ =>
-                return Err(Error::Custom("FieldDescriptor -- missing display hint".to_owned()))
+            _ => return Err(Error::from("FieldDescriptor -- missing display hint"))
         };
 
         Ok(FieldDescriptor { name, type_string, display_hint })

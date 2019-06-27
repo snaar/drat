@@ -1,5 +1,4 @@
 extern crate chopper_lib;
-
 use chopper_lib::args::{Args, CliArgs};
 use chopper_lib::chopper::chopper::{DRDriver, Source};
 use chopper_lib::chopper::header_graph::{ChainId, HeaderChain, HeaderGraph, HeaderNode};
@@ -24,13 +23,12 @@ fn main() {
 pub fn split(input_factories: Vec<Box<InputFactory>>) -> CliResult<()> {
     let cli_args = parse_args()? ;
     let args = Args {cli_args, input_factories};
-    setup_test_graph(args)?.drive();
-    Ok(())
+    setup_test_graph(args)?.drive()
 }
 
 pub fn parse_args() -> CliResult<CliArgs> {
-    let input_1 = "./examples/files/hundred.dc".to_string();
-    let inputs = vec![input_1];
+    let input = "./examples/files/hundred.dc".to_string();
+    let inputs = vec![input];
     Ok(CliArgs::new(inputs, None, None, None)?)
 }
 

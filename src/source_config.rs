@@ -84,7 +84,7 @@ impl SourceConfig {
 
     pub fn reader(&mut self) -> CliResult<Box<chopper::Source+'static>> {
         let io_reader = self.get_io_reader()?;
-        Ok(self.generate_source(io_reader)?)
+        self.generate_source(io_reader)
     }
 
     fn get_io_reader(&mut self) -> CliResult<Box<io::Read+'static>> {
@@ -116,7 +116,7 @@ impl SourceConfig {
                         let err = io::Error::new(io::ErrorKind::Other, msg);
                         return Err(Error::Io(err))
                     }
-                    Some(r) => Ok(self.get_file_reader(r, &p)?)
+                    Some(r) => self.get_file_reader(r, &p)
                 }
             },
         }

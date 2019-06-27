@@ -5,7 +5,7 @@ use crate::chopper::types::{Header, Row};
 use crate::error::CliResult;
 
 pub trait DRDriver {
-    fn drive(&mut self);
+    fn drive(&mut self) -> CliResult<()>;
 }
 
 pub trait Source {

@@ -4,7 +4,7 @@ use crate::chopper::header_graph::{ChainId, HeaderGraph, NodeId, PinId};
 use crate::chopper::data_graph::{DataGraph, DataNode};
 use crate::chopper::types::{Header, Row};
 use crate::driver::source_row_buffer::SourceRowBuffer;
-use crate::error::{self, CliResult, Error};
+use crate::error::{CliResult, Error};
 
 pub struct Driver {
     sources: Vec<Box<Source>>,
@@ -138,7 +138,7 @@ impl Driver {
 }
 
 impl DRDriver for Driver {
-    fn drive(&mut self) {
-        error::handle_drive_error(self.drive())
+    fn drive(&mut self) -> CliResult<()> {
+        self.drive()
     }
 }

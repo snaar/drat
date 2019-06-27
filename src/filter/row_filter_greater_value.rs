@@ -52,8 +52,7 @@ impl DataSink for RowFilterGreaterValue {
                     return Ok(None)
                 }
             }
-            None =>
-                return Err(Error::from("RowFilterGreaterValue -- missing column index"))
+            None => return Err(Error::from("RowFilterGreaterValue -- missing column index"))
         }
         Ok(Some(row))
     }

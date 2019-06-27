@@ -1,5 +1,6 @@
-extern crate chopper_lib;
+extern crate backtrace;
 
+extern crate chopper_lib;
 use chopper_lib::chopper_cli::chopper_cli;
 use chopper_lib::error;
 use chopper_lib::input::input_factory::InputFactory;

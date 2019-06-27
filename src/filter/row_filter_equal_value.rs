@@ -50,8 +50,7 @@ impl DataSink for RowFilterEqualValue {
                     return Ok(None)
                 }
             }
-            None =>
-                return Err(Error::from("RowFilterEqualValue -- missing column index"))
+            None => return Err(Error::from("RowFilterEqualValue -- missing column index"))
         }
         Ok(Some(row))
     }

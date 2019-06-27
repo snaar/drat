@@ -2,6 +2,7 @@
 use std::fmt;
 use std::io;
 use std::process;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use clap;
 use csv;
@@ -50,12 +51,14 @@ impl fmt::Display for Error {
 
 impl From<clap::Error> for Error {
     fn from(err: clap::Error) -> Error {
+        print_backtrace();
         Error::CliParsing(err)
     }
 }
 
 impl From<csv::Error> for Error {
     fn from(err: csv::Error) -> Error {
+        print_backtrace();
         if !err.is_io_error() {
             return Error::Csv(err)
         }
@@ -68,18 +71,21 @@ impl From<csv::Error> for Error {
 
 impl From<io::Error> for Error {
     fn from(err: io::Error) -> Error {
+        print_backtrace();
         Error::Io(err)
     }
 }
 
 impl From<String> for Error {
     fn from(err: String) -> Error {
+        print_backtrace();
         Error::Custom(err)
     }
 }
 
 impl<'a> From<&'a str> for Error {
     fn from(err: &'a str) -> Error {
+        print_backtrace();
         Error::Custom(err.to_owned())
     }
 }
@@ -89,7 +95,7 @@ pub fn handle_drive_error(cli_result: CliResult<()>) {
         Ok(()) => process::exit(0),
         Err(e) => {
             match e {
-                Error::CliParsing(err) => err.exit(),
+                Error::CliParsing(err) => write_error!("{}", err),
                 Error::Csv(err) => write_error!("{}", err),
                 Error::Io(ref err) if err.kind() == io::ErrorKind::BrokenPipe => {},
                 Error::Io(err) => write_error!("{}", err),
@@ -98,4 +104,19 @@ pub fn handle_drive_error(cli_result: CliResult<()>) {
             process::exit(1)
         }
     }
+}
+
+static PRINT_BACKTRACE: AtomicBool = AtomicBool::new(false);
+
+pub fn turn_on_backtrace() {
+    PRINT_BACKTRACE.store(true, Ordering::Relaxed);
+}
+
+fn print_backtrace() {
+    if !PRINT_BACKTRACE.load(Ordering::Relaxed) {
+        return
+    }
+    use backtrace::Backtrace;
+    let bt = Backtrace::new();
+    eprintln!("{:?}", bt);
 }

@@ -5,7 +5,7 @@ use crate::args::{Args, CliArgs, DataRange};
 use crate::chopper::chopper::{DRDriver, Source};
 use crate::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use crate::chopper::types::Header;
-use crate::error::CliResult;
+use crate::error::{self, CliResult};
 use crate::input::input_factory::InputFactory;
 use crate::driver::driver::Driver;
 use crate::source_config::{self, CSVConfig};
@@ -15,8 +15,7 @@ pub fn chopper_cli(input_factories: Vec<Box<InputFactory>>) -> CliResult<()> {
     let cli_args = parse_cli_args()?;
     let args = Args {cli_args, input_factories};
     let mut driver = setup_graph(args)?;
-    driver.drive();
-    Ok(())
+    driver.drive()
 }
 
 pub fn parse_cli_args() -> CliResult<CliArgs> {
@@ -61,7 +60,14 @@ pub fn parse_cli_args() -> CliResult<CliArgs> {
             .takes_value(true)
             .default_value(",")
             .value_name("ARG"))
+        .arg(Arg::with_name("backtrace")
+            .long("backtrace")
+            .help("print backtrace"))
         .get_matches();
+
+    if matches.is_present("backtrace") {
+        error::turn_on_backtrace()
+    }
 
     let begin: Option<u64> = match matches.value_of("begin") {
         None => None,

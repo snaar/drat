@@ -29,7 +29,7 @@ impl CliArgs {
             Some(c) => c,
             None => CSVConfig::new_default()?
         };
-        Ok(CliArgs { inputs, output, data_range, csv_config})
+        Ok(CliArgs { inputs, output, data_range, csv_config })
     }
 }
 
@@ -43,8 +43,8 @@ impl Args {
                csv_config: CSVConfig, input_factories: Vec<Box<InputFactory>>) -> Self {
 
         let data_range = DataRange { begin, end };
-        let cli_args = CliArgs {inputs, output, data_range, csv_config};
-        Args { cli_args, input_factories}
+        let cli_args = CliArgs { inputs, output, data_range, csv_config };
+        Args { cli_args, input_factories }
     }
 
     pub fn create_configs(&mut self) -> CliResult<Vec<SourceConfig>> {
@@ -70,7 +70,9 @@ impl Args {
 }
 
 fn check_at_most_one_stdin(inputs: &[SourceConfig]) -> CliResult<()> {
-    let stdin_count = inputs.iter().filter(|input| input.is_stdin()).count();
+    let stdin_count = inputs.iter()
+                                    .filter(|input| input.is_stdin())
+                                    .count();
     if stdin_count > 1 {
         return Err(Error::from("At most one stdin input is allowed"))
     }

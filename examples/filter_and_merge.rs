@@ -15,16 +15,14 @@ use chopper_lib::write::factory;
 fn main() {
     let http: Http = Http;
     let file: FileInput = FileInput;
-    let vec: Vec<Box<InputFactory>> = vec![Box::new(http),
-                                           Box::new(file)];
+    let vec: Vec<Box<InputFactory>> = vec![Box::new(http), Box::new(file)];
     error::handle_drive_error(filter_and_merge(vec));
 }
 
 pub fn filter_and_merge(input_factories: Vec<Box<InputFactory>>) -> CliResult<()> {
     let cli_args = parse_args()?;
     let args = args::Args {cli_args, input_factories};
-    setup_graph(args)?.drive();
-    Ok(())
+    setup_graph(args)?.drive()
 }
 
 pub fn parse_args() -> CliResult<args::CliArgs> {

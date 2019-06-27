@@ -122,7 +122,9 @@ impl HeaderGraph {
 
         let node: &mut HeaderNode = match self.get_mut_chain(chain_id) {
             Some(c) => c.get_mut_nodes().get_mut(0).unwrap(),
-            None => return Err(Error::from(format!("HeaderGraph -- ChainId[{}] index out of bounds", chain_id)))
+            None =>
+                return Err(Error::from(
+                    format!("HeaderGraph -- ChainId[{}] index out of bounds", chain_id)))
         };
         match node {
             HeaderNode::MergeHeaderSink(mhs, header_to_process) => {

@@ -13,7 +13,6 @@ pub fn parse_into_delimiter(str: &str) -> CliResult<u8> {
             if c.is_ascii() {
                 Ok(c as u8)
             } else {
-
                 Err(Error::from(
                     format!("Error: specified delimiter '{}' is not an ASCII character.", c)))
             }
