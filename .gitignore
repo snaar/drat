@@ -1,4 +1,6 @@
-drat
+chop
+
+Cargo.lock
 
 .*.swp
 doc
