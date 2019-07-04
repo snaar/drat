@@ -3,10 +3,10 @@ use std::collections::HashMap;
 use std::io::{self, Read};
 use std::str;
 
-use crate::util::dc_util;
 use crate::chopper::chopper::Source;
 use crate::chopper::types::{FieldType, FieldValue, Header, Row};
 use crate::error::{CliResult, Error};
+use crate::util::dc_util;
 
 // map for field types
 lazy_static! {
@@ -14,7 +14,7 @@ lazy_static! {
                                       = dc_util::creat_field_string_map_name();
 }
 
-pub struct DCReader<R> {
+pub struct DCSource<R> {
     reader: io::BufReader<R>,
     header: Header,
     field_count: usize,
@@ -22,7 +22,7 @@ pub struct DCReader<R> {
     current_row: Row,
 }
 
-impl <R: io::Read> DCReader<R> {
+impl <R: io::Read> DCSource<R> {
     pub fn new(reader: R) -> CliResult<Self> {
         let mut reader = io::BufReader::new(reader);
 
@@ -55,7 +55,7 @@ impl <R: io::Read> DCReader<R> {
             let mut name = field_descriptor.get_name().to_string();
             // if field name is not given, assign default name - "col_x"
             if name.is_empty() {
-                name= format!("col_{}", i);
+                name = format!("col_{}", i);
             }
             field_names.push(name);
             field_types.push(map_field_string.get(field_descriptor.get_type_string()).unwrap().clone());
@@ -69,7 +69,7 @@ impl <R: io::Read> DCReader<R> {
         let timestamp = 0 as u64;
         let current_row = Row { timestamp, field_values };
 
-        Ok(DCReader { reader, header, field_count, bitset_byte_count, current_row })
+        Ok(DCSource { reader, header, field_count, bitset_byte_count, current_row })
     }
 
     fn next_row(&mut self) -> CliResult<Option<Row>> {
@@ -132,13 +132,13 @@ impl <R: io::Read> DCReader<R> {
     }
 }
 
-impl <R: io::Read> io::Read for DCReader<R> {
+impl <R: io::Read> io::Read for DCSource<R> {
     fn read(&mut self, into: &mut [u8]) -> io::Result<usize> {
         self.reader.read(into)
     }
 }
 
-impl <R: io::Read> Source for DCReader<R> {
+impl <R: io::Read> Source for DCSource<R> {
     fn header(&self) -> &Header {
         &self.header
     }

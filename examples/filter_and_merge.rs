@@ -1,52 +1,46 @@
-use chopper_lib::args;
-use chopper_lib::chopper::chopper::{DRDriver, Source};
+use chopper_lib::chopper::chopper::{ChDriver, Source};
 use chopper_lib::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
-use chopper_lib::chopper::types::{FieldValue, Header};
+use chopper_lib::chopper::types::{self, FieldValue, Header};
+use chopper_lib::driver::driver::Driver;
 use chopper_lib::driver::merge_join::MergeJoin;
 use chopper_lib::error::{self, CliResult};
-use chopper_lib::input::input_factory::InputFactory;
-use chopper_lib::input::file::FileInput;
-use chopper_lib::input::http::Http;
-use chopper_lib::driver::driver::Driver;
 use chopper_lib::filter::row_filter_equal_value::RowFilterEqualValue;
 use chopper_lib::filter::row_filter_greater_value::RowFilterGreaterValue;
+use chopper_lib::source::{source_factory::BosuSourceFactory};
+use chopper_lib::transport::transport_factory::TransportFactory;
+use chopper_lib::transport::file::FileInput;
+use chopper_lib::transport::http::Http;
 use chopper_lib::write::factory;
 
 fn main() {
     let http: Http = Http;
     let file: FileInput = FileInput;
-    let vec: Vec<Box<InputFactory>> = vec![Box::new(http), Box::new(file)];
-    error::handle_drive_error(filter_and_merge(vec));
+    let transport_factories: Vec<Box<TransportFactory>> = vec![Box::new(http), Box::new(file)];
+    error::handle_drive_error(filter_and_merge(transport_factories));
 }
 
-pub fn filter_and_merge(input_factories: Vec<Box<InputFactory>>) -> CliResult<()> {
-    let cli_args = parse_args()?;
-    let args = args::Args {cli_args, input_factories};
-    setup_graph(args)?.drive()
+fn filter_and_merge(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<()> {
+    let mut driver = setup_graph(transport_factories)?;
+    driver.drive()
 }
 
-pub fn parse_args() -> CliResult<args::CliArgs> {
-    let input_1 = "./examples/files/million.dc".to_string();
-    let input_2 = "./examples/files/million.dc".to_string();
+fn setup_graph(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<Box<ChDriver>> {
+    let input_1 = "./examples/files/million.dc";
+    let input_2 = "./examples/files/million.dc";
     let inputs = vec![input_1, input_2];
-    Ok(args::CliArgs::new(inputs, None, None, None)?)
-}
-
-pub fn setup_graph(mut args: args::Args) -> CliResult<Box<DRDriver>> {
+    let output = None;
     let column_int = "an_int".to_string();
     let value_1 = FieldValue::Int(999950);
     let column_double = "a_double".to_string();
     let value_2 = FieldValue::Double(50.0);
-    // sink writer
-    let output = None;
 
     // source reader and headers
-    let source_configs = args.create_configs()?;
-    let size = source_configs.len();
-    let mut sources: Vec<Box<Source>> = Vec::with_capacity(size);
-    let mut headers: Vec<Header> = Vec::with_capacity(size);
-    for mut s in source_configs {
-        let source = s.reader()?;
+    let mut bosu_source_factory
+        = BosuSourceFactory::new(None, None, transport_factories)?;
+    let mut sources: Vec<Box<Source>> = Vec::new();
+    let mut headers: Vec<Header> = Vec::new();
+    for i in inputs {
+        let source = bosu_source_factory.create_source_from_path(i)?;
         headers.push(source.header().clone());
         sources.push(source);
     }
@@ -75,5 +69,5 @@ pub fn setup_graph(mut args: args::Args) -> CliResult<Box<DRDriver>> {
 
     let graph = HeaderGraph::new(vec![chain_1, chain_2, chain_3]);
     Ok(Box::new(
-        Driver::new(sources, graph, args.cli_args.data_range, headers)?))
+        Driver::new(sources, graph, types::DATA_RANGE_DEFAULT, headers)?))
 }

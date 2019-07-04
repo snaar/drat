@@ -3,12 +3,12 @@ use std::path::PathBuf;
 
 use reqwest::{Url, Client};
 
-use crate::input::input_factory::InputFactory;
+use crate::transport::transport_factory::TransportFactory;
 
 #[derive(Clone)]
 pub struct Http;
 
-impl InputFactory for Http {
+impl TransportFactory for Http {
     fn can_open(&self, path: &PathBuf) -> bool {
         path.starts_with("http://") || path.starts_with("https://") || path.starts_with("ftp://")
     }
@@ -27,7 +27,7 @@ impl InputFactory for Http {
         Ok(Box::new(reader))
     }
 
-    fn box_clone(&self) -> Box<InputFactory> {
+    fn box_clone(&self) -> Box<TransportFactory> {
         Box::new((*self).clone())
     }
 

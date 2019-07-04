@@ -1,20 +1,19 @@
-use crate::args;
-use crate::chopper::chopper::{DRDriver, Source};
+use crate::chopper::chopper::{ChDriver, Source};
 use crate::chopper::header_graph::{ChainId, HeaderGraph, NodeId, PinId};
 use crate::chopper::data_graph::{DataGraph, DataNode};
-use crate::chopper::types::{Header, Row};
+use crate::chopper::types::{DataRange, Header, Row};
 use crate::driver::source_row_buffer::SourceRowBuffer;
 use crate::error::{CliResult, Error};
 
 pub struct Driver {
     sources: Vec<Box<Source>>,
     data_graph: DataGraph,
-    date_range: args::DataRange,
+    date_range: DataRange,
 }
 
 impl Driver {
     pub fn new(sources: Vec<Box<Source>>, header_graph: HeaderGraph,
-               date_range: args::DataRange, headers: Vec<Header>) -> CliResult<Self> {
+               date_range: DataRange, headers: Vec<Header>) -> CliResult<Self> {
 
         if sources.len() > header_graph.len() {
             return Err(Error::from(
@@ -137,7 +136,7 @@ impl Driver {
     }
 }
 
-impl DRDriver for Driver {
+impl ChDriver for Driver {
     fn drive(&mut self) -> CliResult<()> {
         self.drive()
     }

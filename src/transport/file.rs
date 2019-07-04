@@ -2,12 +2,12 @@ use std::fs;
 use std::io;
 use std::path::PathBuf;
 
-use crate::input::input_factory::InputFactory;
+use crate::transport::transport_factory::TransportFactory;
 
 #[derive(Clone)]
 pub struct FileInput;
 
-impl InputFactory for FileInput {
+impl TransportFactory for FileInput {
     fn can_open(&self, path: &PathBuf) -> bool {
         path.exists()
     }
@@ -23,7 +23,7 @@ impl InputFactory for FileInput {
         }
     }
 
-    fn box_clone(&self) -> Box<InputFactory> {
+    fn box_clone(&self) -> Box<TransportFactory> {
         Box::new((*self).clone())
     }
 

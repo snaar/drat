@@ -94,6 +94,7 @@ pub fn handle_drive_error(cli_result: CliResult<()>) {
     match cli_result {
         Ok(()) => process::exit(0),
         Err(e) => {
+            write_error!("");
             match e {
                 Error::CliParsing(err) => write_error!("{}", err),
                 Error::Csv(err) => write_error!("{}", err),

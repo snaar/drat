@@ -1,48 +1,41 @@
 extern crate chopper_lib;
-use chopper_lib::args::{Args, CliArgs};
-use chopper_lib::chopper::chopper::{DRDriver, Source};
+
+use chopper_lib::chopper::chopper::{ChDriver, Source};
 use chopper_lib::chopper::header_graph::{ChainId, HeaderChain, HeaderGraph, HeaderNode};
-use chopper_lib::chopper::types::Header;
-use chopper_lib::error::{self, CliResult};
-use chopper_lib::input::input_factory::InputFactory;
-use chopper_lib::input::file::FileInput;
-use chopper_lib::input::http::Http;
+use chopper_lib::chopper::types::{self, Header};
 use chopper_lib::driver::{driver::Driver, split::Split};
+use chopper_lib::error::{self, CliResult};
+use chopper_lib::source::{source_factory::BosuSourceFactory};
+use chopper_lib::transport::transport_factory::TransportFactory;
+use chopper_lib::transport::file::FileInput;
+use chopper_lib::transport::http::Http;
 use chopper_lib::write::factory;
 
 fn main() {
     let http: Http = Http;
     let file: FileInput = FileInput;
-    let vec: Vec<Box<InputFactory>> = vec![
-        Box::new(http),
-        Box::new(file)];
-    error::handle_drive_error(split(vec));
+    let transport_factories: Vec<Box<TransportFactory>> = vec![Box::new(http), Box::new(file)];
+    error::handle_drive_error(split(transport_factories));
 }
 
-
-pub fn split(input_factories: Vec<Box<InputFactory>>) -> CliResult<()> {
-    let cli_args = parse_args()? ;
-    let args = Args {cli_args, input_factories};
-    setup_test_graph(args)?.drive()
+fn split(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<()> {
+    let mut driver = setup_test_graph(transport_factories)?;
+    driver.drive()
 }
 
-pub fn parse_args() -> CliResult<CliArgs> {
-    let input = "./examples/files/hundred.dc".to_string();
+fn setup_test_graph(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<Box<ChDriver>> {
+    let input = "./examples/files/hundred.dc";
     let inputs = vec![input];
-    Ok(CliArgs::new(inputs, None, None, None)?)
-}
-
-pub fn setup_test_graph(mut args: Args) -> CliResult<Box<DRDriver>> {
-    // sink writer
     let output_1 = None;
     let output_2 = None;
 
     // source reader and headers
-    let source_configs = args.create_configs()?;
-    let mut sources: Vec<Box<Source>> = Vec::with_capacity(source_configs.len());
-    let mut headers: Vec<Header> = Vec::with_capacity(source_configs.len());
-    for mut s in source_configs {
-        let source = s.reader()?;
+    let mut bosu_source_factory
+        = BosuSourceFactory::new(None, None, transport_factories)?;
+    let mut sources: Vec<Box<Source>> = Vec::new();
+    let mut headers: Vec<Header> = Vec::new();
+    for i in inputs {
+        let source = bosu_source_factory.create_source_from_path(i)?;
         headers.push(source.header().clone());
         sources.push(source);
     }
@@ -66,5 +59,5 @@ pub fn setup_test_graph(mut args: Args) -> CliResult<Box<DRDriver>> {
 
     let graph = HeaderGraph::new(vec![chain_1, chain_2, chain_3]);
     Ok(Box::new(
-        Driver::new(sources, graph, args.cli_args.data_range, headers)?))
+        Driver::new(sources, graph, types::DATA_RANGE_DEFAULT, headers)?))
 }

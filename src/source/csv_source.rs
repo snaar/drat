@@ -3,9 +3,9 @@ use std::io;
 
 use crate::chopper::chopper::Source;
 use crate::chopper::types::{FieldType, FieldValue, Header, Nanos, Row};
-use crate::error::CliResult;
+use crate::error::{CliResult, Error};
 
-pub struct CSVReader<R> {
+pub struct CSVSource<R> {
     reader: csv::Reader<R>,
     header: Header,
     timestamp_column: usize,
@@ -13,7 +13,7 @@ pub struct CSVReader<R> {
     has_next_row: bool,
 }
 
-impl <R: io::Read> CSVReader<R> {
+impl <R: io::Read> CSVSource<R> {
     pub fn new(mut reader: csv::Reader<R>, timestamp_column: usize) -> CliResult<Self> {
         // get field names if available
         let mut field_names: Vec<String> = Vec::new();
@@ -38,7 +38,7 @@ impl <R: io::Read> CSVReader<R> {
 
         let field_types: Vec<FieldType> = vec![FieldType::String; field_count];
         let header: Header = Header::new(field_names, field_types);
-        let mut csv_reader = CSVReader { reader, header, timestamp_column, next_row, has_next_row: true };
+        let mut csv_reader = CSVSource { reader, header, timestamp_column, next_row, has_next_row: true };
 
         // update next_row with first row
         csv_reader.update_row(first_row)?;
@@ -50,7 +50,12 @@ impl <R: io::Read> CSVReader<R> {
         let mut current_column = 0;
         for i in next_record.iter() {
             if current_column == self.timestamp_column {
-                self.next_row.timestamp = i.parse::<Nanos>().unwrap();
+                self.next_row.timestamp = match i.parse::<Nanos>() {
+                    Ok(t) => t,
+                    Err(_) =>
+                        return Err(Error::from(format!("Cannot parse timestamp value - {:?}. \
+                            If the csv file has header, please turn on csv header option.", i)))
+                };
             }
             self.next_row.field_values[current_column] = FieldValue::String(i.to_string());
             current_column += 1;
@@ -72,7 +77,7 @@ impl <R: io::Read> CSVReader<R> {
     }
 }
 
-impl <R: io::Read> Source for CSVReader<R> {
+impl <R: io::Read> Source for CSVSource<R> {
     fn header(&self) -> &Header {
         &self.header
     }

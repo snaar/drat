@@ -4,7 +4,7 @@ use crate::chopper::header_graph::{ChainId, NumOfHeaderToProcess, PinId};
 use crate::chopper::types::{Header, Row};
 use crate::error::CliResult;
 
-pub trait DRDriver {
+pub trait ChDriver {
     fn drive(&mut self) -> CliResult<()>;
 }
 

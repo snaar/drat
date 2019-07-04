@@ -5,6 +5,14 @@ use crate::error::Error;
 
 pub type Nanos = u64;
 
+#[derive(Copy, Clone)]
+pub struct DataRange {
+    pub begin: Option<u64>,
+    pub end: Option<u64>,
+}
+
+pub static DATA_RANGE_DEFAULT: DataRange = DataRange { begin: None, end: None };
+
 #[derive(Clone)]
 pub struct Header {
     field_names: Vec<String>,

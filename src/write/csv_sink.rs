@@ -4,9 +4,8 @@ use std::path::PathBuf;
 
 use crate::chopper::chopper::{DataSink, HeaderSink};
 use crate::chopper::header_graph::PinId;
-use crate::chopper::types::{FieldType, FieldValue, Header, Row};
+use crate::chopper::types::{FieldValue, Header, Row};
 use crate::error::{CliResult, Error};
-use crate::util::dc_util;
 
 pub struct CSVSink {
     writer: BufWriter<Box<io::Write+'static>>,
@@ -32,57 +31,16 @@ impl CSVSink {
     }
 
     fn write_csv_header(&mut self, header: &mut Header) -> CliResult<()> {
-        Self::write_field_name(&mut self.writer, header)?;
-        Self::write_field_type(&mut self.writer, header)?;
-        Ok(())
-    }
-
-    fn write_field_name(writer: &mut BufWriter<Box<io::Write+'static>>, header: &mut Header) -> CliResult<()> {
+        let writer = &mut self.writer;
         let field_name = header.field_names().clone();
         let mut first = true;
+        write!(writer, "timestamp,")?;
         for name in field_name {
             if first {
                 write!(writer, "{}", name)?;
                 first = false;
             } else {
                 write!(writer, ",{}", name)?;
-            }
-        }
-        write!(writer, "\n")?;
-        Ok(())
-    }
-
-    fn write_field_type(writer: &mut BufWriter<Box<io::Write+'static>>, header: &mut Header) -> CliResult<()> {
-        let field_types = header.field_types().clone();
-        let field_string_map = &dc_util::FIELD_STRING_MAP_TYPE;
-        let mut first = true;
-
-        for field_type in field_types {
-            let type_string = match field_type {
-                FieldType::Boolean =>
-                    return Err(Error::from("CSVSink -- boolean field type is not supported")),
-                FieldType::Byte => field_string_map.get(&FieldType::Byte),
-                FieldType::ByteBuf =>
-                    return Err(Error::from("CSVSink -- ByteBuffer field type is not supported")),
-                FieldType::Char => field_string_map.get(&FieldType::Char),
-                FieldType::Double => field_string_map.get(&FieldType::Double),
-                FieldType::Float => field_string_map.get(&FieldType::Float),
-                FieldType::Int => field_string_map.get(&FieldType::Int),
-                FieldType::Long => field_string_map.get(&FieldType::Long),
-                FieldType::Short => field_string_map.get(&FieldType::Short),
-                FieldType::String => field_string_map.get(&FieldType::String),
-            };
-            match type_string {
-                Some(t) => {
-                    if first {
-                        write!(writer, "{}", t)?;
-                        first = false;
-                    } else {
-                        write!(writer, ",{}", t)?;
-                    }
-                },
-                None =>
-                    return Err(Error::from("CSVSink -- field type missing"))
             }
         }
         write!(writer, "\n")?;

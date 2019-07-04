@@ -1,42 +1,40 @@
-use chopper_lib::args;
-use chopper_lib::chopper::chopper::{DRDriver, Source};
+use chopper_lib::chopper::chopper::{ChDriver, Source};
 use chopper_lib::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
-use chopper_lib::chopper::types::Header;
-use chopper_lib::error::{self, CliResult};
-use chopper_lib::input::input_factory::InputFactory;
-use chopper_lib::input::file::FileInput;
-use chopper_lib::input::http::Http;
+use chopper_lib::chopper::types::{self, Header};
 use chopper_lib::driver::driver::Driver;
+use chopper_lib::error::{self, CliResult};
+use chopper_lib::source::{csv_config::CSVConfig, source_factory::BosuSourceFactory};
+use chopper_lib::transport::file::FileInput;
+use chopper_lib::transport::http::Http;
+use chopper_lib::transport::transport_factory::TransportFactory;
 use chopper_lib::write::factory;
 
 fn main() {
     let http: Http = Http;
     let file: FileInput = FileInput;
-    let vec: Vec<Box<InputFactory>> = vec![Box::new(http), Box::new(file)];
-    error::handle_drive_error(simple_example(vec));
+    let transport_factories: Vec<Box<TransportFactory>> = vec![Box::new(http), Box::new(file)];
+    error::handle_drive_error(simple_example(transport_factories));
 }
 
-pub fn simple_example(input_factories: Vec<Box<InputFactory>>) -> CliResult<()> {
-    let cli_args = parse_args()?;
-    let args = args::Args {cli_args, input_factories};
-    setup_graph(args)?.drive()
+fn simple_example(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<()> {
+    let mut driver = setup_graph(transport_factories)?;
+    driver.drive()
 }
 
-pub fn parse_args() -> CliResult<args::CliArgs> {
-    let input = "./examples/files/hundred.dc".to_string();
+fn setup_graph(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<Box<ChDriver>> {
+//    let mut io_config = IoConfig::new(None, None, transport_factories)?;
+    let csv_config = CSVConfig::new(",", true, 0, true)?;
+    let input = "./examples/files/hundred.csv";
     let inputs = vec![input];
-    Ok(args::CliArgs::new(inputs, None, None, None)?)
-}
-
-pub fn setup_graph(mut args: args::Args) -> CliResult<Box<DRDriver>> {
-    // sink writer
     let output = None;
 
-    let source_configs = args.create_configs().unwrap();
-    let mut sources: Vec<Box<Source>> = Vec::with_capacity(source_configs.len());
-    let mut headers: Vec<Header> = Vec::with_capacity(source_configs.len());
-    for mut s in source_configs {
-        let source = s.reader().unwrap();
+    let mut bosu_source_factory
+        = BosuSourceFactory::new(Some(csv_config), None, transport_factories)?;
+    let mut sources: Vec<Box<Source>> = Vec::new();
+    let mut headers: Vec<Header> = Vec::new();
+    for i in inputs {
+        let source
+            = bosu_source_factory.create_source_from_path(i)?;
         headers.push(source.header().clone());
         sources.push(source);
     }
@@ -47,5 +45,5 @@ pub fn setup_graph(mut args: args::Args) -> CliResult<Box<DRDriver>> {
 
     let graph = HeaderGraph::new(vec![chain]);
     Ok(Box::new(
-        Driver::new(sources, graph, args.cli_args.data_range, headers)?))
+        Driver::new(sources, graph, types::DATA_RANGE_DEFAULT, headers)?))
 }

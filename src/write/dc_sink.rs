@@ -3,11 +3,11 @@ use std::fs::File;
 use std::io::{self, Write, BufWriter};
 use std::path::PathBuf;
 
-use crate::util::dc_util;
 use crate::chopper::chopper::{DataSink, HeaderSink};
 use crate::chopper::header_graph::PinId;
 use crate::chopper::types::{FieldType, FieldValue, Header, Row};
 use crate::error::{CliResult, Error};
+use crate::util::dc_util;
 
 pub struct DCSink {
     writer: BufWriter<Box<io::Write+'static>>,
