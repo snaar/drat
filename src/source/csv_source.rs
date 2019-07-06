@@ -1,9 +1,12 @@
-use csv;
 use std::io;
+
+use csv;
+use csv::Trim;
 
 use crate::chopper::chopper::Source;
 use crate::chopper::types::{FieldType, FieldValue, Header, Nanos, Row};
 use crate::error::{CliResult, Error};
+use crate::source::csv_config::CSVConfig;
 
 pub struct CSVSource<R> {
     reader: csv::Reader<R>,
@@ -14,7 +17,15 @@ pub struct CSVSource<R> {
 }
 
 impl <R: io::Read> CSVSource<R> {
-    pub fn new(mut reader: csv::Reader<R>, timestamp_column: usize) -> CliResult<Self> {
+    pub fn new(reader: R, csv_config: &CSVConfig) -> CliResult<Self> {
+        let mut reader = csv::ReaderBuilder::new()
+            .delimiter(csv_config.delimiter())
+            .has_headers(csv_config.has_headers())
+            .trim(Trim::All)
+            .from_reader(reader);
+
+        let timestamp_column = csv_config.timestamp_col_index();
+
         // get field names if available
         let mut field_names: Vec<String> = Vec::new();
         if reader.has_headers() {
@@ -23,15 +34,17 @@ impl <R: io::Read> CSVSource<R> {
                 field_names.push(i.to_string());
             }
         }
+
         // get first row and initialize next_row
         let first_row = reader.records().next().unwrap()?;
         let field_count = first_row.len();
-        // if field name is not given, assign default name - "col_x"
         if !reader.has_headers() {
+            // if field name is not given, assign default name - "col_x"
             for i in 0..field_count {
                 field_names.push(format!("col_{}", i));
             }
         }
+
         let timestamp: Nanos = 0;
         let field_values: Vec<FieldValue> = vec![FieldValue::None; field_count];
         let next_row = Row { timestamp, field_values };

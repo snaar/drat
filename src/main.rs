@@ -1,4 +1,3 @@
-extern crate backtrace;
 extern crate chopper_lib;
 
 use chopper_lib::chopper_cli::chopper_cli;

@@ -23,12 +23,6 @@ impl SourceFactory for CSVFactory {
     }
 
     fn create_source(&mut self, reader: Box<io::Read>) -> CliResult<Box<Source+'static>> {
-        let csv_config = &mut self.csv_config;
-        let csv_reader_arg = csv::ReaderBuilder::new()
-            .delimiter(csv_config.delimiter())
-            .has_headers(csv_config.has_headers())
-            .from_reader(reader);
-        Ok(Box::new(CSVSource::new(
-            csv_reader_arg, csv_config.timestamp_col_index())?))
+        Ok(Box::new(CSVSource::new(reader, &self.csv_config)?))
     }
 }

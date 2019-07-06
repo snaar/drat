@@ -91,7 +91,7 @@ impl BosuSourceFactory {
         match io_reader {
             None => {
                 let msg = format!("Cannot open file {:?}. \
-                        Check if the path is valid and/or if a right factory is provided", &path);
+                        Check if the path is valid and/or if a right factory is provided.", &path);
                 let err = io::Error::new(io::ErrorKind::Other, msg);
                 Err(Error::Io(err))
             }
