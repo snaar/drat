@@ -6,9 +6,9 @@ use chopper_lib::chopper::types::{self, Header};
 use chopper_lib::driver::{driver::Driver, split::Split};
 use chopper_lib::error::{self, CliResult};
 use chopper_lib::source::{source_factory::BosuSourceFactory};
-use chopper_lib::transport::transport_factory::TransportFactory;
 use chopper_lib::transport::file::FileInput;
 use chopper_lib::transport::http::Http;
+use chopper_lib::transport::transport_factory::TransportFactory;
 use chopper_lib::write::factory;
 
 fn main() {

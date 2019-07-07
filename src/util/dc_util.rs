@@ -1,9 +1,10 @@
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::collections::HashMap;
-use std::io::{self, Write, BufWriter};
+use std::io::{self, BufWriter, Write};
 use std::string::String;
 
-use crate::chopper::types::{FieldType};
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+
+use crate::chopper::types::FieldType;
 use crate::error::{CliResult, Error};
 
 pub const MAGIC_NUM: u64 = 0x44434154;

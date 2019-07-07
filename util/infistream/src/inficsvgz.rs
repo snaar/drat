@@ -1,11 +1,11 @@
-use futures::Stream;
-use futures::Poll;
-use futures::Async;
-use bytes::Bytes;
 use actix_web::Error;
-use std::io::prelude::*;
+use bytes::Bytes;
 use flate2::Compression;
 use flate2::write;
+use futures::Async;
+use futures::Poll;
+use futures::Stream;
+use std::io::prelude::*;
 
 pub struct InfiCSVGZ {
     timestamp: u64,

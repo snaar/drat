@@ -1,7 +1,8 @@
-use byteorder::{BigEndian, ReadBytesExt};
 use std::collections::HashMap;
 use std::io::{self, Read};
 use std::str;
+
+use byteorder::{BigEndian, ReadBytesExt};
 
 use crate::chopper::chopper::Source;
 use crate::chopper::types::{FieldType, FieldValue, Header, Row};

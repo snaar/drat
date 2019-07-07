@@ -1,7 +1,8 @@
-use byteorder::{BigEndian, WriteBytesExt};
 use std::fs::File;
-use std::io::{self, Write, BufWriter};
+use std::io::{self, BufWriter, Write};
 use std::path::PathBuf;
+
+use byteorder::{BigEndian, WriteBytesExt};
 
 use crate::chopper::chopper::{DataSink, HeaderSink};
 use crate::chopper::header_graph::PinId;

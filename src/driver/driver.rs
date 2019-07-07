@@ -1,6 +1,6 @@
 use crate::chopper::chopper::{ChDriver, Source};
-use crate::chopper::header_graph::{ChainId, HeaderGraph, NodeId, PinId};
 use crate::chopper::data_graph::{DataGraph, DataNode};
+use crate::chopper::header_graph::{ChainId, HeaderGraph, NodeId, PinId};
 use crate::chopper::types::{DataRange, Header, Row};
 use crate::driver::source_row_buffer::SourceRowBuffer;
 use crate::error::{CliResult, Error};

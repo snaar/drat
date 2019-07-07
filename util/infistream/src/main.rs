@@ -1,20 +1,20 @@
 extern crate actix;
 extern crate actix_web;
+extern crate bytes;
 extern crate env_logger;
 extern crate flate2;
 extern crate futures;
-extern crate bytes;
 
 use actix_web::{
-    middleware, server, App, Body, Error, HttpRequest, HttpResponse,
+    App, Body, Error, HttpRequest, HttpResponse, middleware, server,
 };
 use futures::Future;
 use futures::future::result;
+use inficsv::InfiCSV;
+use inficsvgz::InfiCSVGZ;
 
 mod inficsv;
 mod inficsvgz;
-use inficsv::InfiCSV;
-use inficsvgz::InfiCSVGZ;
 
 fn index(_req: &HttpRequest) -> Box<Future<Item = HttpResponse, Error = Error>> {
     Box::new(result(Ok(HttpResponse::Ok().content_type("text/html").body(

@@ -1,8 +1,8 @@
-use futures::Stream;
-use futures::Poll;
-use futures::Async;
-use bytes::Bytes;
 use actix_web::Error;
+use bytes::Bytes;
+use futures::Async;
+use futures::Poll;
+use futures::Stream;
 
 pub struct InfiCSV {
     timestamp: u64,

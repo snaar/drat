@@ -1,5 +1,5 @@
-use crate::chopper::data_graph::{DataGraph, DataNode};
 use crate::chopper::chopper::{HeaderSink, MergeHeaderSink, SplitHeaderSink};
+use crate::chopper::data_graph::{DataGraph, DataNode};
 use crate::chopper::types::Header;
 use crate::error::{CliResult, Error};
 

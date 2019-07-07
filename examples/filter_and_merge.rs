@@ -7,9 +7,9 @@ use chopper_lib::error::{self, CliResult};
 use chopper_lib::filter::row_filter_equal_value::RowFilterEqualValue;
 use chopper_lib::filter::row_filter_greater_value::RowFilterGreaterValue;
 use chopper_lib::source::{source_factory::BosuSourceFactory};
-use chopper_lib::transport::transport_factory::TransportFactory;
 use chopper_lib::transport::file::FileInput;
 use chopper_lib::transport::http::Http;
+use chopper_lib::transport::transport_factory::TransportFactory;
 use chopper_lib::write::factory;
 
 fn main() {

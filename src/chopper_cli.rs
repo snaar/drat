@@ -1,4 +1,4 @@
-use clap::{Arg, App};
+use clap::{App, Arg};
 use clap::crate_version;
 
 use crate::chopper::chopper::{ChDriver, Source};
