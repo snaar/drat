@@ -13,18 +13,17 @@ fn main() {
     let http: Http = Http;
     let file: FileInput = FileInput;
     let transport_factories: Vec<Box<TransportFactory>> = vec![Box::new(http), Box::new(file)];
-    error::handle_drive_error(simple_example(transport_factories));
+    error::handle_drive_error(compressed_example(transport_factories));
 }
 
-fn simple_example(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<()> {
+fn compressed_example(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<()> {
     let mut driver = setup_graph(transport_factories)?;
     driver.drive()
 }
 
 fn setup_graph(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<Box<ChDriver>> {
-//    let mut io_config = IoConfig::new(None, None, transport_factories)?;
     let csv_config = CSVConfig::new(",", true, 0, true)?;
-    let input = "./examples/files/hundred.csv";
+    let input = "./examples/files/uspop_time.csv.gz";
     let inputs = vec![input];
     let output = None;
 

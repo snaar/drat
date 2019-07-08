@@ -50,13 +50,26 @@ impl BosuSourceFactory {
     }
 
     fn create_source(&mut self, path: &str, file_extension_override: Option<&str>) -> CliResult<Box<Source+'static>> {
-        let path = PathBuf::from(path);
+        let mut path = PathBuf::from(path);
         let reader = self.create_io_reader(&path)?;
         let file_extension = match file_extension_override {
-            Some(x) => x,
-            None => path.extension().unwrap().to_str().unwrap()
+            Some(x) => x.to_string(),
+            None => {
+                if path.extension().is_none() {
+                    return Err(Error::from(format!("Cannot find file type for [{:?}]. \
+                    Please specify file type as file extension or use parameter file_type.", path)))
+                };
+
+                let mut extension: String = "".to_string();
+                while path.extension().is_some() {
+                    let string = path.extension().unwrap().to_str().unwrap();
+                    extension = format!(".{}{}", string, extension);
+                    path = PathBuf::from(path.file_stem().unwrap());
+                }
+                extension
+            }
         };
-        self.create_source_from_reader(reader, file_extension)
+        self.create_source_from_reader(reader, &file_extension)
     }
 
     fn create_source_from_reader(&mut self, mut reader: Box<io::Read>, file_extension: &str) -> CliResult<Box<Source+'static>> {

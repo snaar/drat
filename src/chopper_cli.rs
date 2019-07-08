@@ -6,16 +6,18 @@ use crate::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use crate::chopper::types::{DataRange, Header};
 use crate::driver::driver::Driver;
 use crate::error::{self, CliResult};
-use crate::source::{csv_config::{self, CSVConfig}, source_factory::BosuSourceFactory};
+use crate::source::{csv_config::{self, CSVConfig}, source_factory::{BosuSourceFactory, SourceFactory}};
 use crate::transport::transport_factory::TransportFactory;
 use crate::write::factory;
 
-pub fn chopper_cli(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<()> {
-    let mut driver = parse_cli_args(transport_factories)?;
+pub fn chopper_cli(transport_factories: Vec<Box<TransportFactory>>,
+                   source_factories: Option<Vec<Box<SourceFactory>>>) -> CliResult<()> {
+    let mut driver = parse_cli_args(transport_factories, source_factories)?;
     driver.drive()
 }
 
-pub fn parse_cli_args(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<Box<ChDriver>> {
+pub fn parse_cli_args(transport_factories: Vec<Box<TransportFactory>>,
+                      source_factories: Option<Vec<Box<SourceFactory>>>) -> CliResult<Box<ChDriver>> {
     let matches = App::new("drat")
         .version(crate_version!())
         .about("drat is a simple streaming time series tool")
@@ -102,16 +104,18 @@ pub fn parse_cli_args(transport_factories: Vec<Box<TransportFactory>>) -> CliRes
     let csv_config
         = CSVConfig::new(delimiter, has_headers, timestamp_column_index, print_timestamp)?;
 
-    setup_graph(inputs, outputs, transport_factories, data_range, csv_config)
+    setup_graph(inputs, outputs, transport_factories, source_factories, data_range, csv_config)
 }
 
 pub fn setup_graph(inputs: Option<Vec<&str>>,
                    output: Option<String>,
                    transport_factories: Vec<Box<TransportFactory>>,
-                   data_range: DataRange, csv_config: CSVConfig) -> CliResult<Box<ChDriver>> {
+                   source_factories: Option<Vec<Box<SourceFactory>>>,
+                   data_range: DataRange,
+                   csv_config: CSVConfig) -> CliResult<Box<ChDriver>> {
 
     let mut bosu_source_factory
-        = BosuSourceFactory::new(Some(csv_config), None, transport_factories)?;
+        = BosuSourceFactory::new(Some(csv_config), source_factories, transport_factories)?;
     let mut sources: Vec<Box<Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     match inputs {

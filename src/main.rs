@@ -9,8 +9,9 @@ use chopper_lib::transport::transport_factory::TransportFactory;
 fn main() {
     let http: Http = Http;
     let file: FileInput = FileInput;
-    let vec: Vec<Box<TransportFactory>> = vec![
+    let transport_factories: Vec<Box<TransportFactory>> = vec![
         Box::new(http),
         Box::new(file)];
-    error::handle_drive_error(chopper_cli(vec));
+    let source_factories = None;
+    error::handle_drive_error(chopper_cli(transport_factories, source_factories));
 }
