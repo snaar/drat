@@ -11,9 +11,9 @@ clap = "2"
 csv = "1"
 dtoa = "0.4"
 flate2 = "1"
-lazy_static = "1.2.0"
+lazy_static = "1"
 lzf = "0.3"
-reqwest = "0.8"
+reqwest = "0.9"
 backtrace = "0.3"
 
 [lib]
