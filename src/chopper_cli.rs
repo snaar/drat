@@ -37,8 +37,8 @@ pub fn parse_cli_args(transport_factories: Vec<Box<TransportFactory>>) -> CliRes
             .help("csv only: specify the timestamp column index [default: 0]")
             .takes_value(true)
             .value_name("ARG"))
-        .arg(Arg::with_name("transport")
-            .help("sets the transport files to use; \n\
+        .arg(Arg::with_name("input")
+            .help("sets the input files to use; \n\
             if missing, stdin will be used")
             .multiple(true))
         .arg(Arg::with_name("output")
@@ -49,7 +49,7 @@ pub fn parse_cli_args(transport_factories: Vec<Box<TransportFactory>>) -> CliRes
             .value_name("FILE"))
         .arg(Arg::with_name("has_headers")
             .long("has-headers")
-            .help("csv only: transport files have headers"))
+            .help("csv only: input files have headers"))
         .arg(Arg::with_name("delimiter")
             .long("delimiter")
             .short("d")
@@ -82,7 +82,7 @@ pub fn parse_cli_args(transport_factories: Vec<Box<TransportFactory>>) -> CliRes
         None => csv_config::TIMESTAMP_COL_DEFAULT,
         Some(t) => t.parse::<usize>().unwrap()
     };
-    let inputs = match matches.values_of("transport") {
+    let inputs = match matches.values_of("input") {
         None => None,
         Some(i) => {
             let mut inputs_vec: Vec<&str> = Vec::new();
