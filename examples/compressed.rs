@@ -3,7 +3,7 @@ use chopper_lib::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper_lib::chopper::types::{self, Header};
 use chopper_lib::driver::driver::Driver;
 use chopper_lib::error::{self, CliResult};
-use chopper_lib::source::{csv_config::CSVConfig, source_factory::BosuSourceFactory};
+use chopper_lib::source::{csv_configs::CSVInputConfig, source_factory::BosuSourceFactory};
 use chopper_lib::transport::file::FileInput;
 use chopper_lib::transport::http::Http;
 use chopper_lib::transport::transport_factory::TransportFactory;
@@ -22,7 +22,7 @@ fn compressed_example(transport_factories: Vec<Box<TransportFactory>>) -> CliRes
 }
 
 fn setup_graph(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<Box<ChDriver>> {
-    let csv_config = CSVConfig::new(",", true, 0, true)?;
+    let csv_config = CSVInputConfig::new(",", true, 0)?;
     let input = "./examples/files/uspop_time.csv.gz";
     let inputs = vec![input];
     let output = None;
@@ -38,7 +38,7 @@ fn setup_graph(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<Box
         sources.push(source);
     }
 
-    let header_sink = factory::new_header_sink(output)?;
+    let header_sink = factory::new_header_sink(output, None)?;
     let node_output = HeaderNode::HeaderSink(header_sink);
     let chain = HeaderChain::new(vec![node_output]);
 

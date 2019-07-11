@@ -6,7 +6,7 @@ use csv::Trim;
 use crate::chopper::chopper::Source;
 use crate::chopper::types::{FieldType, FieldValue, Header, Nanos, Row};
 use crate::error::{CliResult, Error};
-use crate::source::csv_config::CSVConfig;
+use crate::source::csv_configs::CSVInputConfig;
 
 pub struct CSVSource<R> {
     reader: csv::Reader<R>,
@@ -17,10 +17,10 @@ pub struct CSVSource<R> {
 }
 
 impl <R: io::Read> CSVSource<R> {
-    pub fn new(reader: R, csv_config: &CSVConfig) -> CliResult<Self> {
+    pub fn new(reader: R, csv_config: &CSVInputConfig) -> CliResult<Self> {
         let mut reader = csv::ReaderBuilder::new()
             .delimiter(csv_config.delimiter())
-            .has_headers(csv_config.has_headers())
+            .has_headers(csv_config.has_header())
             .trim(Trim::All)
             .from_reader(reader);
 
@@ -97,5 +97,9 @@ impl <R: io::Read> Source for CSVSource<R> {
 
     fn next_row(&mut self) -> CliResult<Option<Row>> {
         self.next_row()
+    }
+
+    fn has_native_timestamp_column(&self) -> bool {
+        false
     }
 }

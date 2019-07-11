@@ -5,7 +5,7 @@ use chopper_lib::chopper::header_graph::{ChainId, HeaderChain, HeaderGraph, Head
 use chopper_lib::chopper::types::{self, Header};
 use chopper_lib::driver::{driver::Driver, split::Split};
 use chopper_lib::error::{self, CliResult};
-use chopper_lib::source::{source_factory::BosuSourceFactory};
+use chopper_lib::source::source_factory::BosuSourceFactory;
 use chopper_lib::transport::file::FileInput;
 use chopper_lib::transport::http::Http;
 use chopper_lib::transport::transport_factory::TransportFactory;
@@ -48,12 +48,12 @@ fn setup_test_graph(transport_factories: Vec<Box<TransportFactory>>) -> CliResul
     let chain_1 = HeaderChain::new(vec![node_split_sink]);
 
     // sink chain 2
-    let header_sink_1 = factory::new_header_sink(output_1)?;
+    let header_sink_1 = factory::new_header_sink(output_1, None)?;
     let node_output_1 = HeaderNode::HeaderSink(header_sink_1);
     let chain_2 = HeaderChain::new(vec![node_output_1]);
 
     // sink chain 3
-    let header_sink_2 = factory::new_header_sink(output_2)?;
+    let header_sink_2 = factory::new_header_sink(output_2, None)?;
     let node_output_2 = HeaderNode::HeaderSink(header_sink_2);
     let chain_3 = HeaderChain::new(vec![node_output_2]);
 

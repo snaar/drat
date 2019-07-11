@@ -16,7 +16,7 @@ pub static DATA_RANGE_DEFAULT: DataRange = DataRange { begin: None, end: None };
 #[derive(Clone)]
 pub struct Header {
     field_names: Vec<String>,
-    field_types: Vec<FieldType>
+    field_types: Vec<FieldType>,
 }
 
 impl PartialEq for Header {

@@ -3,7 +3,8 @@ use std::path::PathBuf;
 
 use crate::chopper::chopper::Source;
 use crate::error::{CliResult, Error};
-use crate::source::{csv_config::CSVConfig, csv_factory::CSVFactory, dc_factory::DCFactory, decompress};
+use crate::source::csv_configs::CSVInputConfig;
+use crate::source::{csv_factory::CSVFactory, dc_factory::DCFactory, decompress};
 use crate::transport::transport_factory::TransportFactory;
 
 pub trait SourceFactory {
@@ -17,15 +18,16 @@ pub struct BosuSourceFactory {
 }
 
 impl BosuSourceFactory {
-    pub fn new(csv_config: Option<CSVConfig>,
+    pub fn new(csv_input_config: Option<CSVInputConfig>,
                user_source_factories: Option<Vec<Box<SourceFactory>>>,
                transport_factories: Vec<Box<TransportFactory>>) -> CliResult<Self> {
 
-        let csv_config = match csv_config {
+        let csv_input_config = match csv_input_config {
             Some(c) => c,
-            None => CSVConfig::new_default()?
+            None => CSVInputConfig::new_default()?
         };
-        let csv_factory = CSVFactory::new(csv_config);
+
+        let csv_factory = CSVFactory::new(csv_input_config);
         let dc_factory = DCFactory::new();
         let mut source_factories: Vec<Box<SourceFactory>> = vec![Box::new(csv_factory), Box::new(dc_factory)];
         if user_source_factories.is_some() {

@@ -6,15 +6,17 @@ use crate::chopper::chopper::{DataSink, HeaderSink};
 use crate::chopper::header_graph::PinId;
 use crate::chopper::types::{FieldValue, Header, Row};
 use crate::error::{CliResult, Error};
+use crate::source::csv_configs::CSVOutputConfig;
 
 pub struct CSVSink {
     writer: BufWriter<Box<io::Write+'static>>,
+    csv_output_config: CSVOutputConfig
 }
 
 impl CSVSink {
-    pub fn new(path: &Option<String>) -> CliResult<Self> {
+    pub fn new(path: &Option<String>, csv_output_config: CSVOutputConfig) -> CliResult<Self> {
         let writer = BufWriter::new(CSVSink::into_writer(path)?);
-        Ok(CSVSink { writer })
+        Ok(CSVSink { writer, csv_output_config })
     }
 
     fn into_writer(path: &Option<String>) -> io::Result<Box<io::Write>> {
@@ -34,7 +36,8 @@ impl CSVSink {
         let writer = &mut self.writer;
         let field_name = header.field_names().clone();
         let mut first = true;
-        write!(writer, "timestamp,")?;
+
+        if self.csv_output_config.print_timestamp() { write!(writer, "timestamp,")?; }
         for name in field_name {
             if first {
                 write!(writer, "{}", name)?;
@@ -57,29 +60,31 @@ impl HeaderSink for CSVSink {
 
 impl DataSink for CSVSink {
     fn write_row(&mut self, row: Row) -> CliResult<Option<Row>> {
-        write!(self.writer, "{}", row.timestamp)?;
+        let mut first_col = true;
+        if self.csv_output_config.print_timestamp() {
+                write!(self.writer, "{}", row.timestamp)?;
+                first_col = false;
+        }
         let field_values = &row.field_values;
+        let delimiter = self.csv_output_config.delimiter();
         for value in field_values {
+            if first_col { first_col = false; }
+            else { write!(self.writer, "{}", delimiter)?; }
+
             match value {
                 FieldValue::Boolean(_x) =>
                     return Err(Error::from("CSVSink -- boolean field type is not supported")),
-                FieldValue::Byte(x) => write!(self.writer, ",{}", x)?,
+                FieldValue::Byte(x) => write!(self.writer, "{}", x)?,
                 FieldValue::ByteBuf(_x) =>
                     return Err(Error::from("CSVSink -- ByteBuffer field type is not supported")),
-                FieldValue::Char(x) => write!(self.writer, ",{}", x)?,
-                FieldValue::Double(x) => {
-                    write!(self.writer, ",")?;
-                    dtoa::write(&mut self.writer, *x)?;
-                },
-                FieldValue::Float(x) => {
-                    write!(self.writer, ",")?;
-                    dtoa::write(&mut self.writer, *x)?;
-                },
-                FieldValue::Int(x) => write!(self.writer, ",{}", x)?,
-                FieldValue::Long(x) => write!(self.writer, ",{}", x)?,
-                FieldValue::Short(x) => write!(self.writer, ",{}", x)?,
-                FieldValue::String(x) => write!(self.writer, ",{}", x)?,
-                FieldValue::None => write!(self.writer, ",", )?,
+                FieldValue::Char(x) => write!(self.writer, "{}", x)?,
+                FieldValue::Double(x) => { dtoa::write(&mut self.writer, *x)?; },
+                FieldValue::Float(x) => { dtoa::write(&mut self.writer, *x)?; },
+                FieldValue::Int(x) => write!(self.writer, "{}", x)?,
+                FieldValue::Long(x) => write!(self.writer, "{}", x)?,
+                FieldValue::Short(x) => write!(self.writer, "{}", x)?,
+                FieldValue::String(x) => write!(self.writer, "{}", x)?,
+                FieldValue::None => (),
             };
         }
         write!(self.writer, "\n")?;

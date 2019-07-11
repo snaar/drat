@@ -6,8 +6,9 @@ use crate::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use crate::chopper::types::{DataRange, Header};
 use crate::driver::driver::Driver;
 use crate::error::{self, CliResult};
-use crate::source::{csv_config::{self, CSVConfig}, source_factory::{BosuSourceFactory, SourceFactory}};
+use crate::source::{csv_configs::{self, CSVInputConfig, CSVOutputConfig}, source_factory::{BosuSourceFactory, SourceFactory}};
 use crate::transport::transport_factory::TransportFactory;
+use crate::util::csv_util;
 use crate::write::factory;
 
 pub fn chopper_cli(transport_factories: Vec<Box<TransportFactory>>,
@@ -33,12 +34,9 @@ pub fn parse_cli_args(transport_factories: Vec<Box<TransportFactory>>,
             .help("set end timestamp (exclusive)")
             .takes_value(true)
             .value_name("TIMESTAMP"))
-        .arg(Arg::with_name("timestamp_column_index")
-            .short("t")
-            .long("timestamp-column-index")
-            .help("csv only: specify the timestamp column index [default: 0]")
-            .takes_value(true)
-            .value_name("ARG"))
+        .arg(Arg::with_name("backtrace")
+            .long("backtrace")
+            .help("print backtrace"))
         .arg(Arg::with_name("input")
             .help("sets the input files to use; \n\
             if missing, stdin will be used")
@@ -49,23 +47,34 @@ pub fn parse_cli_args(transport_factories: Vec<Box<TransportFactory>>,
             .help("output to a file")
             .takes_value(true)
             .value_name("FILE"))
-        .arg(Arg::with_name("has_headers")
-            .long("has-headers")
-            .help("csv only: input files have headers"))
-        .arg(Arg::with_name("delimiter")
-            .long("delimiter")
-            .short("d")
-            .help("csv only: field/column delimiter")
+        .arg(Arg::with_name("csv_input_delimiter")
+            .long("csv-in-delimiter")
+            .help("csv only: input field/column delimiter")
             .takes_value(true)
             .default_value(",")
             .value_name("ARG"))
-        .arg(Arg::with_name("print_timestamp")
-            .long("print-timestamp")
-            .short("p")
-            .help("csv only: print timestamp as first column"))
-        .arg(Arg::with_name("backtrace")
-            .long("backtrace")
-            .help("print backtrace"))
+        .arg(Arg::with_name("csv_output_delimiter")
+            .long("csv-out-delimiter")
+            .help("csv only: output field/column delimiter")
+            .takes_value(true)
+            .default_value(",")
+            .value_name("ARG"))
+        .arg(Arg::with_name("csv_has_header")
+            .long("csv-has-header")
+            .help("csv only: input files have header"))
+        .arg(Arg::with_name("csv_print_timestamp")
+            .long("csv-print-timestamp")
+            .help("csv only: print timestamp as first column. default - 'auto'")
+            .takes_value(true)
+            .default_value("auto")
+            .possible_values(&["true", "false", "auto"])
+            .case_insensitive(true)
+            .value_name("ARG"))
+        .arg(Arg::with_name("csv_timestamp_column_index")
+            .long("csv-timestamp")
+            .help("csv only: specify the timestamp column index [default: 0]")
+            .takes_value(true)
+            .value_name("ARG"))
         .get_matches();
 
     if matches.is_present("backtrace") {
@@ -80,10 +89,6 @@ pub fn parse_cli_args(transport_factories: Vec<Box<TransportFactory>>,
         Some(e) => Some(e.parse::<u64>().unwrap())
     };
     let data_range = DataRange { begin, end };
-    let timestamp_column_index: usize = match matches.value_of("timestamp_column_index") {
-        None => csv_config::TIMESTAMP_COL_DEFAULT,
-        Some(t) => t.parse::<usize>().unwrap()
-    };
     let inputs = match matches.values_of("input") {
         None => None,
         Some(i) => {
@@ -98,24 +103,43 @@ pub fn parse_cli_args(transport_factories: Vec<Box<TransportFactory>>,
         None => None,
         Some(s) => Some(s.to_string())
     };
-    let has_headers = matches.is_present("has_headers");
-    let delimiter = matches.value_of("delimiter").unwrap();
-    let print_timestamp = matches.is_present("print_timestamp");
-    let csv_config
-        = CSVConfig::new(delimiter, has_headers, timestamp_column_index, print_timestamp)?;
+    let input_delimiter = matches.value_of("csv_input_delimiter").unwrap();
+    let output_delimiter = matches.value_of("csv_output_delimiter").unwrap();
+    let has_header = matches.is_present("csv_has_header");
+    let print_timestamp = match matches.value_of("csv_print_timestamp").unwrap() {
+        "auto" => None,
+        "true" => Some(true),
+        "false" => Some(false),
+        _ => unreachable!()
+    };
+    let timestamp_column_index: usize = match matches.value_of("csv_timestamp_column_index") {
+        None => csv_configs::TIMESTAMP_COL_DEFAULT,
+        Some(t) => t.parse::<usize>().unwrap()
+    };
+    let csv_input_config
+        = CSVInputConfig::new(input_delimiter, has_header, timestamp_column_index)?;
 
-    setup_graph(inputs, outputs, transport_factories, source_factories, data_range, csv_config)
+    setup_graph(inputs,
+                outputs,
+                transport_factories,
+                source_factories,
+                data_range,
+                csv_input_config,
+                output_delimiter,
+                print_timestamp)
 }
 
-pub fn setup_graph(inputs: Option<Vec<&str>>,
-                   output: Option<String>,
-                   transport_factories: Vec<Box<TransportFactory>>,
-                   source_factories: Option<Vec<Box<SourceFactory>>>,
-                   data_range: DataRange,
-                   csv_config: CSVConfig) -> CliResult<Box<ChDriver>> {
-
+fn setup_graph(inputs: Option<Vec<&str>>,
+               output: Option<String>,
+               transport_factories: Vec<Box<TransportFactory>>,
+               source_factories: Option<Vec<Box<SourceFactory>>>,
+               data_range: DataRange,
+               csv_input_config: CSVInputConfig,
+               csv_output_delimiter: &str,
+               csv_output_print_timestamp: Option<bool>) -> CliResult<Box<ChDriver>> {
+    // get sources and headers
     let mut bosu_source_factory
-        = BosuSourceFactory::new(Some(csv_config), source_factories, transport_factories)?;
+        = BosuSourceFactory::new(Some(csv_input_config), source_factories, transport_factories)?;
     let mut sources: Vec<Box<Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     match inputs {
@@ -135,8 +159,13 @@ pub fn setup_graph(inputs: Option<Vec<&str>>,
         }
     }
 
-    // sink writer
-    let header_sink = factory::new_header_sink(output)?;
+    let csv_output_config = match csv_output_print_timestamp {
+        Some(b) => CSVOutputConfig::new(csv_output_delimiter, b),
+        None => csv_util::create_csv_output_config_from_source(&mut sources, csv_output_delimiter)
+    };
+
+    // create header graph
+    let header_sink = factory::new_header_sink(output, Some(csv_output_config))?;
     let node = HeaderNode::HeaderSink(header_sink);
     let chain = HeaderChain::new(vec![node]);
     let graph = HeaderGraph::new(vec![chain]);

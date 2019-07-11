@@ -6,7 +6,7 @@ use chopper_lib::driver::merge_join::MergeJoin;
 use chopper_lib::error::{self, CliResult};
 use chopper_lib::filter::row_filter_equal_value::RowFilterEqualValue;
 use chopper_lib::filter::row_filter_greater_value::RowFilterGreaterValue;
-use chopper_lib::source::{source_factory::BosuSourceFactory};
+use chopper_lib::source::{csv_configs::{CSVOutputConfig, DELIMITER_DEFAULT}, source_factory::BosuSourceFactory};
 use chopper_lib::transport::file::FileInput;
 use chopper_lib::transport::http::Http;
 use chopper_lib::transport::transport_factory::TransportFactory;
@@ -63,7 +63,8 @@ fn setup_graph(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<Box
     let merge = MergeJoin::new(2)?;
     let num_of_header_to_process = merge.num_of_header_to_process();
     let node_merge_sink = HeaderNode::MergeHeaderSink(merge, num_of_header_to_process);
-    let header_sink = factory::new_header_sink(output)?;
+    let csv_output_config = CSVOutputConfig::new(DELIMITER_DEFAULT, true);
+    let header_sink = factory::new_header_sink(output, Some(csv_output_config))?;
     let node_output = HeaderNode::HeaderSink(header_sink);
     let chain_3 = HeaderChain::new(vec![node_merge_sink, node_output]);
 
