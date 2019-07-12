@@ -5,7 +5,7 @@ use chopper_lib::chopper::header_graph::{ChainId, HeaderChain, HeaderGraph, Head
 use chopper_lib::chopper::types::{self, Header};
 use chopper_lib::driver::{driver::Driver, split::Split};
 use chopper_lib::error::{self, CliResult};
-use chopper_lib::source::source_factory::BosuSourceFactory;
+use chopper_lib::input::input_factory::InputFactory;
 use chopper_lib::write::factory;
 
 fn main() {
@@ -23,12 +23,12 @@ fn setup_test_graph() -> CliResult<Box<ChDriver>> {
     let output_2 = None;
 
     // source reader and headers
-    let mut bosu_source_factory
-        = BosuSourceFactory::new(None, None, None)?;
+    let mut input_factory
+        = InputFactory::new(None, None, None)?;
     let mut sources: Vec<Box<Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {
-        let source = bosu_source_factory.create_source_from_path(i)?;
+        let source = input_factory.create_source_from_path(i)?;
         headers.push(source.header().clone());
         sources.push(source);
     }

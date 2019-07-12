@@ -6,7 +6,8 @@ use chopper_lib::driver::merge_join::MergeJoin;
 use chopper_lib::error::{self, CliResult};
 use chopper_lib::filter::row_filter_equal_value::RowFilterEqualValue;
 use chopper_lib::filter::row_filter_greater_value::RowFilterGreaterValue;
-use chopper_lib::source::{csv_configs::{CSVOutputConfig, DELIMITER_DEFAULT}, source_factory::BosuSourceFactory};
+use chopper_lib::input::input_factory::InputFactory;
+use chopper_lib::source::csv_configs::{CSVOutputConfig, DELIMITER_DEFAULT};
 use chopper_lib::write::factory;
 
 fn main() {
@@ -28,12 +29,12 @@ fn setup_graph() -> CliResult<Box<ChDriver>> {
     let value_2 = FieldValue::Double(50.0);
 
     // source reader and headers
-    let mut bosu_source_factory
-        = BosuSourceFactory::new(None, None, None)?;
+    let mut input_factory
+        = InputFactory::new(None, None, None)?;
     let mut sources: Vec<Box<Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {
-        let source = bosu_source_factory.create_source_from_path(i)?;
+        let source = input_factory.create_source_from_path(i)?;
         headers.push(source.header().clone());
         sources.push(source);
     }

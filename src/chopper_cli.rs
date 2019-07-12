@@ -6,7 +6,8 @@ use crate::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use crate::chopper::types::{DataRange, Header};
 use crate::driver::driver::Driver;
 use crate::error::{self, CliResult};
-use crate::source::{csv_configs::{self, CSVInputConfig, CSVOutputConfig}, source_factory::{BosuSourceFactory, SourceFactory}};
+use crate::input::input_factory::InputFactory;
+use crate::source::{csv_configs::{self, CSVInputConfig, CSVOutputConfig}, source_factory::SourceFactory};
 use crate::transport::transport_factory::TransportFactory;
 use crate::util::csv_util;
 use crate::write::factory;
@@ -138,14 +139,14 @@ fn setup_graph(inputs: Option<Vec<&str>>,
                csv_output_delimiter: &str,
                csv_output_print_timestamp: Option<bool>) -> CliResult<Box<ChDriver>> {
     // get sources and headers
-    let mut bosu_source_factory
-        = BosuSourceFactory::new(Some(csv_input_config), source_factories, transport_factories)?;
+    let mut input_factory
+        = InputFactory::new(Some(csv_input_config), source_factories, transport_factories)?;
     let mut sources: Vec<Box<Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     match inputs {
         Some(inputs) => {
             for i in inputs {
-                let source = bosu_source_factory.create_source_from_path(i)?;
+                let source = input_factory.create_source_from_path(i)?;
                 headers.push(source.header().clone());
                 sources.push(source);
             }
@@ -153,7 +154,7 @@ fn setup_graph(inputs: Option<Vec<&str>>,
         None => {
             // default source factory is csv
             let source
-                = bosu_source_factory.create_source_from_stdin("csv")?;
+                = input_factory.create_source_from_stdin("csv")?;
             headers.push(source.header().clone());
             sources.push(source);
         }
