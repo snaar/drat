@@ -3,32 +3,25 @@ use chopper_lib::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper_lib::chopper::types::{self, Header};
 use chopper_lib::driver::driver::Driver;
 use chopper_lib::error::{self, CliResult};
-use chopper_lib::source::{csv_configs::CSVInputConfig, source_factory::BosuSourceFactory};
-use chopper_lib::transport::file::FileInput;
-use chopper_lib::transport::http::Http;
-use chopper_lib::transport::transport_factory::TransportFactory;
+use chopper_lib::source::{csv_configs::{CSVInputConfig, CSVOutputConfig, DELIMITER_DEFAULT}, source_factory::BosuSourceFactory};
 use chopper_lib::write::factory;
 
 fn main() {
-    let http: Http = Http;
-    let file: FileInput = FileInput;
-    let transport_factories: Vec<Box<TransportFactory>> = vec![Box::new(http), Box::new(file)];
-    error::handle_drive_error(compressed_example(transport_factories));
+    error::handle_drive_error(compressed_example());
 }
 
-fn compressed_example(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<()> {
-    let mut driver = setup_graph(transport_factories)?;
-    driver.drive()
+fn compressed_example() -> CliResult<()> {
+    setup_graph()?.drive()
 }
 
-fn setup_graph(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<Box<ChDriver>> {
+fn setup_graph() -> CliResult<Box<ChDriver>> {
     let csv_config = CSVInputConfig::new(",", true, 0)?;
     let input = "./examples/files/uspop_time.csv.gz";
     let inputs = vec![input];
     let output = None;
 
     let mut bosu_source_factory
-        = BosuSourceFactory::new(Some(csv_config), None, transport_factories)?;
+        = BosuSourceFactory::new(Some(csv_config), None, None)?;
     let mut sources: Vec<Box<Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {
@@ -38,7 +31,8 @@ fn setup_graph(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<Box
         sources.push(source);
     }
 
-    let header_sink = factory::new_header_sink(output, None)?;
+    let csv_output_config = CSVOutputConfig::new(DELIMITER_DEFAULT, false);
+    let header_sink = factory::new_header_sink(output, Some(csv_output_config))?;
     let node_output = HeaderNode::HeaderSink(header_sink);
     let chain = HeaderChain::new(vec![node_output]);
 

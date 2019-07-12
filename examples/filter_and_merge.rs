@@ -7,24 +7,17 @@ use chopper_lib::error::{self, CliResult};
 use chopper_lib::filter::row_filter_equal_value::RowFilterEqualValue;
 use chopper_lib::filter::row_filter_greater_value::RowFilterGreaterValue;
 use chopper_lib::source::{csv_configs::{CSVOutputConfig, DELIMITER_DEFAULT}, source_factory::BosuSourceFactory};
-use chopper_lib::transport::file::FileInput;
-use chopper_lib::transport::http::Http;
-use chopper_lib::transport::transport_factory::TransportFactory;
 use chopper_lib::write::factory;
 
 fn main() {
-    let http: Http = Http;
-    let file: FileInput = FileInput;
-    let transport_factories: Vec<Box<TransportFactory>> = vec![Box::new(http), Box::new(file)];
-    error::handle_drive_error(filter_and_merge(transport_factories));
+    error::handle_drive_error(filter_and_merge());
 }
 
-fn filter_and_merge(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<()> {
-    let mut driver = setup_graph(transport_factories)?;
-    driver.drive()
+fn filter_and_merge() -> CliResult<()> {
+    setup_graph()?.drive()
 }
 
-fn setup_graph(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<Box<ChDriver>> {
+fn setup_graph() -> CliResult<Box<ChDriver>> {
     let input_1 = "./examples/files/million.dc";
     let input_2 = "./examples/files/million.dc";
     let inputs = vec![input_1, input_2];
@@ -36,7 +29,7 @@ fn setup_graph(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<Box
 
     // source reader and headers
     let mut bosu_source_factory
-        = BosuSourceFactory::new(None, None, transport_factories)?;
+        = BosuSourceFactory::new(None, None, None)?;
     let mut sources: Vec<Box<Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {

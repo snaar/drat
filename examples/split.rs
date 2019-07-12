@@ -6,24 +6,17 @@ use chopper_lib::chopper::types::{self, Header};
 use chopper_lib::driver::{driver::Driver, split::Split};
 use chopper_lib::error::{self, CliResult};
 use chopper_lib::source::source_factory::BosuSourceFactory;
-use chopper_lib::transport::file::FileInput;
-use chopper_lib::transport::http::Http;
-use chopper_lib::transport::transport_factory::TransportFactory;
 use chopper_lib::write::factory;
 
 fn main() {
-    let http: Http = Http;
-    let file: FileInput = FileInput;
-    let transport_factories: Vec<Box<TransportFactory>> = vec![Box::new(http), Box::new(file)];
-    error::handle_drive_error(split(transport_factories));
+    error::handle_drive_error(split());
 }
 
-fn split(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<()> {
-    let mut driver = setup_test_graph(transport_factories)?;
-    driver.drive()
+fn split() -> CliResult<()> {
+    setup_test_graph()?.drive()
 }
 
-fn setup_test_graph(transport_factories: Vec<Box<TransportFactory>>) -> CliResult<Box<ChDriver>> {
+fn setup_test_graph() -> CliResult<Box<ChDriver>> {
     let input = "./examples/files/hundred.dc";
     let inputs = vec![input];
     let output_1 = None;
@@ -31,7 +24,7 @@ fn setup_test_graph(transport_factories: Vec<Box<TransportFactory>>) -> CliResul
 
     // source reader and headers
     let mut bosu_source_factory
-        = BosuSourceFactory::new(None, None, transport_factories)?;
+        = BosuSourceFactory::new(None, None, None)?;
     let mut sources: Vec<Box<Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {

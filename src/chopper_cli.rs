@@ -11,13 +11,13 @@ use crate::transport::transport_factory::TransportFactory;
 use crate::util::csv_util;
 use crate::write::factory;
 
-pub fn chopper_cli(transport_factories: Vec<Box<TransportFactory>>,
+pub fn chopper_cli(transport_factories: Option<Vec<Box<TransportFactory>>>,
                    source_factories: Option<Vec<Box<SourceFactory>>>) -> CliResult<()> {
     let mut driver = parse_cli_args(transport_factories, source_factories)?;
     driver.drive()
 }
 
-pub fn parse_cli_args(transport_factories: Vec<Box<TransportFactory>>,
+pub fn parse_cli_args(transport_factories: Option<Vec<Box<TransportFactory>>>,
                       source_factories: Option<Vec<Box<SourceFactory>>>) -> CliResult<Box<ChDriver>> {
     let matches = App::new("drat")
         .version(crate_version!())
@@ -131,7 +131,7 @@ pub fn parse_cli_args(transport_factories: Vec<Box<TransportFactory>>,
 
 fn setup_graph(inputs: Option<Vec<&str>>,
                output: Option<String>,
-               transport_factories: Vec<Box<TransportFactory>>,
+               transport_factories: Option<Vec<Box<TransportFactory>>>,
                source_factories: Option<Vec<Box<SourceFactory>>>,
                data_range: DataRange,
                csv_input_config: CSVInputConfig,

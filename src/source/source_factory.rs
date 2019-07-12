@@ -5,11 +5,23 @@ use crate::chopper::chopper::Source;
 use crate::error::{CliResult, Error};
 use crate::source::csv_configs::CSVInputConfig;
 use crate::source::{csv_factory::CSVFactory, dc_factory::DCFactory, decompress};
-use crate::transport::transport_factory::TransportFactory;
+use crate::transport::{file::FileInput, http::Http, transport_factory::TransportFactory};
 
 pub trait SourceFactory {
     fn can_create_from(&self, path: &PathBuf) -> bool;
     fn create_source(&mut self, reader: Box<io::Read>) -> CliResult<Box<Source+'static>>;
+}
+
+pub fn create_default_source_factories(csv_input_config: CSVInputConfig) -> Vec<Box<SourceFactory>> {
+    let source_factories: Vec<Box<SourceFactory>>
+        = vec![Box::new(CSVFactory::new(csv_input_config)), Box::new(DCFactory)];
+    source_factories
+}
+
+pub fn create_default_transport_factories() -> Vec<Box<TransportFactory>> {
+    let transport_factories: Vec<Box<TransportFactory>>
+        = vec![Box::new(FileInput), Box::new(Http)];
+    transport_factories
 }
 
 pub struct BosuSourceFactory {
@@ -20,19 +32,32 @@ pub struct BosuSourceFactory {
 impl BosuSourceFactory {
     pub fn new(csv_input_config: Option<CSVInputConfig>,
                user_source_factories: Option<Vec<Box<SourceFactory>>>,
-               transport_factories: Vec<Box<TransportFactory>>) -> CliResult<Self> {
+               transport_factories: Option<Vec<Box<TransportFactory>>>) -> CliResult<Self> {
 
+        // transport factories
+        let mut default_transport_factories = create_default_transport_factories();
+        let transport_factories: Vec<Box<TransportFactory>> = match transport_factories {
+            Some(mut t) => {
+                t.append(&mut default_transport_factories);
+                t
+            },
+            None => default_transport_factories
+        };
+
+        // source factories
         let csv_input_config = match csv_input_config {
             Some(c) => c,
             None => CSVInputConfig::new_default()?
         };
+        let mut default_source_factories = create_default_source_factories(csv_input_config);
+        let source_factories = match user_source_factories {
+            Some(mut s) => {
+                s.append(&mut default_source_factories);
+                s
+            },
+            None => default_source_factories
+        };
 
-        let csv_factory = CSVFactory::new(csv_input_config);
-        let dc_factory = DCFactory::new();
-        let mut source_factories: Vec<Box<SourceFactory>> = vec![Box::new(csv_factory), Box::new(dc_factory)];
-        if user_source_factories.is_some() {
-            source_factories.append(&mut user_source_factories.unwrap());
-        }
         Ok(BosuSourceFactory{ transport_factories, source_factories })
     }
 }

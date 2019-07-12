@@ -7,12 +7,6 @@ use crate::source::{dc_source, source_factory::SourceFactory};
 
 pub struct DCFactory;
 
-impl DCFactory {
-    pub fn new() -> DCFactory {
-        DCFactory { }
-    }
-}
-
 impl SourceFactory for DCFactory {
     fn can_create_from(&self, path: &PathBuf) -> bool {
         path.extension().unwrap().eq("dc")
