@@ -1,4 +1,4 @@
-use chopper_lib::chopper::chopper::{ChDriver, Source};
+use chopper_lib::chopper::chopper::{ChopperDriver, Source};
 use chopper_lib::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper_lib::chopper::types::{self, FieldValue, Header};
 use chopper_lib::driver::driver::Driver;
@@ -18,7 +18,7 @@ fn filter_and_merge() -> CliResult<()> {
     setup_graph()?.drive()
 }
 
-fn setup_graph() -> CliResult<Box<ChDriver>> {
+fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let input_1 = "./examples/files/million.dc";
     let input_2 = "./examples/files/million.dc";
     let inputs = vec![input_1, input_2];
@@ -31,7 +31,7 @@ fn setup_graph() -> CliResult<Box<ChDriver>> {
     // source reader and headers
     let mut input_factory
         = InputFactory::new(None, None, None)?;
-    let mut sources: Vec<Box<Source>> = Vec::new();
+    let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {
         let source = input_factory.create_source_from_path(i)?;

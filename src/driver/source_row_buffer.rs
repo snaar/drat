@@ -11,7 +11,7 @@ pub struct SourceRowBuffer {
 }
 
 impl SourceRowBuffer {
-    pub fn new(mut source: Box<Source+'static>, chain_id: ChainId) -> CliResult<Self> {
+    pub fn new(mut source: Box<dyn Source>, chain_id: ChainId) -> CliResult<Self> {
         let mut row = source.next_row()?;
         if row.is_none() {
             return Err(Error::from("SourceRowBuffer -- empty file"))
@@ -76,7 +76,7 @@ fn filter_data_range(data_range: &DataRange, timestamp: Nanos) -> Action {
     }
 }
 
-fn match_next_row(source: &mut Box<Source+'static>, data_range: &DataRange) -> CliResult<Option<Row>> {
+fn match_next_row(source: &mut Box<dyn Source>, data_range: &DataRange) -> CliResult<Option<Row>> {
     let mut next_row: Option<Row> = None;
     loop {
         match source.next_row()? {

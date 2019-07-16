@@ -97,14 +97,14 @@ impl FieldDescriptor {
     }
 }
 
-pub fn write_sized_string(writer: &mut BufWriter<Box<io::Write+'static>>, string: &str) -> CliResult<()> {
+pub fn write_sized_string<W: io::Write>(writer: &mut BufWriter<W>, string: &str) -> CliResult<()> {
     let bytes = string.as_bytes();
     writer.write_u32::<BigEndian>(bytes.len() as u32)?;
     writer.write_all(bytes)?;
     Ok(())
 }
 
-pub fn write_string_value(writer: &mut BufWriter<Box<io::Write+'static>>, value: &str) -> CliResult<()> {
+pub fn write_string_value<W: io::Write>(writer: &mut BufWriter<W>, value: &str) -> CliResult<()> {
     let bytes = value.as_bytes();
     match bytes.len() {
         x if x <= std::i16::MAX as usize => writer.write_i16::<BigEndian>(bytes.len() as i16)?,

@@ -1,5 +1,5 @@
 use std::io;
-use std::path::PathBuf;
+use std::path::Path;
 
 use crate::chopper::chopper::Source;
 use crate::error::CliResult;
@@ -18,11 +18,11 @@ impl CSVFactory {
 }
 
 impl SourceFactory for CSVFactory {
-    fn can_create_from(&self, path: &PathBuf) -> bool {
+    fn can_create_from(&self, path: &Path) -> bool {
         path.extension().unwrap().eq("csv")
     }
 
-    fn create_source(&mut self, reader: Box<io::Read>) -> CliResult<Box<Source+'static>> {
+    fn create_source(&mut self, reader: Box<dyn io::Read>) -> CliResult<Box<dyn Source>> {
         Ok(Box::new(CSVSource::new(reader, &self.csv_input_config)?))
     }
 }

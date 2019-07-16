@@ -26,7 +26,6 @@ impl MergeHeaderSink for MergeJoin {
     fn check_header(&mut self, _pin_id: PinId, header: &Header) -> CliResult<()> {
         match &self.header {
             Some(h) => {
-                // TODO: without cloning?
                 if !header.eq(h) {
                     return Err(Error::from("MuxHeaderSink -- wrong header"));
                 }

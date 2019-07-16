@@ -1,7 +1,7 @@
 use clap::{App, Arg};
 use clap::crate_version;
 
-use crate::chopper::chopper::{ChDriver, Source};
+use crate::chopper::chopper::{ChopperDriver, Source};
 use crate::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use crate::chopper::types::{DataRange, Header};
 use crate::driver::driver::Driver;
@@ -12,14 +12,14 @@ use crate::transport::transport_factory::TransportFactory;
 use crate::util::csv_util;
 use crate::write::factory;
 
-pub fn chopper_cli(transport_factories: Option<Vec<Box<TransportFactory>>>,
-                   source_factories: Option<Vec<Box<SourceFactory>>>) -> CliResult<()> {
+pub fn chopper_cli(transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
+                   source_factories: Option<Vec<Box<dyn SourceFactory>>>) -> CliResult<()> {
     let mut driver = parse_cli_args(transport_factories, source_factories)?;
     driver.drive()
 }
 
-pub fn parse_cli_args(transport_factories: Option<Vec<Box<TransportFactory>>>,
-                      source_factories: Option<Vec<Box<SourceFactory>>>) -> CliResult<Box<ChDriver>> {
+pub fn parse_cli_args(transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
+                      source_factories: Option<Vec<Box<dyn SourceFactory>>>) -> CliResult<Box<dyn ChopperDriver>> {
     let matches = App::new("drat")
         .version(crate_version!())
         .about("drat is a simple streaming time series tool")
@@ -132,16 +132,16 @@ pub fn parse_cli_args(transport_factories: Option<Vec<Box<TransportFactory>>>,
 
 fn setup_graph(inputs: Option<Vec<&str>>,
                output: Option<String>,
-               transport_factories: Option<Vec<Box<TransportFactory>>>,
-               source_factories: Option<Vec<Box<SourceFactory>>>,
+               transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
+               source_factories: Option<Vec<Box<dyn SourceFactory>>>,
                data_range: DataRange,
                csv_input_config: CSVInputConfig,
                csv_output_delimiter: &str,
-               csv_output_print_timestamp: Option<bool>) -> CliResult<Box<ChDriver>> {
+               csv_output_print_timestamp: Option<bool>) -> CliResult<Box<dyn ChopperDriver>> {
     // get sources and headers
     let mut input_factory
         = InputFactory::new(Some(csv_input_config), source_factories, transport_factories)?;
-    let mut sources: Vec<Box<Source>> = Vec::new();
+    let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     match inputs {
         Some(inputs) => {

@@ -1,6 +1,6 @@
 use std::fs;
 use std::io;
-use std::path::PathBuf;
+use std::path::Path;
 
 use crate::transport::transport_factory::TransportFactory;
 
@@ -8,11 +8,11 @@ use crate::transport::transport_factory::TransportFactory;
 pub struct FileInput;
 
 impl TransportFactory for FileInput {
-    fn can_open(&self, path: &PathBuf) -> bool {
+    fn can_open(&self, path: &Path) -> bool {
         path.exists()
     }
 
-    fn open(&self, path: &PathBuf) -> io::Result<Box<io::Read+'static>> {
+    fn open(&self, path: &Path) -> io::Result<Box<dyn io::Read>> {
         match fs::File::open(path) {
             Ok(r) => {
                 Ok(Box::new(r))
@@ -23,7 +23,7 @@ impl TransportFactory for FileInput {
         }
     }
 
-    fn box_clone(&self) -> Box<TransportFactory> {
+    fn box_clone(&self) -> Box<dyn TransportFactory> {
         Box::new((*self).clone())
     }
 

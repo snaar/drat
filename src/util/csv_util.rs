@@ -22,7 +22,7 @@ pub fn parse_into_delimiter(str: &str) -> CliResult<u8> {
     }
 }
 
-pub fn create_csv_output_config_from_source(sources: &mut Vec<Box<Source>>, delimiter: &str) -> CSVOutputConfig {
+pub fn create_csv_output_config_from_source(sources: &mut Vec<Box<dyn Source>>, delimiter: &str) -> CSVOutputConfig {
     let mut all_sources_have_native_timestamps = true;
     for source in sources {
         if !source.has_native_timestamp_column() {

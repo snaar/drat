@@ -1,6 +1,6 @@
 extern crate chopper_lib;
 
-use chopper_lib::chopper::chopper::{ChDriver, Source};
+use chopper_lib::chopper::chopper::{ChopperDriver, Source};
 use chopper_lib::chopper::header_graph::{ChainId, HeaderChain, HeaderGraph, HeaderNode};
 use chopper_lib::chopper::types::{self, Header};
 use chopper_lib::driver::{driver::Driver, split::Split};
@@ -16,7 +16,7 @@ fn split() -> CliResult<()> {
     setup_test_graph()?.drive()
 }
 
-fn setup_test_graph() -> CliResult<Box<ChDriver>> {
+fn setup_test_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let input = "./examples/files/hundred.dc";
     let inputs = vec![input];
     let output_1 = None;
@@ -25,7 +25,7 @@ fn setup_test_graph() -> CliResult<Box<ChDriver>> {
     // source reader and headers
     let mut input_factory
         = InputFactory::new(None, None, None)?;
-    let mut sources: Vec<Box<Source>> = Vec::new();
+    let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {
         let source = input_factory.create_source_from_path(i)?;

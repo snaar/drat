@@ -1,5 +1,5 @@
 use std::io;
-use std::path::PathBuf;
+use std::path::Path;
 
 use reqwest::{Client, Url};
 
@@ -9,11 +9,11 @@ use crate::transport::transport_factory::TransportFactory;
 pub struct Http;
 
 impl TransportFactory for Http {
-    fn can_open(&self, path: &PathBuf) -> bool {
+    fn can_open(&self, path: &Path) -> bool {
         path.starts_with("http://") || path.starts_with("https://") || path.starts_with("ftp://")
     }
 
-    fn open(&self, path: &PathBuf) -> io::Result<Box<io::Read+'static>> {
+    fn open(&self, path: &Path) -> io::Result<Box<dyn io::Read>> {
         let url: Url = path.to_str().unwrap().parse().unwrap();
         let client = Client::new();
         let response = match client.get(url).send() {
@@ -27,7 +27,7 @@ impl TransportFactory for Http {
         Ok(Box::new(reader))
     }
 
-    fn box_clone(&self) -> Box<TransportFactory> {
+    fn box_clone(&self) -> Box<dyn TransportFactory> {
         Box::new((*self).clone())
     }
 

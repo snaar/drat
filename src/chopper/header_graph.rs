@@ -59,17 +59,20 @@ impl HeaderGraph {
         Ok(data_graph)
     }
 
-    fn process_header_re(mut self, data_graph: &mut DataGraph, chain_id: ChainId,
-                         pin_id: PinId, header: &mut Header) -> CliResult<Self> {
+    fn process_header_re(mut self,
+                         data_graph: &mut DataGraph,
+                         chain_id: ChainId,
+                         pin_id: PinId,
+                         header: &mut Header) -> CliResult<Self> {
 
         let chain: &mut HeaderChain = self.header_chains.get_mut(chain_id).unwrap();
         // check the first node of the chain.
         if let HeaderNode::MergeHeaderSink(..) = chain.get_mut_nodes().get_mut(0).unwrap() {
-            // if Mux, check/process the header without removing the chain.
-            // pass to match_remove_node only when all the Mux pin headers are processed.
+            // if MergeHeaderSink, check/process the header without removing the chain
+            // pass to match_remove_chain only when all the Merge pin headers are processed
             self.check_merge_header(data_graph, chain_id, pin_id, header)
         } else {
-            // if not Mux, remove the chain, process header for all the nodes, and get DataSinks.
+            // if not, remove the chain, process header for all the nodes, and get DataSinks
             self.match_remove_chain(data_graph, chain_id, pin_id, header)
         }
     }
@@ -80,11 +83,14 @@ impl HeaderGraph {
         self.header_chains.swap_remove(chain_id)
     }
 
-    fn match_remove_chain(mut self, data_graph: &mut DataGraph, chain_id: ChainId,
-                          _pin_id: PinId, header: &mut Header) -> CliResult<Self> {
+    fn match_remove_chain(mut self,
+                          data_graph: &mut DataGraph,
+                          chain_id: ChainId,
+                          _pin_id: PinId,
+                          header: &mut Header) -> CliResult<Self> {
 
         let chain = self.swap_remove(chain_id);
-        // process header for all the nodes in the chain, and get DataSinks.
+        // process header for all the nodes in the chain, and get DataSinks
         for node in chain.nodes {
             let data_node: DataNode;
             match node {
@@ -107,7 +113,7 @@ impl HeaderGraph {
                     data_node = DataNode::Split(shs.chain_ids().clone());
                     data_graph.add_node(data_node, chain_id)?;
                 }
-                // move to the chain that has MuxHeaderSink
+                // move to the chain that has MergeHeaderSink
                 HeaderNode::Merge(new_chain_id, new_pin_id) => {
                     data_graph.add_node(DataNode::Merge(new_chain_id, new_pin_id), chain_id)?;
                     self = self.check_merge_header(data_graph, new_chain_id, new_pin_id, header)?;
@@ -117,8 +123,11 @@ impl HeaderGraph {
         Ok(self)
     }
 
-    fn check_merge_header(mut self, data_graph: &mut DataGraph, chain_id: ChainId,
-                          pin_id: PinId, header: &mut Header) -> CliResult<Self> {
+    fn check_merge_header(mut self,
+                          data_graph: &mut DataGraph,
+                          chain_id: ChainId,
+                          pin_id: PinId,
+                          header: &mut Header) -> CliResult<Self> {
 
         let node: &mut HeaderNode = match self.get_mut_chain(chain_id) {
             Some(c) => c.get_mut_nodes().get_mut(0).unwrap(),
@@ -135,7 +144,8 @@ impl HeaderGraph {
                 mhs.check_header(pin_id, header)?;
                 header_to_process.counter -= 1;
 
-                // finished processing all the pin headers. next get DataSink for Mux and remove Mux node.
+                // finished processing all the pin headers
+                // next get DataSink for MergeHeaderSink and remove Merge node
                 if header_to_process.counter == 0 {
                     let mut header = mhs.process_header();
                     self = self.match_remove_chain(data_graph, chain_id, pin_id, &mut header)?

@@ -1,4 +1,4 @@
-use crate::chopper::chopper::{ChDriver, Source};
+use crate::chopper::chopper::{ChopperDriver, Source};
 use crate::chopper::data_graph::{DataGraph, DataNode};
 use crate::chopper::header_graph::{ChainId, HeaderGraph, NodeId, PinId};
 use crate::chopper::types::{DataRange, Header, Row};
@@ -12,23 +12,26 @@ pub struct Driver {
 }
 
 impl Driver {
-    pub fn new(sources: Vec<Box<Source>>, header_graph: HeaderGraph,
-               date_range: DataRange, headers: Vec<Header>) -> CliResult<Self> {
+    pub fn new(sources: Vec<Box<dyn Source>>,
+               header_graph: HeaderGraph,
+               date_range: DataRange,
+               headers: Vec<Header>) -> CliResult<Self>
+    {
 
         if sources.len() > header_graph.len() {
             return Err(Error::from(
                 "Driver -- not enough header chains for sources. \
-                each source should have at least one corresponding sink."));
+                each source should have at least one header chain."));
         }
         let data_graph = header_graph.process_header(headers)?;
         Ok(Driver { sources, data_graph, date_range })
     }
 
-    // all the sources are processed at the same time, but a row with min timestamp is output first.
     fn drive(&mut self) -> CliResult<()> {
         let mut row_buffers = self.get_row_buffers()?;
 
         // sort and output
+        // all the sources are processed at the same time, but a row with min timestamp is output first
         let mut buffer_len = row_buffers.len();
         while buffer_len > 0 {
             // get the row with min timestamp and write
@@ -71,8 +74,11 @@ impl Driver {
         min.0
     }
 
-    fn process_row(data_graph: &mut DataGraph, mut chain_id: ChainId,
-                   mut node_id: NodeId, mut pin_id: PinId, mut row: Row) -> CliResult<()> {
+    fn process_row(data_graph: &mut DataGraph,
+                   mut chain_id: ChainId,
+                   mut node_id: NodeId,
+                   mut pin_id: PinId,
+                   mut row: Row) -> CliResult<()> {
 
         let chain = data_graph.get_mut_chain(chain_id);
         while node_id < chain.nodes().len() {
@@ -136,7 +142,7 @@ impl Driver {
     }
 }
 
-impl ChDriver for Driver {
+impl ChopperDriver for Driver {
     fn drive(&mut self) -> CliResult<()> {
         self.drive()
     }

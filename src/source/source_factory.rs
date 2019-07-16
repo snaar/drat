@@ -1,10 +1,10 @@
 use std::io;
-use std::path::PathBuf;
+use std::path::Path;
 
 use crate::chopper::chopper::Source;
 use crate::error::CliResult;
 
 pub trait SourceFactory {
-    fn can_create_from(&self, path: &PathBuf) -> bool;
-    fn create_source(&mut self, reader: Box<io::Read>) -> CliResult<Box<Source+'static>>;
+    fn can_create_from(&self, path: &Path) -> bool;
+    fn create_source(&mut self, reader: Box<dyn io::Read>) -> CliResult<Box<dyn Source>>;
 }

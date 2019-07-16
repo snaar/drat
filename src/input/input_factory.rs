@@ -1,5 +1,5 @@
 use std::io;
-use std::path::PathBuf;
+use std::path::Path;
 
 use crate::chopper::chopper::Source;
 use crate::error::{CliResult, Error};
@@ -9,18 +9,18 @@ use crate::source::decompress;
 use crate::transport::{file::FileInput, http::Http, transport_factory::TransportFactory};
 
 pub struct InputFactory {
-    transport_factories: Vec<Box<TransportFactory>>,
-    source_factories: Vec<Box<SourceFactory>>
+    transport_factories: Vec<Box<dyn TransportFactory>>,
+    source_factories: Vec<Box<dyn SourceFactory>>
 }
 
 impl InputFactory {
     pub fn new(csv_input_config: Option<CSVInputConfig>,
-               user_source_factories: Option<Vec<Box<SourceFactory>>>,
-               user_transport_factories: Option<Vec<Box<TransportFactory>>>) -> CliResult<Self> {
-
+               user_source_factories: Option<Vec<Box<dyn SourceFactory>>>,
+               user_transport_factories: Option<Vec<Box<dyn TransportFactory>>>) -> CliResult<Self>
+    {
         // transport factories
         let mut default_transport_factories = create_default_transport_factories();
-        let transport_factories: Vec<Box<TransportFactory>> = match user_transport_factories {
+        let transport_factories: Vec<Box<dyn TransportFactory>> = match user_transport_factories {
             Some(mut t) => {
                 t.append(&mut default_transport_factories);
                 t
@@ -47,22 +47,23 @@ impl InputFactory {
 }
 
 impl InputFactory {
-    pub fn create_source_from_path(&mut self, path: &str) -> CliResult<Box<Source+'static>> {
+    pub fn create_source_from_path(&mut self, path: &str) -> CliResult<Box<dyn Source>> {
         self.create_source(path, None)
     }
 
-    pub fn create_source_from_path_with_file_type(&mut self, path: &str, file_type_override: &str)
-                                                  -> CliResult<Box<Source+'static>> {
+    pub fn create_source_from_path_with_file_type(
+        &mut self, path: &str, file_type_override: &str) -> CliResult<Box<dyn Source>>
+    {
         self.create_source(path, Some(file_type_override))
     }
 
-    pub fn create_source_from_stdin(&mut self, file_type: &str) -> CliResult<Box<Source+'static>> {
+    pub fn create_source_from_stdin(&mut self, file_type: &str) -> CliResult<Box<dyn Source>> {
         self.create_source_from_reader(Box::new(io::stdin()), file_type)
     }
 
-    fn create_source(&mut self, path: &str, file_extension_override: Option<&str>) -> CliResult<Box<Source+'static>> {
-        let mut path = PathBuf::from(path);
-        let reader = self.create_io_reader(&path)?;
+    fn create_source(&mut self, path: &str, file_extension_override: Option<&str>) -> CliResult<Box<dyn Source>> {
+        let mut path = Path::new(path);
+        let reader = self.create_io_reader(path)?;
         let file_extension = match file_extension_override {
             Some(x) => x.to_string(),
             None => {
@@ -75,23 +76,27 @@ impl InputFactory {
                 while path.extension().is_some() {
                     let string = path.extension().unwrap().to_str().unwrap();
                     extension = format!(".{}{}", string, extension);
-                    path = PathBuf::from(path.file_stem().unwrap());
+                    path = Path::new(path.file_stem().unwrap());
                 }
                 extension
             }
         };
-        self.create_source_from_reader(reader, &file_extension)
+        self.create_source_from_reader(Box::new(reader), &file_extension)
     }
 
-    fn create_source_from_reader(&mut self, mut reader: Box<io::Read>, file_extension: &str) -> CliResult<Box<Source+'static>> {
+    fn create_source_from_reader(&mut self,
+                                 mut reader: Box<dyn io::Read>,
+                                 file_extension: &str) -> CliResult<Box<dyn Source>>
+    {
         // create a dummy path with given file extension
-        let mut path = PathBuf::from("dummy");
-        path.set_extension(file_extension);
+        let mut path = Path::new("dummy");
+        let buf = path.with_extension(file_extension);
+        path = buf.as_path();
 
         // check if the file is compressed
         if decompress::is_compressed(&path) {
             reader = decompress::decompress(&path, reader)?;
-            path = PathBuf::from(path.file_stem().unwrap());
+            path = Path::new(path.file_stem().unwrap());
         }
         // get source from matching source factory
         for sf in &mut self.source_factories {
@@ -102,8 +107,8 @@ impl InputFactory {
         Err(Error::from(format!("Cannot find source factory for file - {:?}", path)))
     }
 
-    fn create_io_reader(&mut self, path: &PathBuf) -> CliResult<Box<io::Read+'static>> {
-        let mut io_reader: Option<Box<io::Read>> = None;
+    fn create_io_reader(&mut self, path: &Path) -> CliResult<Box<dyn io::Read>> {
+        let mut io_reader: Option<Box<dyn io::Read>> = None;
         for _factory in &mut self.transport_factories.iter() {
             match _factory.can_open(path) {
                 false => continue,
@@ -124,14 +129,14 @@ impl InputFactory {
     }
 }
 
-pub fn create_default_source_factories(csv_input_config: CSVInputConfig) -> Vec<Box<SourceFactory>> {
-    let source_factories: Vec<Box<SourceFactory>>
+pub fn create_default_source_factories(csv_input_config: CSVInputConfig) -> Vec<Box<dyn SourceFactory>> {
+    let source_factories: Vec<Box<dyn SourceFactory>>
         = vec![Box::new(CSVFactory::new(csv_input_config)), Box::new(DCFactory)];
     source_factories
 }
 
-pub fn create_default_transport_factories() -> Vec<Box<TransportFactory>> {
-    let transport_factories: Vec<Box<TransportFactory>>
+pub fn create_default_transport_factories() -> Vec<Box<dyn TransportFactory>> {
+    let transport_factories: Vec<Box<dyn TransportFactory>>
         = vec![Box::new(FileInput), Box::new(Http)];
     transport_factories
 }

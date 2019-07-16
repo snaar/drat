@@ -1,17 +1,17 @@
 use std::io;
-use std::path::PathBuf;
+use std::path::Path;
 
 use flate2::read::GzDecoder;
 use lzf;
 
 use crate::error::{CliResult, Error};
 
-pub fn is_compressed(path: &PathBuf) -> bool {
+pub fn is_compressed(path: &Path) -> bool {
     let extension = path.extension().unwrap().to_str().unwrap();
     extension.eq("gz") || extension.eq("lzf")
 }
 
-pub fn decompress(path: &PathBuf, reader: Box<io::Read>) -> CliResult<Box<io::Read+'static>> {
+pub fn decompress(path: &Path, reader: Box<dyn io::Read>) -> CliResult<Box<dyn io::Read>> {
     match path.extension().unwrap().to_str().unwrap() {
         "gz" => {
             let decoder = GzDecoder::new(reader);

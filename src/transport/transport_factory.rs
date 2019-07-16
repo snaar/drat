@@ -1,16 +1,16 @@
 use std::fmt;
 use std::io;
-use std::path::PathBuf;
+use std::path::Path;
 
 pub trait TransportFactory {
-    fn can_open(&self, path: &PathBuf) -> bool;
-    fn open(&self, path: &PathBuf) -> io::Result<Box<io::Read+'static>>;
-    fn box_clone(&self) -> Box<TransportFactory>;
+    fn can_open(&self, path: &Path) -> bool;
+    fn open(&self, path: &Path) -> io::Result<Box<dyn io::Read>>;
+    fn box_clone(&self) -> Box<dyn TransportFactory>;
     fn factory_name(&self) -> &str;
 }
 
-impl Clone for Box<TransportFactory> {
-    fn clone(&self) -> Box<TransportFactory> {
+impl Clone for Box<dyn TransportFactory> {
+    fn clone(&self) -> Box<dyn TransportFactory> {
         self.box_clone()
     }
 }

@@ -1,4 +1,4 @@
-use chopper_lib::chopper::chopper::{ChDriver, Source};
+use chopper_lib::chopper::chopper::{ChopperDriver, Source};
 use chopper_lib::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper_lib::chopper::types::{self, Header};
 use chopper_lib::driver::driver::Driver;
@@ -15,7 +15,7 @@ fn compressed_example() -> CliResult<()> {
     setup_graph()?.drive()
 }
 
-fn setup_graph() -> CliResult<Box<ChDriver>> {
+fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let csv_config = CSVInputConfig::new(",", true, 0)?;
     let input = "./examples/files/uspop_time.csv.gz";
     let inputs = vec![input];
@@ -23,7 +23,7 @@ fn setup_graph() -> CliResult<Box<ChDriver>> {
 
     let mut input_factory
         = InputFactory::new(Some(csv_config), None, None)?;
-    let mut sources: Vec<Box<Source>> = Vec::new();
+    let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {
         let source
