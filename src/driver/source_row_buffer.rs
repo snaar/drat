@@ -1,29 +1,21 @@
 use crate::chopper::chopper::Source;
 use crate::chopper::header_graph::ChainId;
 use crate::chopper::types::{DataRange, Nanos, Row};
-use crate::error::{CliResult, Error};
+use crate::error::CliResult;
 
 pub struct SourceRowBuffer {
     source: Box<Source+'static>,
     chain_id: ChainId,
-    timestamp: u64,
+    timestamp: Nanos,
     row: Option<Row>,
 }
 
 impl SourceRowBuffer {
-    pub fn new(mut source: Box<dyn Source>, chain_id: ChainId) -> CliResult<Self> {
-        let mut row = source.next_row()?;
-        if row.is_none() {
-            return Err(Error::from("SourceRowBuffer -- empty file"))
-        };
-
-        let timestamp = match row {
-            Some(r) => {
-                let timestamp = r.timestamp;
-                row = Some(r);
-                timestamp
-            }
-            None => return Err(Error::from("SourceRowBuffer -- cannot find timestamp"))
+    pub fn new(mut source: Box<dyn Source>, chain_id: ChainId, data_range: &DataRange) -> CliResult<Self> {
+        let mut row = match_next_row(&mut source, data_range)?;
+        let timestamp = match &mut row {
+            Some(r) => r.timestamp,
+            None => 0 as Nanos
         };
         Ok(SourceRowBuffer { source, chain_id, timestamp, row })
     }

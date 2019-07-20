@@ -16,7 +16,15 @@ fn compressed_example() -> CliResult<()> {
 }
 
 fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
-    let csv_config = CSVInputConfig::new(",", true, 0)?;
+    let csv_config
+        = CSVInputConfig::new(
+        ",",
+        true,
+        0,
+        None,
+        None,
+        None,
+        None)?;
     let input = "./examples/files/uspop_time.csv.gz";
     let inputs = vec![input];
     let output = None;

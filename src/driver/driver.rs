@@ -59,7 +59,7 @@ impl Driver {
         let mut row_buffers: Vec<SourceRowBuffer> = Vec::with_capacity(self.sources.len());
         for i in 0..self.sources.len() {
             let source = self.sources.pop().unwrap();
-            row_buffers.push(SourceRowBuffer::new(source, i)?);
+            row_buffers.push(SourceRowBuffer::new(source, i, &self.date_range)?);
         }
         Ok(row_buffers)
     }

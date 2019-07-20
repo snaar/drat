@@ -1,17 +1,32 @@
 use std::cmp::Ordering;
 use std::fmt;
 
-use crate::error::Error;
+use crate::error::{CliResult, Error};
+use crate::util::csv_util;
 
 pub type Nanos = u64;
 
 #[derive(Copy, Clone)]
 pub struct DataRange {
-    pub begin: Option<u64>,
-    pub end: Option<u64>,
+    pub begin: Option<Nanos>,
+    pub end: Option<Nanos>,
 }
 
 pub static DATA_RANGE_DEFAULT: DataRange = DataRange { begin: None, end: None };
+
+impl DataRange {
+    pub fn new(begin: Option<&str>, end: Option<&str>, format: &str) -> CliResult<Self> {
+        let begin = match begin {
+            Some(t) => Some(csv_util::parse_into_nanos_from_str(t, format)?),
+            None => None
+        };
+        let end = match end {
+            Some(t) => Some(csv_util::parse_into_nanos_from_str(t, format)?),
+            None => None
+        };
+        Ok(DataRange{ begin, end })
+    }
+}
 
 #[derive(Clone)]
 pub struct Header {

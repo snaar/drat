@@ -6,12 +6,13 @@ use csv::Trim;
 use crate::chopper::chopper::Source;
 use crate::chopper::types::{FieldType, FieldValue, Header, Nanos, Row};
 use crate::error::{CliResult, Error};
-use crate::source::csv_configs::CSVInputConfig;
+use crate::source::csv_configs::{self, CSVInputConfig};
+use crate::util::csv_util;
 
 pub struct CSVSource<R> {
     reader: csv::Reader<R>,
     header: Header,
-    timestamp_column: usize,
+    csv_config: CSVInputConfig,
     next_row: Row,
     has_next_row: bool,
 }
@@ -23,8 +24,6 @@ impl <R: io::Read> CSVSource<R> {
             .has_headers(csv_config.has_header())
             .trim(Trim::All)
             .from_reader(reader);
-
-        let timestamp_column = csv_config.timestamp_col_index();
 
         // get field names if available
         let mut field_names: Vec<String> = Vec::new();
@@ -48,10 +47,11 @@ impl <R: io::Read> CSVSource<R> {
         let timestamp: Nanos = 0;
         let field_values: Vec<FieldValue> = vec![FieldValue::None; field_count];
         let next_row = Row { timestamp, field_values };
-
         let field_types: Vec<FieldType> = vec![FieldType::String; field_count];
         let header: Header = Header::new(field_names, field_types);
-        let mut csv_reader = CSVSource { reader, header, timestamp_column, next_row, has_next_row: true };
+        let csv_config = csv_config.clone();
+
+        let mut csv_reader = CSVSource { reader, header, csv_config, next_row, has_next_row: true };
 
         // update next_row with first row
         csv_reader.update_row(first_row)?;
@@ -61,18 +61,32 @@ impl <R: io::Read> CSVSource<R> {
 
     fn update_row(&mut self, next_record: csv::StringRecord) -> CliResult<()> {
         let mut current_column = 0;
+        let mut date: &str = "";
+        let mut time: &str = csv_configs::DEFAULT_TIME;
+
         for i in next_record.iter() {
-            if current_column == self.timestamp_column {
-                self.next_row.timestamp = match i.parse::<Nanos>() {
-                    Ok(t) => t,
-                    Err(_) =>
-                        return Err(Error::from(format!("Cannot parse timestamp value - {:?}. \
-                            If the csv file has header, please turn on csv header option.", i)))
-                };
+            if current_column == self.csv_config.timestamp_col_date() {
+                date = i;
+            }
+            else if self.csv_config.timestamp_col_time().is_some()
+                && current_column == self.csv_config.timestamp_col_time().unwrap() {
+                time = i;
             }
             self.next_row.field_values[current_column] = FieldValue::String(i.to_string());
             current_column += 1;
         }
+
+        // parse timestamp into Nanos
+        let timestamp = format!("{}{}{}", date, time, self.csv_config.time_zone());
+        self.next_row.timestamp = match self.csv_config.timestamp_format() {
+            Some(f) => csv_util::parse_into_nanos_from_str(timestamp.as_str(), f)?,
+            None => match timestamp.parse::<Nanos>() {
+                Ok(t) => t,
+                Err(_) => return Err(Error::from(format!("Cannot parse timestamp value - {:?}. \
+                        If the csv file has header, please turn on csv header option.", timestamp)))
+            }
+        };
+
         Ok(())
     }
 

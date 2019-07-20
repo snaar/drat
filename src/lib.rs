@@ -6,6 +6,7 @@ pub mod error;
 
 pub mod chopper;
 pub mod chopper_cli;
+pub mod cli_app;
 pub mod driver;
 pub mod filter;
 pub mod input;
