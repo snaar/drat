@@ -7,7 +7,7 @@ use crate::error::{self, CliResult};
 use crate::input::input_factory::InputFactory;
 use crate::source::{csv_configs::{self, CSVInputConfig, CSVOutputConfig}, source_factory::SourceFactory};
 use crate::transport::transport_factory::TransportFactory;
-use crate::util::csv_util;
+use crate::util::{csv_util, timestamp_util};
 use crate::write::factory;
 
 pub fn chopper_cli(transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
@@ -23,10 +23,9 @@ pub fn parse_cli_args(transport_factories: Option<Vec<Box<dyn TransportFactory>>
     if matches.is_present("backtrace") {
         error::turn_on_backtrace()
     }
-    let begin = matches.value_of("begin");
-    let end = matches.value_of("end");
-    let format = "%Y%m%d,%H:%M:%S,%z";
-    let data_range = DataRange::new(begin, end, format)?;
+    let time_zone = timestamp_util::parse_time_zone(matches.value_of("csv_time_zone"));
+    let data_range
+        = DataRange::new(matches.value_of("begin"), matches.value_of("end"), time_zone.as_str())?;
 
     let inputs = match matches.values_of("input") {
         None => None,
@@ -63,7 +62,6 @@ pub fn parse_cli_args(transport_factories: Option<Vec<Box<dyn TransportFactory>>
     };
     let timestamp_format_date: Option<&str> = matches.value_of("csv_timestamp_format_date");
     let timestamp_format_time: Option<&str> = matches.value_of("csv_timestamp_format_time");
-    let time_zone: Option<&str> = matches.value_of("csv_time_zone");
 
     let csv_input_config
         = CSVInputConfig::new(input_delimiter,

@@ -6,8 +6,8 @@ use csv::Trim;
 use crate::chopper::chopper::Source;
 use crate::chopper::types::{FieldType, FieldValue, Header, Nanos, Row};
 use crate::error::{CliResult, Error};
-use crate::source::csv_configs::{self, CSVInputConfig};
-use crate::util::csv_util;
+use crate::source::csv_configs::CSVInputConfig;
+use crate::util::timestamp_util;
 
 pub struct CSVSource<R> {
     reader: csv::Reader<R>,
@@ -62,7 +62,7 @@ impl <R: io::Read> CSVSource<R> {
     fn update_row(&mut self, next_record: csv::StringRecord) -> CliResult<()> {
         let mut current_column = 0;
         let mut date: &str = "";
-        let mut time: &str = csv_configs::DEFAULT_TIME;
+        let mut time: &str = timestamp_util::DEFAULT_TIME;
 
         for i in next_record.iter() {
             if current_column == self.csv_config.timestamp_col_date() {
@@ -79,7 +79,7 @@ impl <R: io::Read> CSVSource<R> {
         // parse timestamp into Nanos
         let timestamp = format!("{}{}{}", date, time, self.csv_config.time_zone());
         self.next_row.timestamp = match self.csv_config.timestamp_format() {
-            Some(f) => csv_util::parse_into_nanos_from_str(timestamp.as_str(), f)?,
+            Some(f) => timestamp_util::parse_into_nanos_from_str(timestamp.as_str(), f)?,
             None => match timestamp.parse::<Nanos>() {
                 Ok(t) => t,
                 Err(_) => return Err(Error::from(format!("Cannot parse timestamp value - {:?}. \

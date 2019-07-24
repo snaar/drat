@@ -1,15 +1,10 @@
 use std::fmt;
 
 use crate::error::CliResult;
-use crate::util::csv_util;
+use crate::util::{csv_util, timestamp_util};
 
 pub static DELIMITER_DEFAULT: &str = ",";
 pub static TIMESTAMP_COL_DATE_DEFAULT: usize = 0;
-pub static DEFAULT_TIME: &str = "00:00:00";
-pub static DEFAULT_ZONE: &str = "+0000";
-pub static DEFAULT_DATE_FORMAT: &str = "%Y%m%d";
-pub static DEFAULT_TIME_FORMAT: &str = "%H:%M:%S";
-pub static DEFAULT_ZONE_FORMAT: &str = "%z";
 
 #[derive(Clone)]
 pub struct CSVInputConfig {
@@ -34,29 +29,19 @@ impl CSVInputConfig {
                timestamp_col_time: Option<usize>,
                timestamp_format_date: Option<&str>,
                timestamp_format_time: Option<&str>,
-               time_zone: Option<&str>) -> CliResult<Self>
+               time_zone: String) -> CliResult<Self>
     {
         let delimiter = csv_util::parse_into_delimiter(delimiter)?;
         let date = match timestamp_format_date {
             Some(s) => s,
-            None => DEFAULT_DATE_FORMAT
+            None => timestamp_util::DEFAULT_DATE_FORMAT
         };
         let time = match timestamp_format_time {
             Some(s) => s,
-            None => DEFAULT_TIME_FORMAT
+            None => timestamp_util::DEFAULT_TIME_FORMAT
         };
-        let timestamp_format = format!("{}{}{}", date, time, DEFAULT_ZONE_FORMAT);
-        let time_zone = match time_zone {
-            Some(z) => {
-                let zone = match z.to_lowercase().as_str() {
-                    "utc" => "+0000",
-                    "ny" => "-0500",
-                    _ => unreachable!()
-                };
-                String::from(zone)
-            }
-            None => DEFAULT_ZONE.to_string()
-        };
+        let timestamp_format = format!("{}{}{}", date, time, timestamp_util::DEFAULT_ZONE_FORMAT);
+
         Ok(CSVInputConfig {
             delimiter,
             has_header,
@@ -75,7 +60,7 @@ impl CSVInputConfig {
             timestamp_col_date: TIMESTAMP_COL_DATE_DEFAULT,
             timestamp_col_time: None,
             timestamp_format: None,
-            time_zone: DEFAULT_ZONE.to_string()
+            time_zone: timestamp_util::DEFAULT_ZONE.to_string()
         })
     }
 

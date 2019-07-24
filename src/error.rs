@@ -100,7 +100,10 @@ pub fn handle_drive_error(cli_result: CliResult<()>) {
                 Error::Csv(err) => write_error!("{}", err),
                 Error::Io(ref err) if err.kind() == io::ErrorKind::BrokenPipe => {},
                 Error::Io(err) => write_error!("{}", err),
-                Error::Custom(s) => write_error!("Error: {} ", s),
+                Error::Custom(s) => {
+                    println!("$$$$$$$$$$$$$$$");
+                    write_error!("Error: {} ", s)
+                },
             }
             process::exit(1)
         }

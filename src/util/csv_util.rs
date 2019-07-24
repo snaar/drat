@@ -1,6 +1,4 @@
-use chrono::DateTime;
-
-use crate::chopper::{chopper::Source, types::Nanos};
+use crate::chopper::chopper::Source;
 use crate::error::{CliResult, Error};
 use crate::source::csv_configs::CSVOutputConfig;
 
@@ -33,11 +31,4 @@ pub fn create_csv_output_config_from_source(sources: &mut Vec<Box<dyn Source>>, 
         }
     }
     CSVOutputConfig::new(delimiter, all_sources_have_native_timestamps)
-}
-
-pub fn parse_into_nanos_from_str(timestamp: &str, format: &str) -> CliResult<Nanos> {
-    match DateTime::parse_from_str(timestamp, format) {
-        Ok(t) => Ok(t.timestamp_nanos() as Nanos),
-        Err(e) => return Err(Error::from(e.to_string()))
-    }
 }

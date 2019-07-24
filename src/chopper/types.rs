@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::fmt;
 
 use crate::error::{CliResult, Error};
-use crate::util::csv_util;
+use crate::util::timestamp_util;
 
 pub type Nanos = u64;
 
@@ -15,13 +15,13 @@ pub struct DataRange {
 pub static DATA_RANGE_DEFAULT: DataRange = DataRange { begin: None, end: None };
 
 impl DataRange {
-    pub fn new(begin: Option<&str>, end: Option<&str>, format: &str) -> CliResult<Self> {
+    pub fn new(begin: Option<&str>, end: Option<&str>, time_zone: &str) -> CliResult<Self> {
         let begin = match begin {
-            Some(t) => Some(csv_util::parse_into_nanos_from_str(t, format)?),
+            Some(t) => Some(timestamp_util::parse_date_range_timestamp(t.to_string(), time_zone)?),
             None => None
         };
         let end = match end {
-            Some(t) => Some(csv_util::parse_into_nanos_from_str(t, format)?),
+            Some(t) => Some(timestamp_util::parse_date_range_timestamp(t.to_string(), time_zone)?),
             None => None
         };
         Ok(DataRange{ begin, end })
