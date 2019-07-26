@@ -11,7 +11,7 @@ use crate::error::{CliResult, Error};
 use crate::util::dc_util;
 
 pub struct DCSink {
-    writer: BufWriter<Box<io::Write+'static>>,
+    writer: BufWriter<Box<dyn io::Write+'static>>,
     bitset_bytes: usize,
 }
 
@@ -21,7 +21,7 @@ impl DCSink {
         Ok(DCSink { writer, bitset_bytes: 0 })
     }
 
-    fn into_writer(path: &Option<String>) -> io::Result<Box<io::Write>> {
+    fn into_writer(path: &Option<String>) -> io::Result<Box<dyn io::Write>> {
         match path {
             None => {
                 Ok(Box::new(io::stdout()))

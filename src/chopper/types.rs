@@ -1,30 +1,32 @@
 use std::cmp::Ordering;
 use std::fmt;
 
+use chrono_tz::Tz;
+
 use crate::error::{CliResult, Error};
 use crate::util::timestamp_util;
 
 pub type Nanos = u64;
 
 #[derive(Copy, Clone)]
-pub struct DataRange {
+pub struct TimestampRange {
     pub begin: Option<Nanos>,
     pub end: Option<Nanos>,
 }
 
-pub static DATA_RANGE_DEFAULT: DataRange = DataRange { begin: None, end: None };
+pub static TIMESTAMP_RANGE_DEFAULT: TimestampRange = TimestampRange { begin: None, end: None };
 
-impl DataRange {
-    pub fn new(begin: Option<&str>, end: Option<&str>, time_zone: &str) -> CliResult<Self> {
+impl TimestampRange {
+    pub fn new(begin: Option<&str>, end: Option<&str>, timezone: Tz) -> CliResult<Self> {
         let begin = match begin {
-            Some(t) => Some(timestamp_util::parse_date_range_timestamp(t.to_string(), time_zone)?),
+            Some(t) => Some(timestamp_util::parse_timestamp_range(t.to_string(), timezone)?),
             None => None
         };
         let end = match end {
-            Some(t) => Some(timestamp_util::parse_date_range_timestamp(t.to_string(), time_zone)?),
+            Some(t) => Some(timestamp_util::parse_timestamp_range(t.to_string(), timezone)?),
             None => None
         };
-        Ok(DataRange{ begin, end })
+        Ok(TimestampRange { begin, end })
     }
 }
 

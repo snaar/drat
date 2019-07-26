@@ -64,5 +64,5 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
 
     let graph = HeaderGraph::new(vec![chain_1, chain_2, chain_3]);
     Ok(Box::new(
-        Driver::new(sources, graph, types::DATA_RANGE_DEFAULT, headers)?))
+        Driver::new(sources, graph, types::TIMESTAMP_RANGE_DEFAULT, headers)?))
 }

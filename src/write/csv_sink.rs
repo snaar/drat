@@ -9,7 +9,7 @@ use crate::error::{CliResult, Error};
 use crate::source::csv_configs::CSVOutputConfig;
 
 pub struct CSVSink {
-    writer: BufWriter<Box<io::Write+'static>>,
+    writer: BufWriter<Box<dyn io::Write+'static>>,
     csv_output_config: CSVOutputConfig
 }
 
@@ -19,7 +19,7 @@ impl CSVSink {
         Ok(CSVSink { writer, csv_output_config })
     }
 
-    fn into_writer(path: &Option<String>) -> io::Result<Box<io::Write>> {
+    fn into_writer(path: &Option<String>) -> io::Result<Box<dyn io::Write>> {
         match path {
             None => {
                 Ok(Box::new(io::stdout()))

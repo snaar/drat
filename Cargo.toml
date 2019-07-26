@@ -8,6 +8,7 @@ repository = "https://github.com/snaar/chopper"
 [dependencies]
 byteorder = "1"
 chrono = "0.4"
+chrono-tz = "0.4"
 clap = "2"
 csv = "1"
 dtoa = "0.4"

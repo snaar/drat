@@ -1,5 +1,7 @@
 use std::fmt;
 
+use chrono_tz::Tz;
+
 use crate::error::CliResult;
 use crate::util::{csv_util, timestamp_util};
 
@@ -13,7 +15,7 @@ pub struct CSVInputConfig {
     timestamp_col_date: usize,
     timestamp_col_time: Option<usize>,
     timestamp_format: Option<String>,
-    time_zone: String
+    timezone: Tz
 }
 
 #[derive(Clone)]
@@ -27,28 +29,29 @@ impl CSVInputConfig {
                has_header: bool,
                timestamp_col_date: usize,
                timestamp_col_time: Option<usize>,
-               timestamp_format_date: Option<&str>,
-               timestamp_format_time: Option<&str>,
-               time_zone: String) -> CliResult<Self>
+               timestamp_fmt_date: Option<&str>,
+               timestamp_fmt_time: Option<&str>,
+               timezone: Tz) -> CliResult<Self>
     {
         let delimiter = csv_util::parse_into_delimiter(delimiter)?;
-        let date = match timestamp_format_date {
+        let date = match timestamp_fmt_date {
             Some(s) => s,
             None => timestamp_util::DEFAULT_DATE_FORMAT
         };
-        let time = match timestamp_format_time {
+        let time = match timestamp_fmt_time {
             Some(s) => s,
             None => timestamp_util::DEFAULT_TIME_FORMAT
         };
-        let timestamp_format = format!("{}{}{}", date, time, timestamp_util::DEFAULT_ZONE_FORMAT);
+        let timestamp_format = format!("{}{}", date, time);
 
         Ok(CSVInputConfig {
             delimiter,
+
             has_header,
             timestamp_col_date,
             timestamp_col_time,
             timestamp_format: Some(timestamp_format),
-            time_zone
+            timezone
         })
     }
 
@@ -60,7 +63,7 @@ impl CSVInputConfig {
             timestamp_col_date: TIMESTAMP_COL_DATE_DEFAULT,
             timestamp_col_time: None,
             timestamp_format: None,
-            time_zone: timestamp_util::DEFAULT_ZONE.to_string()
+            timezone: timestamp_util::DEFAULT_ZONE
         })
     }
 
@@ -84,8 +87,8 @@ impl CSVInputConfig {
         self.timestamp_format.as_ref()
     }
 
-    pub fn time_zone(&self) -> &str {
-        self.time_zone.as_str()
+    pub fn timezone(&self) -> Tz {
+        self.timezone
     }
 }
 

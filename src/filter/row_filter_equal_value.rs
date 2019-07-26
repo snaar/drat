@@ -37,7 +37,7 @@ impl HeaderSink for RowFilterEqualValueConfig {
             }
         }
         Err(Error::from(
-            format!("RowFilterEqualValueConfig -- field name -- {} not found", self.column_name)))
+            format!("RowFilterEqualValueConfig -- field name [{}] not found", self.column_name)))
     }
 }
 

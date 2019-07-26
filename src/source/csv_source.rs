@@ -1,5 +1,6 @@
 use std::io;
 
+use chrono::{NaiveDateTime, TimeZone};
 use csv;
 use csv::Trim;
 
@@ -77,9 +78,12 @@ impl <R: io::Read> CSVSource<R> {
         }
 
         // parse timestamp into Nanos
-        let timestamp = format!("{}{}{}", date, time, self.csv_config.time_zone());
+        let timestamp = format!("{}{}", date, time);
         self.next_row.timestamp = match self.csv_config.timestamp_format() {
-            Some(f) => timestamp_util::parse_into_nanos_from_str(timestamp.as_str(), f)?,
+            Some(fmt) => {
+                let naive_dt = NaiveDateTime::parse_from_str(timestamp.as_ref(), fmt)?;
+                self.csv_config.timezone().from_local_datetime(&naive_dt).unwrap().timestamp() as Nanos
+            },
             None => match timestamp.parse::<Nanos>() {
                 Ok(t) => t,
                 Err(_) => return Err(Error::from(format!("Cannot parse timestamp value - {:?}. \

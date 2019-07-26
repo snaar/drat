@@ -4,6 +4,7 @@ use std::io;
 use std::process;
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use chrono::ParseError;
 use clap;
 use csv;
 
@@ -21,6 +22,7 @@ pub enum Error {
     CliParsing(clap::Error),
     Csv(csv::Error),
     Io(io::Error),
+    TimeParsing(ParseError),
     Custom(String),
 }
 
@@ -32,6 +34,7 @@ impl Error {
             Error::Csv(err) => write_error!("{}", err),
             Error::Io(ref err) if err.kind() == io::ErrorKind::BrokenPipe => {},
             Error::Io(err) => write_error!("{}", err),
+            Error::TimeParsing(err) => write_error!("{}", err),
             Error::Custom(s) => write_error!("Error: {}", s),
         }
         process::exit(1);
@@ -44,6 +47,7 @@ impl fmt::Display for Error {
             Error::CliParsing(ref e) => e.fmt(f),
             Error::Csv(ref e) => e.fmt(f),
             Error::Io(ref e) => e.fmt(f),
+            Error::TimeParsing(ref e) => e.fmt(f),
             Error::Custom(s) => f.write_str(format!("Error: {}", s).as_str()),
         }
     }
@@ -76,6 +80,13 @@ impl From<io::Error> for Error {
     }
 }
 
+impl From<ParseError> for Error {
+    fn from(err: ParseError) -> Error {
+        print_backtrace();
+        Error::TimeParsing(err)
+    }
+}
+
 impl From<String> for Error {
     fn from(err: String) -> Error {
         print_backtrace();
@@ -100,10 +111,8 @@ pub fn handle_drive_error(cli_result: CliResult<()>) {
                 Error::Csv(err) => write_error!("{}", err),
                 Error::Io(ref err) if err.kind() == io::ErrorKind::BrokenPipe => {},
                 Error::Io(err) => write_error!("{}", err),
-                Error::Custom(s) => {
-                    println!("$$$$$$$$$$$$$$$");
-                    write_error!("Error: {} ", s)
-                },
+                Error::TimeParsing(err) => write_error!("{}", err),
+                Error::Custom(s) => write_error!("Error: {} ", s),
             }
             process::exit(1)
         }

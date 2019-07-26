@@ -34,7 +34,7 @@ impl HeaderSink for ColumnFilterDeleteConfig {
             }
             i += 1;
         }
-        Err(Error::from(format!("ColumnFilterDeleteConfig -- field name - {} not found", self.column_name)))
+        Err(Error::from(format!("ColumnFilterDeleteConfig -- field name [{}] not found", self.column_name)))
     }
 }
 

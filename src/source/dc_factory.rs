@@ -3,7 +3,7 @@ use std::path::Path;
 
 use crate::chopper::chopper::Source;
 use crate::error::CliResult;
-use crate::source::{dc_source, source_factory::SourceFactory};
+use crate::source::{dc_source::DCSource, source_factory::SourceFactory};
 
 pub struct DCFactory;
 
@@ -13,6 +13,6 @@ impl SourceFactory for DCFactory {
     }
 
     fn create_source(&mut self, reader: Box<dyn io::Read>) -> CliResult<Box<dyn Source>> {
-        Ok(Box::new(dc_source::DCSource::new(reader)?))
+        Ok(Box::new(DCSource::new(reader)?))
     }
 }

@@ -1,6 +1,6 @@
 use crate::chopper::chopper::{ChopperDriver, Source};
 use crate::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
-use crate::chopper::types::{DataRange, Header};
+use crate::chopper::types::{Header, TimestampRange};
 use crate::cli_app::CliApp;
 use crate::driver::driver::Driver;
 use crate::error::{self, CliResult};
@@ -23,10 +23,11 @@ pub fn parse_cli_args(transport_factories: Option<Vec<Box<dyn TransportFactory>>
     if matches.is_present("backtrace") {
         error::turn_on_backtrace()
     }
-    let time_zone = timestamp_util::parse_time_zone(matches.value_of("csv_time_zone"));
-    let data_range
-        = DataRange::new(matches.value_of("begin"), matches.value_of("end"), time_zone.as_str())?;
-
+    let timezone = timestamp_util::parse_time_zone(matches.value_of("timezone"));
+    let timestamp_range
+        = TimestampRange::new(matches.value_of("begin"),
+                              matches.value_of("end"),
+                              timezone)?;
     let inputs = match matches.values_of("input") {
         None => None,
         Some(i) => {
@@ -60,22 +61,22 @@ pub fn parse_cli_args(transport_factories: Option<Vec<Box<dyn TransportFactory>>
         None => None,
         Some(i) => Some(i.parse::<usize>().unwrap())
     };
-    let timestamp_format_date: Option<&str> = matches.value_of("csv_timestamp_format_date");
-    let timestamp_format_time: Option<&str> = matches.value_of("csv_timestamp_format_time");
+    let timestamp_fmt_date: Option<&str> = matches.value_of("csv_timestamp_format_date");
+    let timestamp_fmt_time: Option<&str> = matches.value_of("csv_timestamp_format_time");
 
     let csv_input_config
         = CSVInputConfig::new(input_delimiter,
                               has_header,
                               timestamp_col_date,
                               timestamp_col_time,
-                              timestamp_format_date,
-                              timestamp_format_time,
-                              time_zone)?;
+                              timestamp_fmt_date,
+                              timestamp_fmt_time,
+                              timezone)?;
     setup_graph(inputs,
                 outputs,
                 transport_factories,
                 source_factories,
-                data_range,
+                timestamp_range,
                 csv_input_config,
                 output_delimiter,
                 print_timestamp)
@@ -85,7 +86,7 @@ fn setup_graph(inputs: Option<Vec<&str>>,
                output: Option<String>,
                transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
                source_factories: Option<Vec<Box<dyn SourceFactory>>>,
-               data_range: DataRange,
+               timestamp_range: TimestampRange,
                csv_input_config: CSVInputConfig,
                csv_output_delimiter: &str,
                csv_output_print_timestamp: Option<bool>) -> CliResult<Box<dyn ChopperDriver>>
@@ -126,5 +127,5 @@ fn setup_graph(inputs: Option<Vec<&str>>,
     let chain = HeaderChain::new(vec![node]);
     let graph = HeaderGraph::new(vec![chain]);
 
-    Ok(Box::new(Driver::new(sources, graph, data_range, headers)?))
+    Ok(Box::new(Driver::new(sources, graph, timestamp_range, headers)?))
 }

@@ -39,7 +39,7 @@ impl HeaderSink for RowFilterGreaterValueConfig {
             }
         }
         Err(Error::from(
-            format!("RowFilterGreaterValueConfig -- field name -- {} not found", self.column_name)))
+            format!("RowFilterGreaterValueConfig -- field name [{}] not found", self.column_name)))
     }
 }
 

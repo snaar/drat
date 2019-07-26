@@ -26,7 +26,7 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
         None,
         None,
         None,
-        timestamp_util::DEFAULT_ZONE.to_string())?;
+        timestamp_util::DEFAULT_ZONE)?;
     let input = "./examples/files/uspop_time.csv.gz";
     let inputs = vec![input];
     let output = None;
@@ -49,5 +49,5 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
 
     let graph = HeaderGraph::new(vec![chain]);
     Ok(Box::new(
-        Driver::new(sources, graph, types::DATA_RANGE_DEFAULT, headers)?))
+        Driver::new(sources, graph, types::TIMESTAMP_RANGE_DEFAULT, headers)?))
 }

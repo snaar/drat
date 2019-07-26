@@ -1,30 +1,29 @@
 use crate::chopper::chopper::{ChopperDriver, Source};
 use crate::chopper::data_graph::{DataGraph, DataNode};
 use crate::chopper::header_graph::{ChainId, HeaderGraph, NodeId, PinId};
-use crate::chopper::types::{DataRange, Header, Row};
+use crate::chopper::types::{Header, Row, TimestampRange};
 use crate::driver::source_row_buffer::SourceRowBuffer;
 use crate::error::{CliResult, Error};
 
 pub struct Driver {
     sources: Vec<Box<Source>>,
     data_graph: DataGraph,
-    date_range: DataRange,
+    timestamp_range: TimestampRange,
 }
 
 impl Driver {
     pub fn new(sources: Vec<Box<dyn Source>>,
                header_graph: HeaderGraph,
-               date_range: DataRange,
+               timestamp_range: TimestampRange,
                headers: Vec<Header>) -> CliResult<Self>
     {
-
         if sources.len() > header_graph.len() {
             return Err(Error::from(
                 "Driver -- not enough header chains for sources. \
                 each source should have at least one header chain."));
         }
         let data_graph = header_graph.process_header(headers)?;
-        Ok(Driver { sources, data_graph, date_range })
+        Ok(Driver { sources, data_graph, timestamp_range })
     }
 
     fn drive(&mut self) -> CliResult<()> {
@@ -43,7 +42,7 @@ impl Driver {
 
             // remove the row buffer if it reaches the end of the file
             loop {
-                if !row_buffers[buffer_index].has_next(&self.date_range)? {
+                if !row_buffers[buffer_index].has_next(&self.timestamp_range)? {
                     self.flush(chain_id, 0)?;
                     row_buffers.remove(buffer_index);
                 }
@@ -59,7 +58,7 @@ impl Driver {
         let mut row_buffers: Vec<SourceRowBuffer> = Vec::with_capacity(self.sources.len());
         for i in 0..self.sources.len() {
             let source = self.sources.pop().unwrap();
-            row_buffers.push(SourceRowBuffer::new(source, i, &self.date_range)?);
+            row_buffers.push(SourceRowBuffer::new(source, i, &self.timestamp_range)?);
         }
         Ok(row_buffers)
     }
@@ -78,8 +77,8 @@ impl Driver {
                    mut chain_id: ChainId,
                    mut node_id: NodeId,
                    mut pin_id: PinId,
-                   mut row: Row) -> CliResult<()> {
-
+                   mut row: Row) -> CliResult<()>
+    {
         let chain = data_graph.get_mut_chain(chain_id);
         while node_id < chain.nodes().len() {
             match chain.node(node_id) {

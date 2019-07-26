@@ -1,6 +1,6 @@
 use crate::chopper::chopper::Source;
 use crate::chopper::header_graph::ChainId;
-use crate::chopper::types::{DataRange, Nanos, Row};
+use crate::chopper::types::{Nanos, Row, TimestampRange};
 use crate::error::CliResult;
 
 pub struct SourceRowBuffer {
@@ -11,8 +11,8 @@ pub struct SourceRowBuffer {
 }
 
 impl SourceRowBuffer {
-    pub fn new(mut source: Box<dyn Source>, chain_id: ChainId, data_range: &DataRange) -> CliResult<Self> {
-        let mut row = match_next_row(&mut source, data_range)?;
+    pub fn new(mut source: Box<dyn Source>, chain_id: ChainId, timestamp_range: &TimestampRange) -> CliResult<Self> {
+        let mut row = match_next_row(&mut source, timestamp_range)?;
         let timestamp = match &mut row {
             Some(r) => r.timestamp,
             None => 0 as Nanos
@@ -37,8 +37,8 @@ impl SourceRowBuffer {
         self.row = Some(next_row);
     }
 
-    pub fn has_next(&mut self, data_range: &DataRange) -> CliResult<bool> {
-        let next_row = match_next_row(&mut self.source, &data_range)?;
+    pub fn has_next(&mut self, timestamp_range: &TimestampRange) -> CliResult<bool> {
+        let next_row = match_next_row(&mut self.source, &timestamp_range)?;
         match next_row {
             Some(r) => {
                 self.update_record(r);
@@ -58,22 +58,22 @@ enum Action {
     Skip,
 }
 
-fn filter_data_range(data_range: &DataRange, timestamp: Nanos) -> Action {
-    if data_range.end.is_some() && timestamp >= data_range.end.unwrap() {
+fn filter_data_range(timestamp_range: &TimestampRange, timestamp: Nanos) -> Action {
+    if timestamp_range.end.is_some() && timestamp >= timestamp_range.end.unwrap() {
         return Action::Stop;
     }
-    match data_range.begin.is_none() || timestamp >= data_range.begin.unwrap() {
+    match timestamp_range.begin.is_none() || timestamp >= timestamp_range.begin.unwrap() {
         true => Action::Write,
         false => Action::Skip,
     }
 }
 
-fn match_next_row(source: &mut Box<dyn Source>, data_range: &DataRange) -> CliResult<Option<Row>> {
+fn match_next_row(source: &mut Box<dyn Source>, timestamp_range: &TimestampRange) -> CliResult<Option<Row>> {
     let mut next_row: Option<Row> = None;
     loop {
         match source.next_row()? {
             Some(r) => {
-                match filter_data_range(data_range, r.timestamp) {
+                match filter_data_range(timestamp_range, r.timestamp) {
                     Action::Stop => {
                         break
                     },
