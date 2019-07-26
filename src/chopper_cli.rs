@@ -1,3 +1,8 @@
+use std::collections::HashMap;
+
+use chrono_tz::Tz;
+use clap::ArgMatches;
+
 use crate::chopper::chopper::{ChopperDriver, Source};
 use crate::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use crate::chopper::types::{Header, TimestampRange};
@@ -11,23 +16,37 @@ use crate::util::{csv_util, timestamp_util};
 use crate::write::factory;
 
 pub fn chopper_cli(transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
-                   source_factories: Option<Vec<Box<dyn SourceFactory>>>) -> CliResult<()> {
-    let mut driver = parse_cli_args(transport_factories, source_factories)?;
+                   source_factories: Option<Vec<Box<dyn SourceFactory>>>,
+                   timezone_map: Option<HashMap<&str, Tz>>) -> CliResult<()>
+{
+    let mut driver = parse_cli_args(transport_factories, source_factories, timezone_map)?;
     driver.drive()
 }
 
 pub fn parse_cli_args(transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
-                      source_factories: Option<Vec<Box<dyn SourceFactory>>>) -> CliResult<Box<dyn ChopperDriver>>
+                      source_factories: Option<Vec<Box<dyn SourceFactory>>>,
+                      timezone_map: Option<HashMap<&str, Tz>>) -> CliResult<Box<dyn ChopperDriver>>
 {
     let matches = CliApp.create_cli_app().get_matches();
     if matches.is_present("backtrace") {
         error::turn_on_backtrace()
     }
-    let timezone = timestamp_util::parse_time_zone(matches.value_of("timezone"));
-    let timestamp_range
-        = TimestampRange::new(matches.value_of("begin"),
-                              matches.value_of("end"),
-                              timezone)?;
+
+    let timezone: Tz = match matches.value_of("timezone") {
+        None => timestamp_util::DEFAULT_ZONE,
+        Some(t) =>  match timezone_map {
+            None => t.parse().unwrap(),
+            Some(map) => match map.get(t) {
+                None => t.parse().unwrap(),
+                Some(tz) => *tz
+            }
+        }
+    };
+    let timestamp_range= TimestampRange::new(
+        matches.value_of("begin"),
+        matches.value_of("end"),
+        timezone)?;
+
     let inputs = match matches.values_of("input") {
         None => None,
         Some(i) => {
@@ -43,35 +62,16 @@ pub fn parse_cli_args(transport_factories: Option<Vec<Box<dyn TransportFactory>>
         Some(s) => Some(s.to_string())
     };
 
-    // csv config
-    let input_delimiter = matches.value_of("csv_input_delimiter").unwrap();
+    // csv only
+    let csv_input_config = parse_csv_config(&matches, timezone)?;
     let output_delimiter = matches.value_of("csv_output_delimiter").unwrap();
-    let has_header = matches.is_present("csv_has_header");
     let print_timestamp = match matches.value_of("csv_print_timestamp").unwrap() {
         "auto" => None,
         "true" => Some(true),
         "false" => Some(false),
         _ => unreachable!()
     };
-    let timestamp_col_date: usize = match matches.value_of("csv_timestamp_col_date") {
-        None => csv_configs::TIMESTAMP_COL_DATE_DEFAULT,
-        Some(i) => i.parse::<usize>().unwrap()
-    };
-    let timestamp_col_time: Option<usize> = match matches.value_of("csv_timestamp_col_time") {
-        None => None,
-        Some(i) => Some(i.parse::<usize>().unwrap())
-    };
-    let timestamp_fmt_date: Option<&str> = matches.value_of("csv_timestamp_format_date");
-    let timestamp_fmt_time: Option<&str> = matches.value_of("csv_timestamp_format_time");
 
-    let csv_input_config
-        = CSVInputConfig::new(input_delimiter,
-                              has_header,
-                              timestamp_col_date,
-                              timestamp_col_time,
-                              timestamp_fmt_date,
-                              timestamp_fmt_time,
-                              timezone)?;
     setup_graph(inputs,
                 outputs,
                 transport_factories,
@@ -128,4 +128,27 @@ fn setup_graph(inputs: Option<Vec<&str>>,
     let graph = HeaderGraph::new(vec![chain]);
 
     Ok(Box::new(Driver::new(sources, graph, timestamp_range, headers)?))
+}
+
+fn parse_csv_config(matches: &ArgMatches, timezone: Tz) -> CliResult<CSVInputConfig> {
+    let input_delimiter = matches.value_of("csv_input_delimiter").unwrap();
+    let has_header = matches.is_present("csv_has_header");
+    let timestamp_col_date: usize = match matches.value_of("csv_timestamp_col_date") {
+        None => csv_configs::TIMESTAMP_COL_DATE_DEFAULT,
+        Some(i) => i.parse::<usize>().unwrap()
+    };
+    let timestamp_col_time: Option<usize> = match matches.value_of("csv_timestamp_col_time") {
+        None => None,
+        Some(i) => Some(i.parse::<usize>().unwrap())
+    };
+    let timestamp_fmt_date: Option<&str> = matches.value_of("csv_timestamp_format_date");
+    let timestamp_fmt_time: Option<&str> = matches.value_of("csv_timestamp_format_time");
+
+    CSVInputConfig::new(input_delimiter,
+                        has_header,
+                        timestamp_col_date,
+                        timestamp_col_time,
+                        timestamp_fmt_date,
+                        timestamp_fmt_time,
+                        timezone)
 }
