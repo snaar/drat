@@ -16,7 +16,7 @@ fn test_merge() {
     error::handle_drive_error(merge());
     assert!(is_same_file
         ("./tests/output/test_merge.csv",
-         "./tests/reference/merge_time_city.csv"
+         "./tests/reference/merge.csv"
         ).unwrap());
 }
 
@@ -69,6 +69,7 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let chain_3 = HeaderChain::new(vec![node_merge_sink, node_output]);
 
     let graph = HeaderGraph::new(vec![chain_1, chain_2, chain_3]);
+
     Ok(Box::new(
         Driver::new(sources, graph, types::TIMESTAMP_RANGE_DEFAULT, headers)?))
 }

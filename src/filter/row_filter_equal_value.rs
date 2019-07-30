@@ -15,8 +15,8 @@ pub struct RowFilterEqualValue {
 }
 
 impl RowFilterEqualValue {
-    pub fn new(column_name: String, value: FieldValue) -> Box<dyn HeaderSink> {
-        let config = RowFilterEqualValueConfig { column_name, value };
+    pub fn new(column_name: &str, value: FieldValue) -> Box<dyn HeaderSink> {
+        let config = RowFilterEqualValueConfig { column_name: column_name.to_string(), value };
         Box::new(config) as Box<dyn HeaderSink>
     }
 }

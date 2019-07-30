@@ -17,8 +17,8 @@ pub struct RowFilterGreaterValue {
 }
 
 impl RowFilterGreaterValue {
-    pub fn new(column_name: String, value: FieldValue) -> Box<dyn HeaderSink> {
-        let config = RowFilterGreaterValueConfig { column_name, value };
+    pub fn new(column_name: &str, value: FieldValue) -> Box<dyn HeaderSink> {
+        let config = RowFilterGreaterValueConfig { column_name: column_name.to_string(), value };
         Box::new(config) as Box<dyn HeaderSink>
     }
 }

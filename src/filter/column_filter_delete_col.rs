@@ -12,8 +12,8 @@ pub struct ColumnFilterDelete {
 }
 
 impl ColumnFilterDelete {
-    pub fn new(column_name: String) -> Box<dyn HeaderSink> {
-        let config = ColumnFilterDeleteConfig { column_name };
+    pub fn new(column_name: &str) -> Box<dyn HeaderSink> {
+        let config = ColumnFilterDeleteConfig { column_name: column_name.to_string() };
         Box::new(config) as Box<dyn HeaderSink>
     }
 }

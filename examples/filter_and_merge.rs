@@ -23,9 +23,9 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let input_2 = "./examples/files/million.dc";
     let inputs = vec![input_1, input_2];
     let output = None;
-    let column_int = "an_int".to_string();
+    let column_int = "an_int";
     let value_1 = FieldValue::Int(999950);
-    let column_double = "a_double".to_string();
+    let column_double = "a_double";
     let value_2 = FieldValue::Double(50.0);
 
     // source reader and headers
