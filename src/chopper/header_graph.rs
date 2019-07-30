@@ -34,6 +34,10 @@ impl HeaderChain {
     pub fn get_mut_nodes(&mut self) -> &mut Vec<HeaderNode> {
         &mut self.nodes
     }
+
+    pub fn add_nodes(&mut self, node: HeaderNode) {
+        self.nodes.push(node)
+    }
 }
 
 impl HeaderGraph {
@@ -63,8 +67,8 @@ impl HeaderGraph {
                          data_graph: &mut DataGraph,
                          chain_id: ChainId,
                          pin_id: PinId,
-                         header: &mut Header) -> CliResult<Self> {
-
+                         header: &mut Header) -> CliResult<Self>
+    {
         let chain: &mut HeaderChain = self.header_chains.get_mut(chain_id).unwrap();
         // check the first node of the chain.
         if let HeaderNode::MergeHeaderSink(..) = chain.get_mut_nodes().get_mut(0).unwrap() {

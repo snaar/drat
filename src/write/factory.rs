@@ -5,7 +5,8 @@ use crate::write::csv_sink;
 use crate::write::dc_sink;
 
 pub fn new_header_sink(output: Option<String>,
-                       csv_output_config: Option<CSVOutputConfig>) -> CliResult<Box<dyn HeaderSink +'static>> {
+                       csv_output_config: Option<CSVOutputConfig>) -> CliResult<Box<dyn HeaderSink +'static>>
+{
     let csv_output_config = match csv_output_config {
         Some(c) => c,
         None => CSVOutputConfig::new_default()

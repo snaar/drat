@@ -60,3 +60,18 @@ pub fn parse_time_zone(timezone: Option<&str>) -> Tz {
     };
     tz
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono_tz::America::New_York;
+
+    #[test]
+    fn test_parse_timestamp_range() {
+        let timestamp_year = parse_timestamp_range("2019".to_string(), New_York).unwrap();
+        let timestamp_datetime = parse_timestamp_range(
+            "20190101-00:00:00".to_string(), New_York).unwrap();
+        assert_eq!(timestamp_year, 1546318800);
+        assert_eq!(timestamp_datetime, 1546318800);
+    }
+}

@@ -7,7 +7,7 @@ use crate::chopper::chopper::{ChopperDriver, Source};
 use crate::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use crate::chopper::types::{Header, TimestampRange};
 use crate::cli_app::CliApp;
-use crate::driver::driver::Driver;
+use crate::driver::{driver::Driver, merge_join::MergeJoin};
 use crate::error::{self, CliResult};
 use crate::input::input_factory::InputFactory;
 use crate::source::{csv_configs::{self, CSVInputConfig, CSVOutputConfig}, source_factory::SourceFactory};
@@ -99,12 +99,33 @@ fn setup_graph(inputs: Option<Vec<&str>>,
         Some(csv_input_config),
         source_factories,
         transport_factories)?;
+
+    let csv_output_config = match csv_output_print_timestamp {
+        Some(b) => CSVOutputConfig::new(csv_output_delimiter, b),
+        None => csv_util::create_csv_output_config_from_source(&mut sources, csv_output_delimiter)
+    };
+
+    let mut header_nodes: Vec<HeaderNode> = Vec::new();
+    let mut chains: Vec<HeaderChain> = Vec::new();
     match inputs {
         Some(inputs) => {
-            for i in inputs {
-                let source = input_factory.create_source_from_path(i)?;
+            for i in 0..inputs.len() {
+                let source = input_factory.create_source_from_path(inputs.get(i).unwrap())?;
                 headers.push(source.header().clone());
                 sources.push(source);
+                // add Merge to chains if multiple input files
+                if inputs.len() > 1 {
+                    let merge = HeaderNode::Merge(inputs.len(), i);
+                    let chain = HeaderChain::new(vec![merge]);
+                    chains.push(chain);
+                }
+            }
+            // add MergeHeaderSink as first header node if multiple input files
+            if inputs.len() > 1 {
+                let merge = MergeJoin::new(inputs.len())?;
+                let num_of_header_to_process = merge.num_of_header_to_process();
+                let node_merge_sink = HeaderNode::MergeHeaderSink(merge, num_of_header_to_process);
+                header_nodes.push(node_merge_sink);
             }
         }
         None => {
@@ -115,17 +136,11 @@ fn setup_graph(inputs: Option<Vec<&str>>,
             sources.push(source);
         }
     }
-
-    let csv_output_config = match csv_output_print_timestamp {
-        Some(b) => CSVOutputConfig::new(csv_output_delimiter, b),
-        None => csv_util::create_csv_output_config_from_source(&mut sources, csv_output_delimiter)
-    };
-
-    // create header graph
     let header_sink = factory::new_header_sink(output, Some(csv_output_config))?;
-    let node = HeaderNode::HeaderSink(header_sink);
-    let chain = HeaderChain::new(vec![node]);
-    let graph = HeaderGraph::new(vec![chain]);
+    let node_hs = HeaderNode::HeaderSink(header_sink);
+    header_nodes.push(node_hs);
+    chains.push(HeaderChain::new(header_nodes));
+    let graph = HeaderGraph::new(chains);
 
     Ok(Box::new(Driver::new(sources, graph, timestamp_range, headers)?))
 }
