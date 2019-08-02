@@ -8,14 +8,55 @@ use crate::util::{csv_util, timestamp_util};
 pub static DELIMITER_DEFAULT: &str = ",";
 pub static TIMESTAMP_COL_DATE_DEFAULT: usize = 0;
 
+pub type DateCol = usize;
+pub type TimeCol = usize;
+
+#[derive(Clone)]
+pub enum TimestampCol {
+    Timestamp(usize),
+    DateAndTime(DateCol, TimeCol),
+}
+
+#[derive(Clone)]
+pub struct TimestampConfig {
+    timestamp_col: TimestampCol,
+    timestamp_fmt: Option<String>,
+    timezone: Tz,
+}
+
+impl TimestampConfig {
+    pub fn new(timestamp_col: TimestampCol, timestamp_fmt: Option<String>, timezone: Tz) -> Self {
+        TimestampConfig { timestamp_col, timestamp_fmt, timezone }
+    }
+
+    pub fn default() -> Self {
+        let timestamp_col = TimestampCol::Timestamp(0);
+        let timezone = timestamp_util::DEFAULT_ZONE;
+        TimestampConfig { timestamp_col, timestamp_fmt: None, timezone }
+    }
+
+    pub fn timestamp_col(&mut self) -> &mut TimestampCol {
+        &mut self.timestamp_col
+    }
+
+    pub fn timestamp_fmt(&mut self) -> &mut Option<String> {
+        &mut self.timestamp_fmt
+    }
+
+    pub fn set_timestamp_fmt(&mut self, fmt: String) {
+        self.timestamp_fmt = Some(fmt)
+    }
+
+    pub fn timezone(&self) -> Tz {
+        self.timezone
+    }
+}
+
 #[derive(Clone)]
 pub struct CSVInputConfig {
     delimiter: u8,
     has_header: bool,
-    timestamp_col_date: usize,
-    timestamp_col_time: Option<usize>,
-    timestamp_format: Option<String>,
-    timezone: Tz
+    timestamp_config: TimestampConfig,
 }
 
 #[derive(Clone)]
@@ -27,44 +68,16 @@ pub struct CSVOutputConfig {
 impl CSVInputConfig {
     pub fn new(delimiter: &str,
                has_header: bool,
-               timestamp_col_date: usize,
-               timestamp_col_time: Option<usize>,
-               timestamp_fmt_date: Option<&str>,
-               timestamp_fmt_time: Option<&str>,
-               timezone: Tz) -> CliResult<Self>
+               timestamp_config: TimestampConfig) -> CliResult<Self>
     {
         let delimiter = csv_util::parse_into_delimiter(delimiter)?;
-        let date = match timestamp_fmt_date {
-            Some(s) => s,
-            None => timestamp_util::DEFAULT_DATE_FORMAT
-        };
-        let time = match timestamp_fmt_time {
-            Some(s) => s,
-            None => timestamp_util::DEFAULT_TIME_FORMAT
-        };
-        let timestamp_format = format!("{}{}", date, time);
-
-        Ok(CSVInputConfig {
-            delimiter,
-
-            has_header,
-            timestamp_col_date,
-            timestamp_col_time,
-            timestamp_format: Some(timestamp_format),
-            timezone
-        })
+        Ok(CSVInputConfig { delimiter, has_header, timestamp_config })
     }
 
     pub fn new_default() -> CliResult<Self> {
         let delimiter = csv_util::parse_into_delimiter(DELIMITER_DEFAULT)?;
-        Ok(CSVInputConfig {
-            delimiter,
-            has_header: false,
-            timestamp_col_date: TIMESTAMP_COL_DATE_DEFAULT,
-            timestamp_col_time: None,
-            timestamp_format: None,
-            timezone: timestamp_util::DEFAULT_ZONE
-        })
+        let timestamp_config = TimestampConfig::default();
+        Ok(CSVInputConfig { delimiter, has_header: false, timestamp_config })
     }
 
     pub fn has_header(&self) -> bool {
@@ -75,20 +88,8 @@ impl CSVInputConfig {
         self.delimiter
     }
 
-    pub fn timestamp_col_date(&self) -> usize {
-        self.timestamp_col_date
-    }
-
-    pub fn timestamp_col_time(&self) -> Option<usize> {
-        self.timestamp_col_time
-    }
-
-    pub fn timestamp_format(&self) -> Option<&String> {
-        self.timestamp_format.as_ref()
-    }
-
-    pub fn timezone(&self) -> Tz {
-        self.timezone
+    pub fn timestamp_config(&mut self) -> &mut TimestampConfig {
+        &mut self.timestamp_config
     }
 }
 

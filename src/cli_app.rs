@@ -38,6 +38,7 @@ impl CliApp {
             .arg(Arg::with_name("backtrace")
                 .long("backtrace")
                 .help("print backtrace"))
+
             //  below are csv only
             .arg(Arg::with_name("csv_input_delimiter")
                 .long("csv-in-delimiter")
@@ -51,40 +52,75 @@ impl CliApp {
                 .takes_value(true)
                 .default_value(",")
                 .value_name("ARG"))
+
+            // has header
             .arg(Arg::with_name("csv_has_header")
                 .long("csv-has-header")
                 .help("csv only: input files have header"))
-            .arg(Arg::with_name("csv_print_timestamp")
-                .long("csv-print-timestamp")
+
+            // print timestamp
+            .arg(Arg::with_name("csv_print_ts")
+                .long("csv-print-ts")
                 .help("csv only: print timestamp as first column")
                 .takes_value(true)
                 .default_value("auto")
                 .possible_values(&["true", "false", "auto"])
                 .case_insensitive(true)
                 .value_name("ARG"))
-            .arg(Arg::with_name("csv_timestamp_col_date")
-                .long("csv-timestamp-date")
-                .help("csv only: specify the timestamp date column index")
+
+            // timestamp column
+            .arg(Arg::with_name("csv_ts_col")
+                .long("csv-ts")
+                .help("csv only: specify the timestamp column index")
                 .takes_value(true)
                 .default_value("0")
-                .value_name("ARG"))
-            .arg(Arg::with_name("csv_timestamp_col_time")
-                .long("csv-timestamp-time")
-                .help("csv only: specify the timestamp time column index")
-                .takes_value(true)
-                .value_name("ARG"))
-            .arg(Arg::with_name("csv_timestamp_format_date")
-                .long("csv-timestamp-fmt-date")
-                .help("csv only: specify the timestamp date format [default: %Y%m%d]")
+                .value_name("ARG")
+                .conflicts_with_all(&["csv_ts_col_date", "csv_ts_col_time"]))
+            // timestamp column date
+            .arg(Arg::with_name("csv_ts_col_date")
+                .long("csv-ts-date")
+                .help("csv only: specify the timestamp date column index. \
+                        \nused when date and time are in separate columns")
                 .takes_value(true)
                 .value_name("ARG")
-                .requires("timezone"))
-            .arg(Arg::with_name("csv_timestamp_format_time")
-                .long("csv-timestamp-fmt-time")
-                .help("csv only: specify the timestamp time format [default: %H:%M:%S]")
+                .requires("csv_ts_col_time")
+                .conflicts_with("csv_ts_col"))
+            // timestamp column time
+            .arg(Arg::with_name("csv_ts_col_time")
+                .long("csv-ts-time")
+                .help("csv only: specify the timestamp time column index. \
+                        \nused when date and time are in separate columns")
                 .takes_value(true)
                 .value_name("ARG")
-                .requires_all(&["csv_timestamp_format_date", "timezone"]));
+                .requires("csv_ts_col_date")
+                .conflicts_with("csv_ts_col"))
+
+            // timestamp format
+            .arg(Arg::with_name("csv_ts_fmt")
+                .long("csv-ts-fmt")
+                .help("csv only: specify the timestamp datetime format\
+                        \n[default: date %H:%M:%S, time %H:%M:%S]")
+                .takes_value(true)
+                .value_name("ARG")
+                .conflicts_with_all(&["csv_ts_fmt_date", "csv_ts_fmt_time"]))
+            // timestamp format date
+            .arg(Arg::with_name("csv_ts_fmt_date")
+                .long("csv-ts-fmt-date")
+                .help("csv only: specify the timestamp date format \
+                        \n[default: %Y%m%d]")
+                .takes_value(true)
+                .value_name("ARG")
+                .requires("csv_ts_fmt_time")
+                .conflicts_with("csv_ts_fmt_datetime"))
+            // timestamp format time
+            .arg(Arg::with_name("csv_ts_fmt_time")
+                .long("csv-ts-fmt-time")
+                .help("csv only: specify the timestamp time format \
+                        \n[default: %H:%M:%S]")
+                .takes_value(true)
+                .value_name("ARG")
+                .requires("csv_timestamp_format_date")
+                .conflicts_with("csv_ts_fmt_datetime"));
         app
     }
 }

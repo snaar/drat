@@ -4,7 +4,7 @@ use crate::source::csv_configs::CSVOutputConfig;
 use crate::write::csv_sink;
 use crate::write::dc_sink;
 
-pub fn new_header_sink(output: Option<String>,
+pub fn new_header_sink(output: Option<&str>,
                        csv_output_config: Option<CSVOutputConfig>) -> CliResult<Box<dyn HeaderSink +'static>>
 {
     let csv_output_config = match csv_output_config {
@@ -14,12 +14,13 @@ pub fn new_header_sink(output: Option<String>,
     let writer: Box<dyn HeaderSink +'static>;
     match output {
         Some(p) => {
+            let p = p.to_string();
             if p.ends_with("csv") {
                 writer = Box::new(csv_sink::CSVSink::new(&Some(p), csv_output_config)?);
             } else if p.ends_with("dc") {
                 writer = Box::new(dc_sink::DCSink::new(&Some(p))?);
             } else {
-                return Err(Error::from(format!("Error: file type -- {} is not supported", p)))
+                return Err(Error::from(format!("file type -- {} is not supported", p)))
             }
         }
         None => { // if none use csv sink

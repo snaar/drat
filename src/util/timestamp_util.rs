@@ -10,7 +10,7 @@ pub static DEFAULT_TIME: &str = "00:00:00";
 pub static DEFAULT_ZONE: Tz = UTC;
 pub static DEFAULT_DATE_FORMAT: &str = "%Y%m%d";
 pub static DEFAULT_TIME_FORMAT: &str = "%H:%M:%S";
-pub static DEFAULT_DATE_TIME_FORMAT: &str = "%Y%m%d%H:%M:%S";
+pub static DEFAULT_TIMESTAMP_FORMAT: &str = "%Y%m%d%H:%M:%S";
 pub static DEFAULT_ZONE_FORMAT: &str = "%z";
 
 // list of timestamp formats
@@ -42,7 +42,7 @@ pub fn parse_timestamp_range(mut datetime: String, timezone: Tz) -> CliResult<Na
     }
 
     // try available datetime formats
-    for fmt in DATE_TIME_FORMATS.clone() {
+    for fmt in DATE_TIME_FORMATS.iter() {
         // try parsing to naive datetime first
         let naive_dt = NaiveDateTime::parse_from_str(datetime.as_ref(), fmt.as_ref());
         // if matching format is found, convert naive datetime to a timezone-aware datetime

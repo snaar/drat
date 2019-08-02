@@ -9,6 +9,7 @@ use chopper_lib::driver::merge_join::MergeJoin;
 use chopper_lib::error::{self, CliResult};
 use chopper_lib::input::input_factory::InputFactory;
 use chopper_lib::source::csv_configs::{self, CSVInputConfig, CSVOutputConfig, DELIMITER_DEFAULT};
+use chopper_lib::source::csv_configs::{TimestampConfig, TimestampCol};
 use chopper_lib::write::factory;
 
 #[test]
@@ -31,15 +32,10 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let output = "./tests/output/test_merge.csv";
 
     // source reader and headers
+    let ts_config = TimestampConfig::new
+        (TimestampCol::Timestamp(0), None, New_York);
     let input_config = CSVInputConfig::new
-        (csv_configs::DELIMITER_DEFAULT,
-         true,
-         0,
-         None,
-         None,
-         None,
-         New_York
-        )?;
+        (csv_configs::DELIMITER_DEFAULT, true, ts_config)?;
     let mut input_factory
         = InputFactory::new(Some(input_config), None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
@@ -64,7 +60,7 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let node_merge_sink = HeaderNode::MergeHeaderSink(merge, num_of_header_to_process);
     let csv_output_config = CSVOutputConfig::new(DELIMITER_DEFAULT, true);
     let header_sink = factory::new_header_sink
-        (Some(output.to_string()), Some(csv_output_config))?;
+        (Some(output), Some(csv_output_config))?;
     let node_output = HeaderNode::HeaderSink(header_sink);
     let chain_3 = HeaderChain::new(vec![node_merge_sink, node_output]);
 

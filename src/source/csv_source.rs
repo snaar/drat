@@ -7,7 +7,7 @@ use csv::Trim;
 use crate::chopper::chopper::Source;
 use crate::chopper::types::{FieldType, FieldValue, Header, Nanos, Row};
 use crate::error::{CliResult, Error};
-use crate::source::csv_configs::CSVInputConfig;
+use crate::source::csv_configs::{CSVInputConfig, TimestampCol};
 use crate::util::timestamp_util;
 
 pub struct CSVSource<R> {
@@ -36,7 +36,7 @@ impl <R: io::Read> CSVSource<R> {
         }
 
         // get first row and initialize next_row
-        let first_row = reader.records().next().unwrap()?;
+        let first_row: csv::StringRecord = reader.records().next().unwrap()?;
         let field_count = first_row.len();
         if !reader.has_headers() {
             // if field name is not given, assign default name - "col_x"
@@ -54,6 +54,17 @@ impl <R: io::Read> CSVSource<R> {
 
         let mut csv_reader = CSVSource { reader, header, csv_config, next_row, has_next_row: true };
 
+        // update timestamp format
+        let timestamp = csv_reader.get_timestamp(&first_row);
+        if csv_reader.csv_config.timestamp_config().timestamp_fmt().is_none()
+            && timestamp.parse::<Nanos>().is_err() {
+            for fmt in timestamp_util::DATE_TIME_FORMATS.iter() {
+                if NaiveDateTime::parse_from_str(timestamp.as_ref(), fmt.as_ref()).is_ok() {
+                    csv_reader.csv_config.timestamp_config().set_timestamp_fmt(fmt.clone());
+                }
+            }
+        }
+
         // update next_row with first row
         csv_reader.update_row(first_row)?;
 
@@ -61,28 +72,18 @@ impl <R: io::Read> CSVSource<R> {
     }
 
     fn update_row(&mut self, next_record: csv::StringRecord) -> CliResult<()> {
-        let mut current_column = 0;
-        let mut date: &str = "";
-        let mut time: &str = timestamp_util::DEFAULT_TIME;
-
-        for i in next_record.iter() {
-            if current_column == self.csv_config.timestamp_col_date() {
-                date = i;
-            }
-            else if self.csv_config.timestamp_col_time().is_some()
-                && current_column == self.csv_config.timestamp_col_time().unwrap() {
-                time = i;
-            }
-            self.next_row.field_values[current_column] = FieldValue::String(i.to_string());
-            current_column += 1;
+        for i in 0..next_record.len() {
+            self.next_row.field_values[i]
+                = FieldValue::String(next_record.get(i).unwrap().to_string());
         }
 
+        let timestamp = self.get_timestamp(&next_record);
+
         // parse timestamp into Nanos
-        let timestamp = format!("{}{}", date, time);
-        self.next_row.timestamp = match self.csv_config.timestamp_format() {
+        self.next_row.timestamp = match self.csv_config.timestamp_config().timestamp_fmt() {
             Some(fmt) => {
-                let naive_dt = NaiveDateTime::parse_from_str(timestamp.as_ref(), fmt)?;
-                self.csv_config.timezone().from_local_datetime(&naive_dt).unwrap().timestamp() as Nanos
+                let naive_dt = NaiveDateTime::parse_from_str(timestamp.as_ref(), fmt.as_ref())?;
+                self.csv_config.timestamp_config().timezone().from_local_datetime(&naive_dt).unwrap().timestamp() as Nanos
             },
             None => match timestamp.parse::<Nanos>() {
                 Ok(t) => t,
@@ -90,8 +91,18 @@ impl <R: io::Read> CSVSource<R> {
                         If the csv file has header, please turn on csv header option.", timestamp)))
             }
         };
-
         Ok(())
+    }
+
+    fn get_timestamp(&mut self, record: &csv::StringRecord) -> String {
+        match self.csv_config.timestamp_config().timestamp_col() {
+            TimestampCol::Timestamp(i) => record.get(*i).unwrap().to_string(),
+            TimestampCol::DateAndTime(d, t) => {
+                let date = record.get(*d).unwrap();
+                let time = record.get(*t).unwrap();
+                format!("{}{}", date, time)
+            }
+        }
     }
 
     fn next_row(&mut self) -> CliResult<Option<Row>> {

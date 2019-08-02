@@ -10,7 +10,8 @@ use crate::cli_app::CliApp;
 use crate::driver::{driver::Driver, merge_join::MergeJoin};
 use crate::error::{self, CliResult};
 use crate::input::input_factory::InputFactory;
-use crate::source::{csv_configs::{self, CSVInputConfig, CSVOutputConfig}, source_factory::SourceFactory};
+use crate::source::csv_configs::{CSVInputConfig, CSVOutputConfig, TimestampConfig, TimestampCol};
+use crate::source::source_factory::SourceFactory;
 use crate::transport::transport_factory::TransportFactory;
 use crate::util::{csv_util, timestamp_util};
 use crate::write::factory;
@@ -59,13 +60,13 @@ pub fn parse_cli_args(transport_factories: Option<Vec<Box<dyn TransportFactory>>
     };
     let outputs = match matches.value_of("output") {
         None => None,
-        Some(s) => Some(s.to_string())
+        Some(s) => Some(s)
     };
 
     // csv only
     let csv_input_config = parse_csv_config(&matches, timezone)?;
     let output_delimiter = matches.value_of("csv_output_delimiter").unwrap();
-    let print_timestamp = match matches.value_of("csv_print_timestamp").unwrap() {
+    let print_timestamp = match matches.value_of("csv_print_ts").unwrap() {
         "auto" => None,
         "true" => Some(true),
         "false" => Some(false),
@@ -83,7 +84,7 @@ pub fn parse_cli_args(transport_factories: Option<Vec<Box<dyn TransportFactory>>
 }
 
 fn setup_graph(inputs: Option<Vec<&str>>,
-               output: Option<String>,
+               output: Option<&str>,
                transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
                source_factories: Option<Vec<Box<dyn SourceFactory>>>,
                timestamp_range: TimestampRange,
@@ -148,22 +149,39 @@ fn setup_graph(inputs: Option<Vec<&str>>,
 fn parse_csv_config(matches: &ArgMatches, timezone: Tz) -> CliResult<CSVInputConfig> {
     let input_delimiter = matches.value_of("csv_input_delimiter").unwrap();
     let has_header = matches.is_present("csv_has_header");
-    let timestamp_col_date: usize = match matches.value_of("csv_timestamp_col_date") {
-        None => csv_configs::TIMESTAMP_COL_DATE_DEFAULT,
-        Some(i) => i.parse::<usize>().unwrap()
-    };
-    let timestamp_col_time: Option<usize> = match matches.value_of("csv_timestamp_col_time") {
-        None => None,
-        Some(i) => Some(i.parse::<usize>().unwrap())
-    };
-    let timestamp_fmt_date: Option<&str> = matches.value_of("csv_timestamp_format_date");
-    let timestamp_fmt_time: Option<&str> = matches.value_of("csv_timestamp_format_time");
 
-    CSVInputConfig::new(input_delimiter,
-                        has_header,
-                        timestamp_col_date,
-                        timestamp_col_time,
-                        timestamp_fmt_date,
-                        timestamp_fmt_time,
-                        timezone)
+    // timestamp config
+    let mut ts_fmt: Option<String> = None;
+    let ts_col = match matches.value_of("csv_ts_col_date") {
+        None => {
+            // format
+            match matches.value_of("csv_ts_fmt") {
+                None => (),
+                Some(fmt) => ts_fmt = Some(fmt.to_string())
+            }
+            // col
+            let ts = matches.value_of("csv_ts_col").unwrap();
+            TimestampCol::Timestamp(ts.parse::<usize>().unwrap())
+        },
+        Some(d) => {
+            // format
+            match matches.value_of("csv_ts_fmt_date") {
+                None => (),
+                Some(d) => {
+                    let t = matches.value_of("csv_ts_fmt_time").unwrap();
+                    ts_fmt = Some(format!("{}{}", d, t))
+                }
+            };
+            // col
+            let date = d.parse::<usize>().unwrap();
+            let time = match matches.value_of("csv_ts_col_time") {
+                Some(t) => t.parse::<usize>().unwrap(),
+                None => unreachable!()
+            };
+            TimestampCol::DateAndTime(date, time)
+        }
+    };
+    let ts_config = TimestampConfig::new(ts_col, ts_fmt, timezone);
+
+    CSVInputConfig::new(input_delimiter, has_header, ts_config)
 }

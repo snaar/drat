@@ -3,42 +3,55 @@ use same_file::is_same_file;
 
 use chopper_lib::chopper::chopper::{ChopperDriver, Source};
 use chopper_lib::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
-use chopper_lib::chopper::types::{self, FieldValue, Header};
+use chopper_lib::chopper::types::{self, Header};
 use chopper_lib::driver::driver::Driver;
 use chopper_lib::error::{self, CliResult};
-use chopper_lib::filter::column_filter_delete_col::ColumnFilterDelete;
-use chopper_lib::filter::row_filter_equal_value::RowFilterEqualValue;
-use chopper_lib::filter::row_filter_greater_value::RowFilterGreaterValue;
 use chopper_lib::input::input_factory::InputFactory;
 use chopper_lib::source::csv_configs::{self, CSVInputConfig, CSVOutputConfig, DELIMITER_DEFAULT};
 use chopper_lib::source::csv_configs::{TimestampConfig, TimestampCol};
 use chopper_lib::write::factory;
 
 #[test]
-fn test_filters() {
-    error::handle_drive_error(filter());
+fn test_timestamp() {
+    // test 1
+    let input = "./tests/input/time_city.csv";
+    let inputs = vec![input];
+    let output = "./tests/output/test_timestamp.csv";
+    let ts_fmt = "%Y/%m/%d-%H:%M:%S".to_string();
+    let ts_config = TimestampConfig::new
+        (TimestampCol::Timestamp(1), Some(ts_fmt), New_York);
+    error::handle_drive_error(merge(inputs, output, ts_config));
+
     assert!(is_same_file
-        ("./tests/output/test_filters.csv",
-         "./tests/reference/filters.csv"
+        ("./tests/output/test_merge.csv",
+         "./tests/reference/timestamp.csv"
+        ).unwrap());
+
+    // test 2
+    let input = "./tests/input/time_city.csv";
+    let inputs = vec![input];
+    let output = "./tests/output/test_timestamp.csv";
+    let ts_config = TimestampConfig::new
+        (TimestampCol::DateAndTime(0, 2), None, New_York);
+    error::handle_drive_error(merge(inputs, output, ts_config));
+
+    assert!(is_same_file
+        ("./tests/output/test_merge.csv",
+         "./tests/reference/timestamp.csv"
         ).unwrap());
 }
 
-fn filter() -> CliResult<()> {
-    setup_graph()?.drive()
+fn merge(inputs: Vec<&str>, output: &str, ts_config: TimestampConfig) -> CliResult<()> {
+    setup_graph(inputs, output, ts_config)?.drive()
 }
 
-fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
-    let input = "./tests/input/time_city.csv";
-    let inputs = vec![input];
-    let output = "./tests/output/test_filters.csv";
-
+fn setup_graph(inputs: Vec<&str>, output: &str, ts_config: TimestampConfig) -> CliResult<Box<dyn ChopperDriver>> {
     // source reader and headers
-    let ts_config = TimestampConfig::new
-        (TimestampCol::Timestamp(0), None, New_York);
+
     let input_config = CSVInputConfig::new
         (csv_configs::DELIMITER_DEFAULT, true, ts_config)?;
-    let mut input_factory = InputFactory::new
-        (Some(input_config), None, None)?;
+    let mut input_factory
+        = InputFactory::new(Some(input_config), None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {
@@ -47,26 +60,11 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
         sources.push(source);
     }
 
-    // row filter equal
-    let filter_equal
-        = RowFilterEqualValue::new("String", FieldValue::String("New York".to_string()));
-    let node_1 = HeaderNode::HeaderSink(filter_equal);
-
-    // row filter greater
-    let filter_greater
-        = RowFilterGreaterValue::new("Double", FieldValue::String("10.0".to_string()));
-    let node_2 = HeaderNode::HeaderSink(filter_greater);
-
-    // col filter delete
-    let filter_delete = ColumnFilterDelete::new("Char");
-    let node_3 = HeaderNode::HeaderSink(filter_delete);
-
-    // header sink
     let csv_output_config = CSVOutputConfig::new(DELIMITER_DEFAULT, true);
     let header_sink = factory::new_header_sink
         (Some(output), Some(csv_output_config))?;
     let node_output = HeaderNode::HeaderSink(header_sink);
-    let chain = HeaderChain::new(vec![node_1, node_2, node_3, node_output]);
+    let chain = HeaderChain::new(vec![node_output]);
 
     let graph = HeaderGraph::new(vec![chain]);
 

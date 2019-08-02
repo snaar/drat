@@ -4,8 +4,7 @@ use chopper_lib::chopper::types::{self, Header};
 use chopper_lib::driver::driver::Driver;
 use chopper_lib::error::{self, CliResult};
 use chopper_lib::input::input_factory::InputFactory;
-use chopper_lib::source::csv_configs::{CSVInputConfig, CSVOutputConfig, DELIMITER_DEFAULT};
-use chopper_lib::util::timestamp_util;
+use chopper_lib::source::csv_configs::{CSVInputConfig, CSVOutputConfig, DELIMITER_DEFAULT, TimestampConfig};
 use chopper_lib::write::factory;
 
 fn main() {
@@ -17,16 +16,8 @@ fn compressed_example() -> CliResult<()> {
 }
 
 fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
-
-    let csv_config
-        = CSVInputConfig::new(
-        ",",
-        true,
-        0,
-        None,
-        None,
-        None,
-        timestamp_util::DEFAULT_ZONE)?;
+    let ts_config = TimestampConfig::default();
+    let csv_config = CSVInputConfig::new(",", true, ts_config)?;
     let input = "./examples/files/uspop_time.csv.gz";
     let inputs = vec![input];
     let output = None;
