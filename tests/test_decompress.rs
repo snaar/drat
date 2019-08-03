@@ -12,31 +12,16 @@ use chopper_lib::source::csv_configs::{TimestampConfig, TimestampCol};
 use chopper_lib::write::factory;
 
 #[test]
-fn test_timestamp() {
-    // test 1
-    let input = "./tests/input/time_city.csv";
+fn test_decompress() {
+    let input = "./tests/input/time_city.csv.gz";
     let inputs = vec![input];
-    let output = "./tests/output/test_timestamp.csv";
-    let ts_fmt = "%Y/%m/%d-%H:%M:%S".to_string();
+    let output = "./tests/output/output_time_city.csv";
     let ts_config = TimestampConfig::new
-        (TimestampCol::Timestamp(1), Some(ts_fmt), New_York);
+        (TimestampCol::Timestamp(0), None, New_York);
     error::handle_drive_error(test(inputs, output, ts_config));
 
     assert!(is_same_file
-        ("./tests/output/test_timestamp.csv",
-         "./tests/reference/output_time_city.csv"
-        ).unwrap());
-
-    // test 2
-    let input = "./tests/input/time_city.csv";
-    let inputs = vec![input];
-    let output = "./tests/output/test_timestamp.csv";
-    let ts_config = TimestampConfig::new
-        (TimestampCol::DateAndTime(0, 2), None, New_York);
-    error::handle_drive_error(test(inputs, output, ts_config));
-
-    assert!(is_same_file
-        ("./tests/output/test_timestamp.csv",
+        ("./tests/output/test_decompress.csv",
          "./tests/reference/output_time_city.csv"
         ).unwrap());
 }
@@ -47,7 +32,6 @@ fn test(inputs: Vec<&str>, output: &str, ts_config: TimestampConfig) -> CliResul
 
 fn setup_graph(inputs: Vec<&str>, output: &str, ts_config: TimestampConfig) -> CliResult<Box<dyn ChopperDriver>> {
     // source reader and headers
-
     let input_config = CSVInputConfig::new
         (csv_configs::DELIMITER_DEFAULT, true, ts_config)?;
     let mut input_factory

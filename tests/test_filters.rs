@@ -3,7 +3,7 @@ use same_file::is_same_file;
 
 use chopper_lib::chopper::chopper::{ChopperDriver, Source};
 use chopper_lib::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
-use chopper_lib::chopper::types::{self, FieldValue, Header};
+use chopper_lib::chopper::types::{FieldValue, Header, TimestampRange};
 use chopper_lib::driver::driver::Driver;
 use chopper_lib::error::{self, CliResult};
 use chopper_lib::filter::column_filter_delete_col::ColumnFilterDelete;
@@ -11,26 +11,31 @@ use chopper_lib::filter::row_filter_equal_value::RowFilterEqualValue;
 use chopper_lib::filter::row_filter_greater_value::RowFilterGreaterValue;
 use chopper_lib::input::input_factory::InputFactory;
 use chopper_lib::source::csv_configs::{self, CSVInputConfig, CSVOutputConfig, DELIMITER_DEFAULT};
-use chopper_lib::source::csv_configs::{TimestampConfig, TimestampCol};
+use chopper_lib::source::csv_configs::{TimestampCol, TimestampConfig};
+use chopper_lib::util::timestamp_util;
 use chopper_lib::write::factory;
 
 #[test]
 fn test_filters() {
-    error::handle_drive_error(filter());
+    error::handle_drive_error(test());
     assert!(is_same_file
         ("./tests/output/test_filters.csv",
          "./tests/reference/filters.csv"
         ).unwrap());
 }
 
-fn filter() -> CliResult<()> {
+fn test() -> CliResult<()> {
     setup_graph()?.drive()
 }
 
 fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let input = "./tests/input/time_city.csv";
     let inputs = vec![input];
-    let output = "./tests/output/test_filters.csv";
+    let output = "./tests/reference/filters.csv";
+
+    let begin = timestamp_util::parse_timestamp_range
+        ("2018".to_string(), New_York)?;
+    let timestamp_range = TimestampRange { begin: Some(begin), end: None };
 
     // source reader and headers
     let ts_config = TimestampConfig::new
@@ -71,5 +76,5 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let graph = HeaderGraph::new(vec![chain]);
 
     Ok(Box::new(
-        Driver::new(sources, graph, types::TIMESTAMP_RANGE_DEFAULT, headers)?))
+        Driver::new(sources, graph, timestamp_range, headers)?))
 }

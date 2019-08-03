@@ -8,9 +8,6 @@ pub static DEFAULT_MONTH: &str = "01";
 pub static DEFAULT_DAY: &str = "01";
 pub static DEFAULT_TIME: &str = "00:00:00";
 pub static DEFAULT_ZONE: Tz = UTC;
-pub static DEFAULT_DATE_FORMAT: &str = "%Y%m%d";
-pub static DEFAULT_TIME_FORMAT: &str = "%H:%M:%S";
-pub static DEFAULT_TIMESTAMP_FORMAT: &str = "%Y%m%d%H:%M:%S";
 pub static DEFAULT_ZONE_FORMAT: &str = "%z";
 
 // list of timestamp formats
@@ -19,38 +16,62 @@ lazy_static! {
 }
 
 fn create_date_time_formats() -> Vec<String> {
-    let format = vec![
-        format!("{}{}", DEFAULT_DATE_FORMAT, DEFAULT_TIME_FORMAT),
-        format!("{}-{}", DEFAULT_DATE_FORMAT, DEFAULT_TIME_FORMAT),
-        format!("{},{}", DEFAULT_DATE_FORMAT, DEFAULT_TIME_FORMAT),
-        format!("{}/{}", DEFAULT_DATE_FORMAT, DEFAULT_TIME_FORMAT),
-    ];
+    let mut format: Vec<String> = Vec::new();
+    let date_formats =
+        vec!["%Y%m%d",
+             "%m%d%Y",
+             "%d%m%Y",
+             "%Y/%m/%d",
+             "%m/%d/%Y",
+             "%d/%m/%Y"
+        ];
+    let delimiter =
+        vec!["",
+             "-",
+             ",",
+             "/"
+        ];
+    for df in date_formats {
+        for d in &delimiter {
+            format.push(format!("{}{}{}", df, d, "%H:%M:%S"));
+        }
+    }
     format
 }
 
-pub fn parse_timestamp_range(mut datetime: String, timezone: Tz) -> CliResult<Nanos> {
-    // if time is not specified
-    if datetime.len() <= 8 {
-        let date = match datetime.len() {
-            // add default month and/or day if not specified
-            4 => format!("{}{}{}", datetime, DEFAULT_MONTH, DEFAULT_DAY),
-            6 => format!("{}{}", datetime, DEFAULT_DAY),
-            _ => datetime
-        };
-        // add default time
-        datetime = format!("{}{}", date, DEFAULT_TIME);
-    }
+pub fn parse_timestamp_range(timestamp: String, timezone: Tz) -> CliResult<Nanos> {
+    let timestamp = complete_timestamp(timestamp);
 
     // try available datetime formats
     for fmt in DATE_TIME_FORMATS.iter() {
         // try parsing to naive datetime first
-        let naive_dt = NaiveDateTime::parse_from_str(datetime.as_ref(), fmt.as_ref());
+        let naive_dt
+            = NaiveDateTime::parse_from_str(timestamp.as_ref(), fmt.as_ref());
         // if matching format is found, convert naive datetime to a timezone-aware datetime
         if naive_dt.is_ok() {
             return Ok(timezone.from_local_datetime(&naive_dt?).unwrap().timestamp() as Nanos)
         }
     }
-    Err(Error::from(format!("Cannot parse timestamp: {}. Please check the format.", datetime)))
+    match timestamp.parse::<Nanos>() {
+        Ok(n) => Ok(n),
+        Err(_) => Err(Error::from
+            (format!("Cannot parse timestamp: {}. Please provide format for parsing.", timestamp))),
+    }
+}
+
+pub fn complete_timestamp(mut timestamp: String) -> String {
+    // if time is not specified
+    if timestamp.len() <= 8 {
+        let date = match timestamp.len() {
+            // add default month and/or day if not specified
+            4 => format!("{}{}{}", timestamp, DEFAULT_MONTH, DEFAULT_DAY),
+            6 => format!("{}{}", timestamp, DEFAULT_DAY),
+            _ => timestamp
+        };
+        // add default time
+        timestamp = format!("{}{}", date, DEFAULT_TIME);
+    }
+    timestamp
 }
 
 pub fn parse_time_zone(timezone: Option<&str>) -> Tz {
@@ -68,7 +89,8 @@ mod tests {
 
     #[test]
     fn test_parse_timestamp_range() {
-        let timestamp_year = parse_timestamp_range("2019".to_string(), New_York).unwrap();
+        let timestamp_year = parse_timestamp_range
+            ("2019".to_string(), New_York).unwrap();
         let timestamp_datetime = parse_timestamp_range(
             "20190101-00:00:00".to_string(), New_York).unwrap();
         assert_eq!(timestamp_year, 1546318800);

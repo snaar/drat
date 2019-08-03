@@ -98,16 +98,14 @@ impl CliApp {
             // timestamp format
             .arg(Arg::with_name("csv_ts_fmt")
                 .long("csv-ts-fmt")
-                .help("csv only: specify the timestamp datetime format\
-                        \n[default: date %H:%M:%S, time %H:%M:%S]")
+                .help("csv only: specify the timestamp datetime format")
                 .takes_value(true)
                 .value_name("ARG")
                 .conflicts_with_all(&["csv_ts_fmt_date", "csv_ts_fmt_time"]))
             // timestamp format date
             .arg(Arg::with_name("csv_ts_fmt_date")
                 .long("csv-ts-fmt-date")
-                .help("csv only: specify the timestamp date format \
-                        \n[default: %Y%m%d]")
+                .help("csv only: specify the timestamp date format")
                 .takes_value(true)
                 .value_name("ARG")
                 .requires("csv_ts_fmt_time")

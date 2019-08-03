@@ -14,14 +14,14 @@ use chopper_lib::write::factory;
 
 #[test]
 fn test_merge() {
-    error::handle_drive_error(merge());
+    error::handle_drive_error(test());
     assert!(is_same_file
         ("./tests/output/test_merge.csv",
          "./tests/reference/merge.csv"
         ).unwrap());
 }
 
-fn merge() -> CliResult<()> {
+fn test() -> CliResult<()> {
     setup_graph()?.drive()
 }
 

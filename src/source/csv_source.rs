@@ -55,13 +55,20 @@ impl <R: io::Read> CSVSource<R> {
         let mut csv_reader = CSVSource { reader, header, csv_config, next_row, has_next_row: true };
 
         // update timestamp format
-        let timestamp = csv_reader.get_timestamp(&first_row);
-        if csv_reader.csv_config.timestamp_config().timestamp_fmt().is_none()
-            && timestamp.parse::<Nanos>().is_err() {
+        let ts = csv_reader.get_timestamp(&first_row);
+        let timestamp = timestamp_util::complete_timestamp(ts);
+
+        if csv_reader.csv_config.timestamp_config().timestamp_fmt().is_none() {
             for fmt in timestamp_util::DATE_TIME_FORMATS.iter() {
                 if NaiveDateTime::parse_from_str(timestamp.as_ref(), fmt.as_ref()).is_ok() {
                     csv_reader.csv_config.timestamp_config().set_timestamp_fmt(fmt.clone());
                 }
+            }
+        }
+        if csv_reader.csv_config.timestamp_config().timestamp_fmt().is_none() {
+            if timestamp.parse::<Nanos>().is_err() {
+                return Err(Error::from
+                    (format!("Cannot parse timestamp. Please provide format for parsing.")))
             }
         }
 
@@ -77,7 +84,8 @@ impl <R: io::Read> CSVSource<R> {
                 = FieldValue::String(next_record.get(i).unwrap().to_string());
         }
 
-        let timestamp = self.get_timestamp(&next_record);
+        let ts = self.get_timestamp(&next_record);
+        let timestamp = timestamp_util::complete_timestamp(ts);
 
         // parse timestamp into Nanos
         self.next_row.timestamp = match self.csv_config.timestamp_config().timestamp_fmt() {
@@ -85,10 +93,12 @@ impl <R: io::Read> CSVSource<R> {
                 let naive_dt = NaiveDateTime::parse_from_str(timestamp.as_ref(), fmt.as_ref())?;
                 self.csv_config.timestamp_config().timezone().from_local_datetime(&naive_dt).unwrap().timestamp() as Nanos
             },
-            None => match timestamp.parse::<Nanos>() {
-                Ok(t) => t,
-                Err(_) => return Err(Error::from(format!("Cannot parse timestamp value - {:?}. \
+            None => {
+                match timestamp.parse::<Nanos>() {
+                    Ok(t) => t,
+                    Err(_) => return Err(Error::from(format!("Cannot parse timestamp value - {:?}. \
                         If the csv file has header, please turn on csv header option.", timestamp)))
+                }
             }
         };
         Ok(())
