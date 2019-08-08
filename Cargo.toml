@@ -3,7 +3,7 @@ name = "chopper"
 version = "0.0.1"
 authors = ["Xinyun Wu <xin@snaar.net>"]
 edition = "2018"
-repository = "https://github.com/snaar/octoske/chopper"
+repository = "https://github.com/octoske/chopper"
 
 [dependencies]
 byteorder = "1"
