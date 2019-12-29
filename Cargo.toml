@@ -4,6 +4,7 @@ version = "0.0.1"
 authors = ["Xinyun Wu <xin@snaar.net>"]
 edition = "2018"
 repository = "https://github.com/octoske/chopper"
+description = "Chopper is a simple streaming time series inspection and manipulation tool."
 readme = "README.md"
 license = "BSD-2-Clause"
 keywords = ["cli", "io", "data", "streaming", "csv"]
