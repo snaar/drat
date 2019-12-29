@@ -6,7 +6,7 @@ edition = "2018"
 repository = "https://github.com/octoske/chopper"
 readme = "README.md"
 license = "BSD-2-Clause"
-keywords = ["cli", "io", "data", "streaming", "csv", "library", "tool"]
+keywords = ["cli", "io", "data", "streaming", "csv"]
 categories = ["command-line-utilities", "encoding"]
 exclude = [
 	".idea/*",
