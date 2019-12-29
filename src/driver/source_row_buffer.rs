@@ -4,7 +4,7 @@ use crate::chopper::types::{Nanos, Row, TimestampRange};
 use crate::error::CliResult;
 
 pub struct SourceRowBuffer {
-    source: Box<Source+'static>,
+    source: Box<dyn Source+'static>,
     chain_id: ChainId,
     timestamp: Nanos,
     row: Option<Row>,

@@ -179,7 +179,7 @@ impl DataSink for DCSink {
         Ok(())
     }
 
-    fn boxed(self) -> Box<DataSink> {
+    fn boxed(self) -> Box<dyn DataSink> {
         Box::new(self)
     }
 }

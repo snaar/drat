@@ -4,11 +4,20 @@ version = "0.0.1"
 authors = ["Xinyun Wu <xin@snaar.net>"]
 edition = "2018"
 repository = "https://github.com/snaar/octoske/chopper"
+readme = "README.md"
+license = "BSD-2-Clause"
+keywords = ["cli", "io", "data", "streaming", "csv", "library", "tool"]
+categories = ["command-line-utilities", "encoding"]
+exclude = [
+	".idea/*",
+	"examples/*",
+	"tests/*",
+	]
 
 [dependencies]
 byteorder = "1"
 chrono = "0.4"
-chrono-tz = "0.4"
+chrono-tz = "0.5"
 clap = "2"
 csv = "1"
 dtoa = "0.4"

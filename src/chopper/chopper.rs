@@ -15,7 +15,7 @@ pub trait Source {
 }
 
 //TODO better debug format?
-impl fmt::Debug for Source {
+impl fmt::Debug for dyn Source {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "source field names: {:?}", self.header().field_names())
     }

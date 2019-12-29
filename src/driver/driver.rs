@@ -6,7 +6,7 @@ use crate::driver::source_row_buffer::SourceRowBuffer;
 use crate::error::{CliResult, Error};
 
 pub struct Driver {
-    sources: Vec<Box<Source>>,
+    sources: Vec<Box<dyn Source>>,
     data_graph: DataGraph,
     timestamp_range: TimestampRange,
 }

@@ -15,7 +15,7 @@ impl Clone for Box<dyn TransportFactory> {
     }
 }
 
-impl fmt::Debug for TransportFactory {
+impl fmt::Debug for dyn TransportFactory {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self.factory_name())
     }
