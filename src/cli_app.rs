@@ -18,6 +18,7 @@ impl CliApp {
                 .takes_value(true)
                 .value_name("FILE"))
             .arg(Arg::with_name("timezone")
+                .short("z")
                 .long("timezone")
                 .help("specify time zone for timestamp.")
                 .takes_value(true)
