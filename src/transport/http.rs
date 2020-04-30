@@ -1,7 +1,7 @@
 use std::io;
 use std::path::Path;
 
-use reqwest::{Client, Url};
+use reqwest::{blocking::Client, Url};
 
 use crate::transport::transport_factory::TransportFactory;
 
