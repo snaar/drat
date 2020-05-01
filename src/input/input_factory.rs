@@ -9,15 +9,22 @@ use crate::source::decompress;
 use crate::transport::{file::FileInput, http::Http, transport_factory::TransportFactory};
 
 pub struct InputFactory {
+    fallback_file_ext: Option<String>,
     transport_factories: Vec<Box<dyn TransportFactory>>,
     source_factories: Vec<Box<dyn SourceFactory>>
 }
 
 impl InputFactory {
-    pub fn new(csv_input_config: Option<CSVInputConfig>,
+    pub fn new(fallback_file_ext: Option<&str>,
+               csv_input_config: Option<CSVInputConfig>,
                user_source_factories: Option<Vec<Box<dyn SourceFactory>>>,
                user_transport_factories: Option<Vec<Box<dyn TransportFactory>>>) -> CliResult<Self>
     {
+        let fallback_file_ext: Option<String> = match fallback_file_ext {
+            None => None,
+            Some(x) => Some(x.to_owned())
+        };
+
         // transport factories
         let mut default_transport_factories = create_default_transport_factories();
         let transport_factories: Vec<Box<dyn TransportFactory>> = match user_transport_factories {
@@ -42,7 +49,7 @@ impl InputFactory {
             None => default_source_factories
         };
 
-        Ok(InputFactory { transport_factories, source_factories })
+        Ok(InputFactory { fallback_file_ext, transport_factories, source_factories })
     }
 }
 
@@ -68,17 +75,22 @@ impl InputFactory {
             Some(x) => x.to_string(),
             None => {
                 if path.extension().is_none() {
-                    return Err(Error::from(format!("Cannot find file type for [{:?}]. \
-                    Please specify file type as file extension or use parameter file_type.", path)))
-                };
-
-                let mut extension: String = "".to_string();
-                while path.extension().is_some() {
-                    let string = path.extension().unwrap().to_str().unwrap();
-                    extension = format!(".{}{}", string, extension);
-                    path = Path::new(path.file_stem().unwrap());
+                    match &self.fallback_file_ext {
+                        Some(x) => x.clone(),
+                        None => {
+                            return Err(Error::from(format!("Unkown file type: [{:?}].\n\
+                                No file extension found. Neither file extension override, nor default file extension was specified.", path)));
+                        }
+                    }
+                } else {
+                    let mut extension: String = "".to_string();
+                    while path.extension().is_some() {
+                        let string = path.extension().unwrap().to_str().unwrap();
+                        extension = format!(".{}{}", string, extension);
+                        path = Path::new(path.file_stem().unwrap());
+                    }
+                    extension
                 }
-                extension
             }
         };
         self.create_source_from_reader(Box::new(reader), &file_extension)

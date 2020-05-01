@@ -23,7 +23,7 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let output = None;
 
     let mut input_factory
-        = InputFactory::new(Some(csv_config), None, None)?;
+        = InputFactory::new(None, Some(csv_config), None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {

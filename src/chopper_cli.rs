@@ -63,6 +63,8 @@ pub fn parse_cli_args(transport_factories: Option<Vec<Box<dyn TransportFactory>>
         Some(s) => Some(s)
     };
 
+    let fallback_file_ext = matches.value_of("fallback_file_ext");
+
     // csv only
     let csv_input_config = parse_csv_config(&matches, timezone)?;
     let output_delimiter = matches.value_of("csv_output_delimiter").unwrap();
@@ -78,6 +80,7 @@ pub fn parse_cli_args(transport_factories: Option<Vec<Box<dyn TransportFactory>>
                 transport_factories,
                 source_factories,
                 timestamp_range,
+                fallback_file_ext,
                 csv_input_config,
                 output_delimiter,
                 print_timestamp)
@@ -88,6 +91,7 @@ fn setup_graph(inputs: Option<Vec<&str>>,
                transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
                source_factories: Option<Vec<Box<dyn SourceFactory>>>,
                timestamp_range: TimestampRange,
+               fallback_file_ext: Option<&str>,
                csv_input_config: CSVInputConfig,
                csv_output_delimiter: &str,
                csv_output_print_timestamp: Option<bool>) -> CliResult<Box<dyn ChopperDriver>>
@@ -95,8 +99,8 @@ fn setup_graph(inputs: Option<Vec<&str>>,
     // get sources and headers
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
-    let mut input_factory
-        = InputFactory::new(
+    let mut input_factory = InputFactory::new(
+        fallback_file_ext,
         Some(csv_input_config),
         source_factories,
         transport_factories)?;
