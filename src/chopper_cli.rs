@@ -29,6 +29,7 @@ pub fn parse_cli_args(transport_factories: Option<Vec<Box<dyn TransportFactory>>
                       timezone_map: Option<HashMap<&str, Tz>>) -> CliResult<Box<dyn ChopperDriver>>
 {
     let matches = CliApp.create_cli_app().get_matches();
+
     if matches.is_present("backtrace") {
         error::turn_on_backtrace()
     }
@@ -43,6 +44,7 @@ pub fn parse_cli_args(transport_factories: Option<Vec<Box<dyn TransportFactory>>
             }
         }
     };
+
     let timestamp_range= TimestampRange::new(
         matches.value_of("begin"),
         matches.value_of("end"),
@@ -58,17 +60,14 @@ pub fn parse_cli_args(transport_factories: Option<Vec<Box<dyn TransportFactory>>
             Some(inputs_vec)
         },
     };
-    let outputs = match matches.value_of("output") {
-        None => None,
-        Some(s) => Some(s)
-    };
 
+    let outputs = matches.value_of("output");
     let fallback_file_ext = matches.value_of("fallback_file_ext");
 
     // csv only
     let csv_input_config = parse_csv_config(&matches, timezone)?;
-    let output_delimiter = matches.value_of("csv_output_delimiter").unwrap();
-    let print_timestamp = match matches.value_of("csv_print_ts").unwrap() {
+    let csv_output_delimiter = matches.value_of("csv_output_delimiter").unwrap();
+    let csv_output_print_timestamp = match matches.value_of("csv_print_ts").unwrap() {
         "auto" => None,
         "true" => Some(true),
         "false" => Some(false),
@@ -82,8 +81,8 @@ pub fn parse_cli_args(transport_factories: Option<Vec<Box<dyn TransportFactory>>
                 timestamp_range,
                 fallback_file_ext,
                 csv_input_config,
-                output_delimiter,
-                print_timestamp)
+                csv_output_delimiter,
+                csv_output_print_timestamp)
 }
 
 fn setup_graph(inputs: Option<Vec<&str>>,

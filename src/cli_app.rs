@@ -16,7 +16,7 @@ impl CliApp {
                 .short("o")
                 .help("output to a file")
                 .takes_value(true)
-                .value_name("FILE"))
+                .value_name("file"))
             .arg(Arg::with_name("fallback_file_ext")
                 .long("fallback-file-ext")
                 .help("file format extention to assume when cannot deduce input file format")
@@ -29,19 +29,19 @@ impl CliApp {
                 .help("specify time zone for timestamp.")
                 .takes_value(true)
                 .case_insensitive(true)
-                .value_name("ARG"))
+                .value_name("arg"))
             .arg(Arg::with_name("begin")
                 .short("b")
                 .long("begin")
                 .help("set begin timestamp (inclusive); \ndate: yyyymmdd, time: hh:mm:ss")
                 .takes_value(true)
-                .value_name("TIMESTAMP"))
+                .value_name("timestamp"))
             .arg(Arg::with_name("end")
                 .short("e")
                 .long("end")
                 .help("set end timestamp (exclusive); \ndate: yyyymmdd, time: hh:mm:ss")
                 .takes_value(true)
-                .value_name("TIMESTAMP"))
+                .value_name("timestamp"))
             .arg(Arg::with_name("backtrace")
                 .long("backtrace")
                 .help("print backtrace"))
@@ -52,13 +52,13 @@ impl CliApp {
                 .help("csv only: input field/column delimiter")
                 .takes_value(true)
                 .default_value(",")
-                .value_name("ARG"))
+                .value_name("arg"))
             .arg(Arg::with_name("csv_output_delimiter")
                 .long("csv-out-delimiter")
                 .help("csv only: output field/column delimiter")
                 .takes_value(true)
                 .default_value(",")
-                .value_name("ARG"))
+                .value_name("arg"))
 
             // has header
             .arg(Arg::with_name("csv_has_header")
@@ -73,7 +73,7 @@ impl CliApp {
                 .default_value("auto")
                 .possible_values(&["true", "false", "auto"])
                 .case_insensitive(true)
-                .value_name("ARG"))
+                .value_name("arg"))
 
             // timestamp column
             .arg(Arg::with_name("csv_ts_col")
@@ -81,7 +81,7 @@ impl CliApp {
                 .help("csv only: specify the timestamp column index")
                 .takes_value(true)
                 .default_value("0")
-                .value_name("ARG")
+                .value_name("arg")
                 .conflicts_with_all(&["csv_ts_col_date", "csv_ts_col_time"]))
             // timestamp column date
             .arg(Arg::with_name("csv_ts_col_date")
@@ -89,7 +89,7 @@ impl CliApp {
                 .help("csv only: specify the timestamp date column index. \
                         \nused when date and time are in separate columns")
                 .takes_value(true)
-                .value_name("ARG")
+                .value_name("arg")
                 .requires("csv_ts_col_time")
                 .conflicts_with("csv_ts_col"))
             // timestamp column time
@@ -98,7 +98,7 @@ impl CliApp {
                 .help("csv only: specify the timestamp time column index. \
                         \nused when date and time are in separate columns")
                 .takes_value(true)
-                .value_name("ARG")
+                .value_name("arg")
                 .requires("csv_ts_col_date")
                 .conflicts_with("csv_ts_col"))
 
@@ -107,14 +107,14 @@ impl CliApp {
                 .long("csv-ts-fmt")
                 .help("csv only: specify the timestamp datetime format")
                 .takes_value(true)
-                .value_name("ARG")
+                .value_name("arg")
                 .conflicts_with_all(&["csv_ts_fmt_date", "csv_ts_fmt_time"]))
             // timestamp format date
             .arg(Arg::with_name("csv_ts_fmt_date")
                 .long("csv-ts-fmt-date")
                 .help("csv only: specify the timestamp date format")
                 .takes_value(true)
-                .value_name("ARG")
+                .value_name("arg")
                 .requires("csv_ts_fmt_time")
                 .conflicts_with("csv_ts_fmt_datetime"))
             // timestamp format time
@@ -123,7 +123,7 @@ impl CliApp {
                 .help("csv only: specify the timestamp time format \
                         \n[default: %H:%M:%S]")
                 .takes_value(true)
-                .value_name("ARG")
+                .value_name("arg")
                 .requires("csv_timestamp_format_date")
                 .conflicts_with("csv_ts_fmt_datetime"));
         app
