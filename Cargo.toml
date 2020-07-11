@@ -37,4 +37,4 @@ name = "chop"
 path = "src/main.rs"
 
 [dev-dependencies]
-same-file = "1.0"
+same-file = "1"
