@@ -12,7 +12,7 @@ use crate::util::dc_util;
 // map for field types
 lazy_static! {
     static ref FIELD_STRING_MAP_NAME: HashMap<&'static str, FieldType>
-                                      = dc_util::creat_field_string_map_name();
+                                      = dc_util::create_field_string_map_name();
 }
 
 pub struct DCSource<R> {
