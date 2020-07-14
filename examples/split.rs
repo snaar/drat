@@ -23,8 +23,7 @@ fn setup_test_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let output_2 = None;
 
     // source reader and headers
-    let mut input_factory
-        = InputFactory::new(None, None, None, None)?;
+    let mut input_factory = InputFactory::new(None, None, None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {
@@ -51,6 +50,10 @@ fn setup_test_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let chain_3 = HeaderChain::new(vec![node_output_2]);
 
     let graph = HeaderGraph::new(vec![chain_1, chain_2, chain_3]);
-    Ok(Box::new(
-        Driver::new(sources, graph, types::TIMESTAMP_RANGE_DEFAULT, headers)?))
+    Ok(Box::new(Driver::new(
+        sources,
+        graph,
+        types::TIMESTAMP_RANGE_DEFAULT,
+        headers,
+    )?))
 }

@@ -8,7 +8,7 @@ use crate::source::csv_source::CSVSource;
 use crate::source::source_factory::SourceFactory;
 
 pub struct CSVFactory {
-    pub csv_input_config: CSVInputConfig
+    pub csv_input_config: CSVInputConfig,
 }
 
 impl CSVFactory {

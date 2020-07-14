@@ -18,10 +18,11 @@ use chopper_lib::write::factory;
 #[test]
 fn test_filters() {
     error::handle_drive_error(test());
-    assert!(is_same_file
-        ("./tests/output/test_filters.csv",
-         "./tests/reference/filters.csv"
-        ).unwrap());
+    assert!(is_same_file(
+        "./tests/output/test_filters.csv",
+        "./tests/reference/filters.csv"
+    )
+    .unwrap());
 }
 
 fn test() -> CliResult<()> {
@@ -33,17 +34,16 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let inputs = vec![input];
     let output = "./tests/reference/filters.csv";
 
-    let begin = timestamp_util::parse_timestamp_range
-        ("2018".to_string(), New_York)?;
-    let timestamp_range = TimestampRange { begin: Some(begin), end: None };
+    let begin = timestamp_util::parse_timestamp_range("2018".to_string(), New_York)?;
+    let timestamp_range = TimestampRange {
+        begin: Some(begin),
+        end: None,
+    };
 
     // source reader and headers
-    let ts_config = TimestampConfig::new
-        (TimestampCol::Timestamp(0), None, New_York);
-    let input_config = CSVInputConfig::new
-        (None, true, ts_config)?;
-    let mut input_factory = InputFactory::new
-        (None, Some(input_config), None, None)?;
+    let ts_config = TimestampConfig::new(TimestampCol::Timestamp(0), None, New_York);
+    let input_config = CSVInputConfig::new(None, true, ts_config)?;
+    let mut input_factory = InputFactory::new(None, Some(input_config), None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {
@@ -53,13 +53,13 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     }
 
     // row filter equal
-    let filter_equal
-        = RowFilterEqualValue::new("String", FieldValue::String("New York".to_string()));
+    let filter_equal =
+        RowFilterEqualValue::new("String", FieldValue::String("New York".to_string()));
     let node_1 = HeaderNode::HeaderSink(filter_equal);
 
     // row filter greater
-    let filter_greater
-        = RowFilterGreaterValue::new("Double", FieldValue::String("10.0".to_string()));
+    let filter_greater =
+        RowFilterGreaterValue::new("Double", FieldValue::String("10.0".to_string()));
     let node_2 = HeaderNode::HeaderSink(filter_greater);
 
     // col filter delete
@@ -68,13 +68,16 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
 
     // header sink
     let csv_output_config = CSVOutputConfig::new(OUTPUT_DELIMITER_DEFAULT, true);
-    let header_sink = factory::new_header_sink
-        (Some(output), Some(csv_output_config))?;
+    let header_sink = factory::new_header_sink(Some(output), Some(csv_output_config))?;
     let node_output = HeaderNode::HeaderSink(header_sink);
     let chain = HeaderChain::new(vec![node_1, node_2, node_3, node_output]);
 
     let graph = HeaderGraph::new(vec![chain]);
 
-    Ok(Box::new(
-        Driver::new(sources, graph, timestamp_range, headers)?))
+    Ok(Box::new(Driver::new(
+        sources,
+        graph,
+        timestamp_range,
+        headers,
+    )?))
 }

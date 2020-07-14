@@ -4,20 +4,29 @@ use crate::chopper::types::{Nanos, Row, TimestampRange};
 use crate::error::CliResult;
 
 pub struct SourceRowBuffer {
-    source: Box<dyn Source+'static>,
+    source: Box<dyn Source + 'static>,
     chain_id: ChainId,
     timestamp: Nanos,
     row: Option<Row>,
 }
 
 impl SourceRowBuffer {
-    pub fn new(mut source: Box<dyn Source>, chain_id: ChainId, timestamp_range: &TimestampRange) -> CliResult<Self> {
+    pub fn new(
+        mut source: Box<dyn Source>,
+        chain_id: ChainId,
+        timestamp_range: &TimestampRange,
+    ) -> CliResult<Self> {
         let mut row = match_next_row(&mut source, timestamp_range)?;
         let timestamp = match &mut row {
             Some(r) => r.timestamp,
-            None => 0 as Nanos
+            None => 0 as Nanos,
         };
-        Ok(SourceRowBuffer { source, chain_id, timestamp, row })
+        Ok(SourceRowBuffer {
+            source,
+            chain_id,
+            timestamp,
+            row,
+        })
     }
 
     pub fn timestamp(&self) -> u64 {
@@ -44,9 +53,7 @@ impl SourceRowBuffer {
                 self.update_record(r);
                 Ok(true)
             }
-            None => {
-                Ok(false)
-            }
+            None => Ok(false),
         }
     }
 }
@@ -68,22 +75,21 @@ fn filter_data_range(timestamp_range: &TimestampRange, timestamp: Nanos) -> Acti
     }
 }
 
-fn match_next_row(source: &mut Box<dyn Source>, timestamp_range: &TimestampRange) -> CliResult<Option<Row>> {
+fn match_next_row(
+    source: &mut Box<dyn Source>,
+    timestamp_range: &TimestampRange,
+) -> CliResult<Option<Row>> {
     let mut next_row: Option<Row> = None;
     loop {
         match source.next_row()? {
-            Some(r) => {
-                match filter_data_range(timestamp_range, r.timestamp) {
-                    Action::Stop => {
-                        break
-                    },
-                    Action::Write => {
-                        next_row = Some(r);
-                        break
-                    },
-                    Action::Skip => continue,
+            Some(r) => match filter_data_range(timestamp_range, r.timestamp) {
+                Action::Stop => break,
+                Action::Write => {
+                    next_row = Some(r);
+                    break;
                 }
-            }
+                Action::Skip => continue,
+            },
             None => break,
         }
     }

@@ -14,12 +14,8 @@ impl TransportFactory for FileInput {
 
     fn open(&self, path: &Path) -> io::Result<Box<dyn io::Read>> {
         match fs::File::open(path) {
-            Ok(r) => {
-                Ok(Box::new(r))
-            },
-            Err(err) => {
-                return Err(io::Error::new(io::ErrorKind::Other, err))
-            }
+            Ok(r) => Ok(Box::new(r)),
+            Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err)),
         }
     }
 

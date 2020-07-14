@@ -11,8 +11,8 @@ use crate::util::dc_util;
 
 // map for field types
 lazy_static! {
-    static ref FIELD_STRING_MAP_NAME: HashMap<&'static str, FieldType>
-                                      = dc_util::create_field_string_map_name();
+    static ref FIELD_STRING_MAP_NAME: HashMap<&'static str, FieldType> =
+        dc_util::create_field_string_map_name();
 }
 
 pub struct DCSource<R> {
@@ -23,18 +23,24 @@ pub struct DCSource<R> {
     current_row: Row,
 }
 
-impl <R: io::Read> DCSource<R> {
+impl<R: io::Read> DCSource<R> {
     pub fn new(reader: R) -> CliResult<Self> {
         let mut reader = io::BufReader::new(reader);
 
         let magic_num = reader.read_u64::<BigEndian>()?;
         if &magic_num != &dc_util::MAGIC_NUM {
-            return Err(Error::from(format!("DCReader -- wrong magic number - {}", magic_num)))
+            return Err(Error::from(format!(
+                "DCReader -- wrong magic number - {}",
+                magic_num
+            )));
         }
 
         let version = reader.read_u16::<BigEndian>()?;
         if &version != &dc_util::VERSION {
-            return Err(Error::from(format!("DCReader -- wrong version - {}", version)))
+            return Err(Error::from(format!(
+                "DCReader -- wrong version - {}",
+                version
+            )));
         }
 
         // skip user given data
@@ -59,7 +65,12 @@ impl <R: io::Read> DCSource<R> {
                 name = format!("col_{}", i);
             }
             field_names.push(name);
-            field_types.push(map_field_string.get(field_descriptor.get_type_string()).unwrap().clone());
+            field_types.push(
+                map_field_string
+                    .get(field_descriptor.get_type_string())
+                    .unwrap()
+                    .clone(),
+            );
             field_values.push(FieldValue::None);
         }
 
@@ -68,9 +79,18 @@ impl <R: io::Read> DCSource<R> {
 
         // Row
         let timestamp = 0 as u64;
-        let current_row = Row { timestamp, field_values };
+        let current_row = Row {
+            timestamp,
+            field_values,
+        };
 
-        Ok(DCSource { reader, header, field_count, bitset_byte_count, current_row })
+        Ok(DCSource {
+            reader,
+            header,
+            field_count,
+            bitset_byte_count,
+            current_row,
+        })
     }
 
     fn next_row(&mut self) -> CliResult<Option<Row>> {
@@ -90,19 +110,36 @@ impl <R: io::Read> DCSource<R> {
             let mut current_bitset = bitset_bytes[i];
             for _j in 0..8 {
                 self.current_row.field_values[field_index] = {
-                    if current_bitset & 1 == 0 { // not null
+                    if current_bitset & 1 == 0 {
+                        // not null
                         match self.header.field_types()[field_index] {
-                            FieldType::Boolean =>
-                                return Err(Error::from("DCReader -- boolean field type is not supported")),
+                            FieldType::Boolean => {
+                                return Err(Error::from(
+                                    "DCReader -- boolean field type is not supported",
+                                ))
+                            }
                             FieldType::Byte => FieldValue::Byte(self.reader.read_u8()?),
-                            FieldType::ByteBuf =>
-                                return Err(Error::from("DCReader -- ByteBuffer field type is not supported")),
-                            FieldType::Char => FieldValue::Char(self.reader.read_u16::<BigEndian>()?),
-                            FieldType::Double => FieldValue::Double(self.reader.read_f64::<BigEndian>()?),
-                            FieldType::Float => FieldValue::Float(self.reader.read_f32::<BigEndian>()?),
+                            FieldType::ByteBuf => {
+                                return Err(Error::from(
+                                    "DCReader -- ByteBuffer field type is not supported",
+                                ))
+                            }
+                            FieldType::Char => {
+                                FieldValue::Char(self.reader.read_u16::<BigEndian>()?)
+                            }
+                            FieldType::Double => {
+                                FieldValue::Double(self.reader.read_f64::<BigEndian>()?)
+                            }
+                            FieldType::Float => {
+                                FieldValue::Float(self.reader.read_f32::<BigEndian>()?)
+                            }
                             FieldType::Int => FieldValue::Int(self.reader.read_i32::<BigEndian>()?),
-                            FieldType::Long => FieldValue::Long(self.reader.read_i64::<BigEndian>()?),
-                            FieldType::Short => FieldValue::Short(self.reader.read_i16::<BigEndian>()?),
+                            FieldType::Long => {
+                                FieldValue::Long(self.reader.read_i64::<BigEndian>()?)
+                            }
+                            FieldType::Short => {
+                                FieldValue::Short(self.reader.read_i16::<BigEndian>()?)
+                            }
                             FieldType::String => FieldValue::String(self.read_string()?.to_owned()),
                         }
                     } else {
@@ -133,13 +170,13 @@ impl <R: io::Read> DCSource<R> {
     }
 }
 
-impl <R: io::Read> io::Read for DCSource<R> {
+impl<R: io::Read> io::Read for DCSource<R> {
     fn read(&mut self, into: &mut [u8]) -> io::Result<usize> {
         self.reader.read(into)
     }
 }
 
-impl <R: io::Read> Source for DCSource<R> {
+impl<R: io::Read> Source for DCSource<R> {
     fn header(&self) -> &Header {
         &self.header
     }

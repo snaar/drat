@@ -14,17 +14,26 @@ pub struct TimestampRange {
     pub end: Option<Nanos>,
 }
 
-pub static TIMESTAMP_RANGE_DEFAULT: TimestampRange = TimestampRange { begin: None, end: None };
+pub static TIMESTAMP_RANGE_DEFAULT: TimestampRange = TimestampRange {
+    begin: None,
+    end: None,
+};
 
 impl TimestampRange {
     pub fn new(begin: Option<&str>, end: Option<&str>, timezone: Tz) -> CliResult<Self> {
         let begin = match begin {
-            Some(t) => Some(timestamp_util::parse_timestamp_range(t.to_string(), timezone)?),
-            None => None
+            Some(t) => Some(timestamp_util::parse_timestamp_range(
+                t.to_string(),
+                timezone,
+            )?),
+            None => None,
         };
         let end = match end {
-            Some(t) => Some(timestamp_util::parse_timestamp_range(t.to_string(), timezone)?),
-            None => None
+            Some(t) => Some(timestamp_util::parse_timestamp_range(
+                t.to_string(),
+                timezone,
+            )?),
+            None => None,
         };
         Ok(TimestampRange { begin, end })
     }
@@ -38,14 +47,16 @@ pub struct Header {
 
 impl PartialEq for Header {
     fn eq(&self, other: &Header) -> bool {
-        self.field_names().eq(other.field_names()) &&
-            self.field_types().eq(other.field_types())
+        self.field_names().eq(other.field_names()) && self.field_types().eq(other.field_types())
     }
 }
 
 impl Header {
     pub fn new(field_names: Vec<String>, field_types: Vec<FieldType>) -> Self {
-        Header { field_names, field_types }
+        Header {
+            field_names,
+            field_types,
+        }
     }
 
     pub fn field_names(&self) -> &Vec<String> {
@@ -83,11 +94,13 @@ pub enum FieldValue {
 impl PartialOrd for FieldValue {
     fn partial_cmp(&self, other: &FieldValue) -> Option<Ordering> {
         match (self, other) {
-            (FieldValue::Boolean(_x), FieldValue::Boolean(_y)) =>
-                Error::from("FieldValue -- boolean field type is not supported").exit(),
+            (FieldValue::Boolean(_x), FieldValue::Boolean(_y)) => {
+                Error::from("FieldValue -- boolean field type is not supported").exit()
+            }
             (FieldValue::Byte(x), FieldValue::Byte(y)) => Some(x.cmp(y)),
-            (FieldValue::ByteBuf(_x), FieldValue::ByteBuf(_y)) =>
-                Error::from("FieldValue -- ByteBuffer field type is not supported").exit(),
+            (FieldValue::ByteBuf(_x), FieldValue::ByteBuf(_y)) => {
+                Error::from("FieldValue -- ByteBuffer field type is not supported").exit()
+            }
             (FieldValue::Char(x), FieldValue::Char(y)) => Some(x.cmp(y)),
             (FieldValue::Double(x), FieldValue::Double(y)) => x.partial_cmp(y),
             (FieldValue::Float(x), FieldValue::Float(y)) => x.partial_cmp(y),
@@ -99,10 +112,13 @@ impl PartialOrd for FieldValue {
                 let x: f64 = x.parse().unwrap();
                 let y: f64 = y.parse().unwrap();
                 x.partial_cmp(&y)
-            },
+            }
             (FieldValue::None, FieldValue::None) => Some(Ordering::Equal),
-            _ => Error::from(
-                format!("FieldValue -- cannot compare different field types - {} {}", self, other)).exit(),
+            _ => Error::from(format!(
+                "FieldValue -- cannot compare different field types - {} {}",
+                self, other
+            ))
+            .exit(),
         }
     }
 }
@@ -110,11 +126,13 @@ impl PartialOrd for FieldValue {
 impl PartialEq for FieldValue {
     fn eq(&self, other: &FieldValue) -> bool {
         match (self, other) {
-            (FieldValue::Boolean(_x), FieldValue::Boolean(_y)) =>
-                Error::from("FieldValue -- boolean field type is not supported").exit(),
+            (FieldValue::Boolean(_x), FieldValue::Boolean(_y)) => {
+                Error::from("FieldValue -- boolean field type is not supported").exit()
+            }
             (FieldValue::Byte(x), FieldValue::Byte(y)) => x == y,
-            (FieldValue::ByteBuf(_x), FieldValue::ByteBuf(_y)) =>
-                Error::from("FieldValue -- ByteBuffer field type is not supported").exit(),
+            (FieldValue::ByteBuf(_x), FieldValue::ByteBuf(_y)) => {
+                Error::from("FieldValue -- ByteBuffer field type is not supported").exit()
+            }
             (FieldValue::Char(x), FieldValue::Char(y)) => x == y,
             (FieldValue::Double(x), FieldValue::Double(y)) => x == y,
             (FieldValue::Float(x), FieldValue::Float(y)) => x == y,
@@ -131,11 +149,13 @@ impl PartialEq for FieldValue {
 impl fmt::Display for FieldValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self {
-            FieldValue::Boolean(_x) =>
-                Error::from("FieldValue -- boolean field type is not supported").exit(),
+            FieldValue::Boolean(_x) => {
+                Error::from("FieldValue -- boolean field type is not supported").exit()
+            }
             FieldValue::Byte(x) => f.write_str(format!("byte[{}]", x).as_str()),
-            FieldValue::ByteBuf(_x) =>
-                Error::from("FieldValue -- ByteBuffer field type is not supported").exit(),
+            FieldValue::ByteBuf(_x) => {
+                Error::from("FieldValue -- ByteBuffer field type is not supported").exit()
+            }
             FieldValue::Char(x) => f.write_str(format!("char[{}]", x).as_str()),
             FieldValue::Double(x) => f.write_str(format!("double[{}]", x).as_str()),
             FieldValue::Float(x) => f.write_str(format!("float[{}]", x).as_str()),

@@ -4,7 +4,9 @@ use chopper_lib::chopper::types::{self, Header};
 use chopper_lib::driver::driver::Driver;
 use chopper_lib::error::{self, CliResult};
 use chopper_lib::input::input_factory::InputFactory;
-use chopper_lib::source::csv_configs::{CSVInputConfig, CSVOutputConfig, OUTPUT_DELIMITER_DEFAULT, TimestampConfig};
+use chopper_lib::source::csv_configs::{
+    CSVInputConfig, CSVOutputConfig, TimestampConfig, OUTPUT_DELIMITER_DEFAULT,
+};
 use chopper_lib::write::factory;
 
 fn main() {
@@ -22,13 +24,11 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let inputs = vec![input];
     let output = None;
 
-    let mut input_factory
-        = InputFactory::new(None, Some(csv_config), None, None)?;
+    let mut input_factory = InputFactory::new(None, Some(csv_config), None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {
-        let source
-            = input_factory.create_source_from_path(i)?;
+        let source = input_factory.create_source_from_path(i)?;
         headers.push(source.header().clone());
         sources.push(source);
     }
@@ -39,6 +39,10 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let chain = HeaderChain::new(vec![node_output]);
 
     let graph = HeaderGraph::new(vec![chain]);
-    Ok(Box::new(
-        Driver::new(sources, graph, types::TIMESTAMP_RANGE_DEFAULT, headers)?))
+    Ok(Box::new(Driver::new(
+        sources,
+        graph,
+        types::TIMESTAMP_RANGE_DEFAULT,
+        headers,
+    )?))
 }

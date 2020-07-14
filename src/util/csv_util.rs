@@ -9,21 +9,28 @@ pub fn parse_into_delimiter(str: &str) -> CliResult<u8> {
         r"\t" => Ok(b'\t'),
         s => {
             if s.len() != 1 {
-                return Err(Error::from(
-                    format!("Error: specified delimiter '{}' is not a single ASCII character.", s)))
+                return Err(Error::from(format!(
+                    "Error: specified delimiter '{}' is not a single ASCII character.",
+                    s
+                )));
             }
             let c = s.chars().next().unwrap();
             if c.is_ascii() {
                 Ok(c as u8)
             } else {
-                Err(Error::from(
-                    format!("Error: specified delimiter '{}' is not an ASCII character.", c)))
+                Err(Error::from(format!(
+                    "Error: specified delimiter '{}' is not an ASCII character.",
+                    c
+                )))
             }
         }
     }
 }
 
-pub fn create_csv_output_config_from_source(sources: &mut Vec<Box<dyn Source>>, delimiter: &str) -> CSVOutputConfig {
+pub fn create_csv_output_config_from_source(
+    sources: &mut Vec<Box<dyn Source>>,
+    delimiter: &str,
+) -> CSVOutputConfig {
     let mut all_sources_have_native_timestamps = true;
     for source in sources {
         if !source.has_native_timestamp_column() {

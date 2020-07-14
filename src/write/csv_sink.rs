@@ -9,21 +9,22 @@ use crate::error::{CliResult, Error};
 use crate::source::csv_configs::CSVOutputConfig;
 
 pub struct CSVSink {
-    writer: BufWriter<Box<dyn io::Write+'static>>,
-    csv_output_config: CSVOutputConfig
+    writer: BufWriter<Box<dyn io::Write + 'static>>,
+    csv_output_config: CSVOutputConfig,
 }
 
 impl CSVSink {
     pub fn new(path: &Option<String>, csv_output_config: CSVOutputConfig) -> CliResult<Self> {
         let writer = BufWriter::new(CSVSink::into_writer(path)?);
-        Ok(CSVSink { writer, csv_output_config })
+        Ok(CSVSink {
+            writer,
+            csv_output_config,
+        })
     }
 
     fn into_writer(path: &Option<String>) -> io::Result<Box<dyn io::Write>> {
         match path {
-            None => {
-                Ok(Box::new(io::stdout()))
-            }
+            None => Ok(Box::new(io::stdout())),
             Some(p) => {
                 let path = PathBuf::from(p);
                 let file = File::create(path)?;
@@ -37,7 +38,9 @@ impl CSVSink {
         let field_name = header.field_names().clone();
         let mut first = true;
 
-        if self.csv_output_config.print_timestamp() { write!(writer, "timestamp,")?; }
+        if self.csv_output_config.print_timestamp() {
+            write!(writer, "timestamp,")?;
+        }
         for name in field_name {
             if first {
                 write!(writer, "{}", name)?;
@@ -62,24 +65,37 @@ impl DataSink for CSVSink {
     fn write_row(&mut self, row: Row) -> CliResult<Option<Row>> {
         let mut first_col = true;
         if self.csv_output_config.print_timestamp() {
-                write!(self.writer, "{}", row.timestamp)?;
-                first_col = false;
+            write!(self.writer, "{}", row.timestamp)?;
+            first_col = false;
         }
         let field_values = &row.field_values;
         let delimiter = self.csv_output_config.delimiter();
         for value in field_values {
-            if first_col { first_col = false; }
-            else { write!(self.writer, "{}", delimiter)?; }
+            if first_col {
+                first_col = false;
+            } else {
+                write!(self.writer, "{}", delimiter)?;
+            }
 
             match value {
-                FieldValue::Boolean(_x) =>
-                    return Err(Error::from("CSVSink -- boolean field type is not supported")),
+                FieldValue::Boolean(_x) => {
+                    return Err(Error::from(
+                        "CSVSink -- boolean field type is not supported",
+                    ))
+                }
                 FieldValue::Byte(x) => write!(self.writer, "{}", x)?,
-                FieldValue::ByteBuf(_x) =>
-                    return Err(Error::from("CSVSink -- ByteBuffer field type is not supported")),
+                FieldValue::ByteBuf(_x) => {
+                    return Err(Error::from(
+                        "CSVSink -- ByteBuffer field type is not supported",
+                    ))
+                }
                 FieldValue::Char(x) => write!(self.writer, "{}", x)?,
-                FieldValue::Double(x) => { dtoa::write(&mut self.writer, *x)?; },
-                FieldValue::Float(x) => { dtoa::write(&mut self.writer, *x)?; },
+                FieldValue::Double(x) => {
+                    dtoa::write(&mut self.writer, *x)?;
+                }
+                FieldValue::Float(x) => {
+                    dtoa::write(&mut self.writer, *x)?;
+                }
                 FieldValue::Int(x) => write!(self.writer, "{}", x)?,
                 FieldValue::Long(x) => write!(self.writer, "{}", x)?,
                 FieldValue::Short(x) => write!(self.writer, "{}", x)?,

@@ -26,13 +26,21 @@ pub struct TimestampConfig {
 
 impl TimestampConfig {
     pub fn new(timestamp_col: TimestampCol, timestamp_fmt: Option<String>, timezone: Tz) -> Self {
-        TimestampConfig { timestamp_col, timestamp_fmt, timezone }
+        TimestampConfig {
+            timestamp_col,
+            timestamp_fmt,
+            timezone,
+        }
     }
 
     pub fn default() -> Self {
         let timestamp_col = TimestampCol::Timestamp(0);
         let timezone = timestamp_util::DEFAULT_ZONE;
-        TimestampConfig { timestamp_col, timestamp_fmt: None, timezone }
+        TimestampConfig {
+            timestamp_col,
+            timestamp_fmt: None,
+            timezone,
+        }
     }
 
     pub fn timestamp_col(&mut self) -> &mut TimestampCol {
@@ -62,24 +70,33 @@ pub struct CSVInputConfig {
 #[derive(Clone)]
 pub struct CSVOutputConfig {
     delimiter: String,
-    print_timestamp: bool
+    print_timestamp: bool,
 }
 
 impl CSVInputConfig {
-    pub fn new(delimiter: Option<&str>,
-               has_header: bool,
-               timestamp_config: TimestampConfig) -> CliResult<Self>
-    {
+    pub fn new(
+        delimiter: Option<&str>,
+        has_header: bool,
+        timestamp_config: TimestampConfig,
+    ) -> CliResult<Self> {
         let delimiter = match delimiter {
             None => None,
-            Some(x) => Some(csv_util::parse_into_delimiter(x)?)
+            Some(x) => Some(csv_util::parse_into_delimiter(x)?),
         };
-        Ok(CSVInputConfig { delimiter, has_header, timestamp_config })
+        Ok(CSVInputConfig {
+            delimiter,
+            has_header,
+            timestamp_config,
+        })
     }
 
     pub fn new_default() -> CliResult<Self> {
         let timestamp_config = TimestampConfig::default();
-        Ok(CSVInputConfig { delimiter: None, has_header: false, timestamp_config })
+        Ok(CSVInputConfig {
+            delimiter: None,
+            has_header: false,
+            timestamp_config,
+        })
     }
 
     pub fn has_header(&self) -> bool {
@@ -97,11 +114,17 @@ impl CSVInputConfig {
 
 impl CSVOutputConfig {
     pub fn new(delimiter: &str, print_timestamp: bool) -> Self {
-        CSVOutputConfig { delimiter: delimiter.to_string(), print_timestamp }
+        CSVOutputConfig {
+            delimiter: delimiter.to_string(),
+            print_timestamp,
+        }
     }
 
     pub fn new_default() -> Self {
-        CSVOutputConfig { delimiter: OUTPUT_DELIMITER_DEFAULT.to_string(), print_timestamp: true }
+        CSVOutputConfig {
+            delimiter: OUTPUT_DELIMITER_DEFAULT.to_string(),
+            print_timestamp: true,
+        }
     }
 
     pub fn delimiter(&self) -> &String {
@@ -115,6 +138,10 @@ impl CSVOutputConfig {
 
 impl fmt::Debug for CSVInputConfig {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "delimiter: {:?}, has headers: {:?}", self.delimiter, self.has_header)
+        write!(
+            f,
+            "delimiter: {:?}, has headers: {:?}",
+            self.delimiter, self.has_header
+        )
     }
 }

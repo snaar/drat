@@ -12,18 +12,24 @@ pub struct Driver {
 }
 
 impl Driver {
-    pub fn new(sources: Vec<Box<dyn Source>>,
-               header_graph: HeaderGraph,
-               timestamp_range: TimestampRange,
-               headers: Vec<Header>) -> CliResult<Self>
-    {
+    pub fn new(
+        sources: Vec<Box<dyn Source>>,
+        header_graph: HeaderGraph,
+        timestamp_range: TimestampRange,
+        headers: Vec<Header>,
+    ) -> CliResult<Self> {
         if sources.len() > header_graph.len() {
             return Err(Error::from(
                 "Driver -- not enough header chains for sources. \
-                each source should have at least one header chain."));
+                each source should have at least one header chain.",
+            ));
         }
         let data_graph = header_graph.process_header(headers)?;
-        Ok(Driver { sources, data_graph, timestamp_range })
+        Ok(Driver {
+            sources,
+            data_graph,
+            timestamp_range,
+        })
     }
 
     fn drive(&mut self) -> CliResult<()> {
@@ -50,7 +56,7 @@ impl Driver {
             }
             // update row buffer length
             buffer_len = row_buffers.len();
-         }
+        }
         Ok(())
     }
 
@@ -68,35 +74,34 @@ impl Driver {
         let min = row_buffers
             .iter()
             .enumerate()
-            .min_by(|&(_, i1), &(_, i2)|
-                i1.timestamp().cmp(&i2.timestamp())).unwrap();
+            .min_by(|&(_, i1), &(_, i2)| i1.timestamp().cmp(&i2.timestamp()))
+            .unwrap();
         min.0
     }
 
-    fn process_row(data_graph: &mut DataGraph,
-                   mut chain_id: ChainId,
-                   mut node_id: NodeId,
-                   mut pin_id: PinId,
-                   mut row: Row) -> CliResult<()>
-    {
+    fn process_row(
+        data_graph: &mut DataGraph,
+        mut chain_id: ChainId,
+        mut node_id: NodeId,
+        mut pin_id: PinId,
+        mut row: Row,
+    ) -> CliResult<()> {
         let chain = data_graph.get_mut_chain(chain_id);
         while node_id < chain.nodes().len() {
             match chain.node(node_id) {
-                DataNode::DataSink(sink) => {
-                    match sink.write_row_to_pin(pin_id, row)? {
-                        Some(r) => {
-                            row = r;
-                            node_id += 1;
-                        },
-                        None => break
+                DataNode::DataSink(sink) => match sink.write_row_to_pin(pin_id, row)? {
+                    Some(r) => {
+                        row = r;
+                        node_id += 1;
                     }
-                }
+                    None => break,
+                },
                 DataNode::Merge(new_chain_id, new_pin_id) => {
                     chain_id = *new_chain_id;
                     node_id = 0;
                     pin_id = *new_pin_id;
                     Self::process_row(data_graph, chain_id, node_id, pin_id, row)?;
-                    break
+                    break;
                 }
                 DataNode::Split(chain_ids) => {
                     if pin_id < chain_ids.len() {
@@ -105,8 +110,8 @@ impl Driver {
                         Self::process_row(data_graph, new_chain_id, 0, pin_id, row.clone())?;
                         Self::process_row(data_graph, chain_id, 0, pin_id, row.clone())?;
                     }
-                    break
-                },
+                    break;
+                }
             }
         }
         Ok(())
@@ -120,21 +125,21 @@ impl Driver {
                 DataNode::DataSink(sink) => {
                     sink.flush()?;
                     node_id += 1
-                },
+                }
                 DataNode::Merge(new_chain_id, _pin_id) => {
                     chain_id = *new_chain_id;
                     self.flush(chain_id, 0)?;
-                    break
-                },
+                    break;
+                }
                 DataNode::Split(chain_ids) => {
                     if pin_id < chain_ids.len() {
                         let new_chain_id = chain_ids[pin_id];
                         pin_id += 1;
-                        self.flush(new_chain_id,0)?;
-                        self.flush(chain_id,pin_id)?;
+                        self.flush(new_chain_id, 0)?;
+                        self.flush(chain_id, pin_id)?;
                     }
-                    break
-                },
+                    break;
+                }
             }
         }
         Ok(())

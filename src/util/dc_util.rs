@@ -16,13 +16,13 @@ pub enum DisplayHint {
 }
 
 pub fn get_bitset_bytes(field_count: usize) -> usize {
-    1+((field_count-1)/8)
+    1 + ((field_count - 1) / 8)
 }
 
 // map for field types
 lazy_static! {
-    pub static ref FIELD_STRING_MAP_TYPE: HashMap<FieldType, &'static str>
-                                        = create_field_string_map_type();
+    pub static ref FIELD_STRING_MAP_TYPE: HashMap<FieldType, &'static str> =
+        create_field_string_map_type();
 }
 
 pub fn create_field_string_map_name() -> HashMap<&'static str, FieldType> {
@@ -69,10 +69,14 @@ impl FieldDescriptor {
         let display_hint = match reader.read_i32::<BigEndian>()? {
             -1 => DisplayHint::None,
             0 => DisplayHint::Timestamp,
-            _ => return Err(Error::from("FieldDescriptor -- missing display hint"))
+            _ => return Err(Error::from("FieldDescriptor -- missing display hint")),
         };
 
-        Ok(FieldDescriptor { name, type_string, display_hint })
+        Ok(FieldDescriptor {
+            name,
+            type_string,
+            display_hint,
+        })
     }
 
     pub fn get_name(&self) -> &str {

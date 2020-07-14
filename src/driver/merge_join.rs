@@ -11,9 +11,14 @@ pub struct MergeJoin {
 impl MergeJoin {
     pub fn new(input_pin_num: usize) -> CliResult<Box<dyn MergeHeaderSink>> {
         if input_pin_num <= 0 {
-            return Err(Error::from("MergeJoin -- number of inputs must be at least 1"));
+            return Err(Error::from(
+                "MergeJoin -- number of inputs must be at least 1",
+            ));
         }
-        let merge = MergeJoin { input_pin_num, header: None };
+        let merge = MergeJoin {
+            input_pin_num,
+            header: None,
+        };
         Ok(Box::new(merge) as Box<dyn MergeHeaderSink>)
     }
 
@@ -30,7 +35,7 @@ impl MergeHeaderSink for MergeJoin {
                     return Err(Error::from("MuxHeaderSink -- wrong header"));
                 }
             }
-            None => self.add_header(header)
+            None => self.add_header(header),
         }
         Ok(())
     }
@@ -42,7 +47,8 @@ impl MergeHeaderSink for MergeJoin {
     fn get_data_sink(self: Box<Self>) -> CliResult<Box<dyn DataSink>> {
         if self.header.is_some() {
             return Err(Error::from(
-                "MuxHeaderSink -- all the headers must be processed before returning DataSink"));
+                "MuxHeaderSink -- all the headers must be processed before returning DataSink",
+            ));
         }
         Ok(self.boxed())
     }
@@ -52,7 +58,9 @@ impl MergeHeaderSink for MergeJoin {
     }
 
     fn num_of_header_to_process(&self) -> NumOfHeaderToProcess {
-        NumOfHeaderToProcess { counter: self.pin_num() }
+        NumOfHeaderToProcess {
+            counter: self.pin_num(),
+        }
     }
 }
 

@@ -13,7 +13,9 @@ pub struct ColumnFilterDelete {
 
 impl ColumnFilterDelete {
     pub fn new(column_name: &str) -> Box<dyn HeaderSink> {
-        let config = ColumnFilterDeleteConfig { column_name: column_name.to_string() };
+        let config = ColumnFilterDeleteConfig {
+            column_name: column_name.to_string(),
+        };
         Box::new(config) as Box<dyn HeaderSink>
     }
 }
@@ -30,11 +32,14 @@ impl HeaderSink for ColumnFilterDeleteConfig {
                 header.field_types_mut().remove(i);
                 // return data filter with the column index
                 let data_sink = ColumnFilterDelete { column_index: i };
-                return Ok(data_sink.boxed())
+                return Ok(data_sink.boxed());
             }
             i += 1;
         }
-        Err(Error::from(format!("ColumnFilterDeleteConfig -- field name [{}] not found", self.column_name)))
+        Err(Error::from(format!(
+            "ColumnFilterDeleteConfig -- field name [{}] not found",
+            self.column_name
+        )))
     }
 }
 

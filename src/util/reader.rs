@@ -190,7 +190,11 @@ mod tests {
         check_line(&mut reader, 0, "");
     }
 
-    fn check_line<R: Read>(reader: &mut ChopperBufReader<R>, expect_result: usize, expect_line: &str) {
+    fn check_line<R: Read>(
+        reader: &mut ChopperBufReader<R>,
+        expect_result: usize,
+        expect_line: &str,
+    ) {
         let mut line = String::new();
         let result = reader.read_line(&mut line);
         assert!(result.is_ok());

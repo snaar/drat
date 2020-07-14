@@ -32,7 +32,7 @@ impl Error {
         match &self {
             Error::CliParsing(err) => err.exit(),
             Error::Csv(err) => write_error!("{}", err),
-            Error::Io(ref err) if err.kind() == io::ErrorKind::BrokenPipe => {},
+            Error::Io(ref err) if err.kind() == io::ErrorKind::BrokenPipe => {}
             Error::Io(err) => write_error!("{}", err),
             Error::TimeParsing(err) => write_error!("{}", err),
             Error::Custom(s) => write_error!("Error: {}", s),
@@ -64,7 +64,7 @@ impl From<csv::Error> for Error {
     fn from(err: csv::Error) -> Error {
         print_backtrace();
         if !err.is_io_error() {
-            return Error::Csv(err)
+            return Error::Csv(err);
         }
         match err.into_kind() {
             csv::ErrorKind::Io(v) => From::from(v),
@@ -109,7 +109,7 @@ pub fn handle_drive_error(cli_result: CliResult<()>) {
             match e {
                 Error::CliParsing(err) => write_error!("{}", err),
                 Error::Csv(err) => write_error!("{}", err),
-                Error::Io(ref err) if err.kind() == io::ErrorKind::BrokenPipe => {},
+                Error::Io(ref err) if err.kind() == io::ErrorKind::BrokenPipe => {}
                 Error::Io(err) => write_error!("{}", err),
                 Error::TimeParsing(err) => write_error!("{}", err),
                 Error::Custom(s) => write_error!("Error: {} ", s),
@@ -127,7 +127,7 @@ pub fn turn_on_backtrace() {
 
 fn print_backtrace() {
     if !PRINT_BACKTRACE.load(Ordering::Relaxed) {
-        return
+        return;
     }
     use backtrace::Backtrace;
     let bt = Backtrace::new();

@@ -16,7 +16,10 @@ pub struct RowFilterEqualValue {
 
 impl RowFilterEqualValue {
     pub fn new(column_name: &str, value: FieldValue) -> Box<dyn HeaderSink> {
-        let config = RowFilterEqualValueConfig { column_name: column_name.to_string(), value };
+        let config = RowFilterEqualValueConfig {
+            column_name: column_name.to_string(),
+            value,
+        };
         Box::new(config) as Box<dyn HeaderSink>
     }
 }
@@ -27,17 +30,18 @@ impl HeaderSink for RowFilterEqualValueConfig {
         for i in 0..field_names.len() {
             if field_names[i].eq_ignore_ascii_case(self.column_name.as_str()) {
                 // set column index
-                let filter =
-                    RowFilterEqualValue {
-                        column_name: self.column_name,
-                        column_index: Some(i),
-                        value: self.value
-                    };
-                return Ok(filter.boxed())
+                let filter = RowFilterEqualValue {
+                    column_name: self.column_name,
+                    column_index: Some(i),
+                    value: self.value,
+                };
+                return Ok(filter.boxed());
             }
         }
-        Err(Error::from(
-            format!("RowFilterEqualValueConfig -- field name [{}] not found", self.column_name)))
+        Err(Error::from(format!(
+            "RowFilterEqualValueConfig -- field name [{}] not found",
+            self.column_name
+        )))
     }
 }
 
@@ -47,10 +51,10 @@ impl DataSink for RowFilterEqualValue {
             Some(i) => {
                 let field_value: &FieldValue = row.field_values.get(i).unwrap();
                 if !field_value.eq(&self.value) {
-                    return Ok(None)
+                    return Ok(None);
                 }
             }
-            None => return Err(Error::from("RowFilterEqualValue -- missing column index"))
+            None => return Err(Error::from("RowFilterEqualValue -- missing column index")),
         }
         Ok(Some(row))
     }

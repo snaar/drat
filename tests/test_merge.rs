@@ -15,10 +15,11 @@ use chopper_lib::write::factory;
 #[test]
 fn test_merge() {
     error::handle_drive_error(test());
-    assert!(is_same_file
-        ("./tests/output/test_merge.csv",
-         "./tests/reference/merge.csv",
-        ).unwrap());
+    assert!(is_same_file(
+        "./tests/output/test_merge.csv",
+        "./tests/reference/merge.csv",
+    )
+    .unwrap());
 }
 
 fn test() -> CliResult<()> {
@@ -32,12 +33,9 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let output = "./tests/output/test_merge.csv";
 
     // source reader and headers
-    let ts_config = TimestampConfig::new
-        (TimestampCol::Timestamp(0), None, New_York);
-    let input_config = CSVInputConfig::new
-        (None, true, ts_config)?;
-    let mut input_factory
-        = InputFactory::new(None, Some(input_config), None, None)?;
+    let ts_config = TimestampConfig::new(TimestampCol::Timestamp(0), None, New_York);
+    let input_config = CSVInputConfig::new(None, true, ts_config)?;
+    let mut input_factory = InputFactory::new(None, Some(input_config), None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {
@@ -59,13 +57,16 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let num_of_header_to_process = merge.num_of_header_to_process();
     let node_merge_sink = HeaderNode::MergeHeaderSink(merge, num_of_header_to_process);
     let csv_output_config = CSVOutputConfig::new(OUTPUT_DELIMITER_DEFAULT, true);
-    let header_sink = factory::new_header_sink
-        (Some(output), Some(csv_output_config))?;
+    let header_sink = factory::new_header_sink(Some(output), Some(csv_output_config))?;
     let node_output = HeaderNode::HeaderSink(header_sink);
     let chain_3 = HeaderChain::new(vec![node_merge_sink, node_output]);
 
     let graph = HeaderGraph::new(vec![chain_1, chain_2, chain_3]);
 
-    Ok(Box::new(
-        Driver::new(sources, graph, types::TIMESTAMP_RANGE_DEFAULT, headers)?))
+    Ok(Box::new(Driver::new(
+        sources,
+        graph,
+        types::TIMESTAMP_RANGE_DEFAULT,
+        headers,
+    )?))
 }

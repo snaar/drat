@@ -18,9 +18,7 @@ impl TransportFactory for Http {
         let client = Client::new();
         let response = match client.get(url).send() {
             Ok(r) => r,
-            Err(err) => {
-                return Err(io::Error::new(io::ErrorKind::Other, err))
-            }
+            Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err)),
         };
 
         let reader = io::BufReader::new(response);

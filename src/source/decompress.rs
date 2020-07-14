@@ -16,7 +16,7 @@ pub fn decompress(path: &Path, reader: Box<dyn io::Read>) -> CliResult<Box<dyn i
         "gz" => {
             let decoder = GzDecoder::new(reader);
             Ok(Box::new(decoder))
-        },
+        }
         "lzf" => {
             let mut file = reader;
             let mut buf = Vec::new();
@@ -24,7 +24,7 @@ pub fn decompress(path: &Path, reader: Box<dyn io::Read>) -> CliResult<Box<dyn i
             let decompressed = lzf::decompress(&buf[..], buf.len() * 100).unwrap();
             let cursor = io::Cursor::new(decompressed);
             Ok(Box::new(cursor))
-        },
-        _ => Err(Error::from(format!("Cannot decompress file - {:?}", path)))
+        }
+        _ => Err(Error::from(format!("Cannot decompress file - {:?}", path))),
     }
 }

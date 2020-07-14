@@ -7,11 +7,11 @@ pub type PinId = usize;
 pub enum DataNode {
     DataSink(Box<dyn DataSink>),
     Merge(ChainId, PinId),
-    Split(Vec<ChainId>)
+    Split(Vec<ChainId>),
 }
 
 pub struct DataChain {
-    nodes: Vec<DataNode>
+    nodes: Vec<DataNode>,
 }
 
 pub struct DataGraph {
@@ -54,10 +54,14 @@ impl DataGraph {
     pub fn add_node(&mut self, node: DataNode, chain_id: ChainId) -> CliResult<()> {
         match self.data_chains.get_mut(chain_id) {
             Some(c) => c.nodes.push(node),
-            None =>
-                return Err(Error::from(
-                    format!("DataGraph -- index out of bound. \
-                    ChainId: [{}], DataGraph size: [{:?}]", chain_id, self.data_chains.len())))
+            None => {
+                return Err(Error::from(format!(
+                    "DataGraph -- index out of bound. \
+                    ChainId: [{}], DataGraph size: [{:?}]",
+                    chain_id,
+                    self.data_chains.len()
+                )))
+            }
         };
         Ok(())
     }

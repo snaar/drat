@@ -18,6 +18,8 @@ impl SplitHeaderSink for Split {
     }
 
     fn num_of_header_to_process(&self) -> NumOfHeaderToProcess {
-        NumOfHeaderToProcess { counter: self.chain_ids.len() }
+        NumOfHeaderToProcess {
+            counter: self.chain_ids.len(),
+        }
     }
 }
