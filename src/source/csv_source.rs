@@ -1,27 +1,38 @@
 use std::io;
 
 use chrono::{NaiveDateTime, TimeZone};
-use csv;
-use csv::Trim;
+use csv::{self, Trim};
 
 use crate::chopper::chopper::Source;
 use crate::chopper::types::{FieldType, FieldValue, Header, Nanos, Row};
 use crate::error::{CliResult, Error};
 use crate::source::csv_configs::{CSVInputConfig, TimestampCol};
-use crate::util::timestamp_util;
+use crate::util::{csv_util, timestamp_util};
+use crate::util::reader::{ChopperHeaderPreview, ChopperBufReader};
+
+const DELIMITERS: &[u8] = b", ";
 
 pub struct CSVSource<R> {
-    reader: csv::Reader<R>,
+    reader: csv::Reader<ChopperBufReader<R>>,
     header: Header,
     csv_config: CSVInputConfig,
     next_row: Row,
     has_next_row: bool,
 }
 
-impl <R: io::Read> CSVSource<R> {
+impl<R: io::Read> CSVSource<R> {
     pub fn new(reader: R, csv_config: &CSVInputConfig) -> CliResult<Self> {
+        let header_preview = ChopperHeaderPreview::new(reader).unwrap();
+        let delimiter = match csv_config.delimiter() {
+            None => {
+                csv_util::guess_delimiter(header_preview.header.as_str(), DELIMITERS)
+            },
+            Some(d) => d,
+        };
+        let reader = header_preview.rewind_and_get_reader();
+
         let mut reader = csv::ReaderBuilder::new()
-            .delimiter(csv_config.delimiter())
+            .delimiter(delimiter)
             .has_headers(csv_config.has_header())
             .trim(Trim::All)
             .from_reader(reader);
@@ -129,7 +140,7 @@ impl <R: io::Read> CSVSource<R> {
     }
 }
 
-impl <R: io::Read> Source for CSVSource<R> {
+impl<R: io::Read> Source for CSVSource<R> {
     fn header(&self) -> &Header {
         &self.header
     }

@@ -7,8 +7,8 @@ use chopper_lib::chopper::types::{self, Header};
 use chopper_lib::driver::driver::Driver;
 use chopper_lib::error::{self, CliResult};
 use chopper_lib::input::input_factory::InputFactory;
-use chopper_lib::source::csv_configs::{self, CSVInputConfig, CSVOutputConfig, DELIMITER_DEFAULT};
-use chopper_lib::source::csv_configs::{TimestampConfig, TimestampCol};
+use chopper_lib::source::csv_configs::{CSVInputConfig, CSVOutputConfig, OUTPUT_DELIMITER_DEFAULT};
+use chopper_lib::source::csv_configs::{TimestampCol, TimestampConfig};
 use chopper_lib::write::factory;
 
 #[test]
@@ -33,7 +33,7 @@ fn test(inputs: Vec<&str>, output: &str, ts_config: TimestampConfig) -> CliResul
 fn setup_graph(inputs: Vec<&str>, output: &str, ts_config: TimestampConfig) -> CliResult<Box<dyn ChopperDriver>> {
     // source reader and headers
     let input_config = CSVInputConfig::new
-        (csv_configs::DELIMITER_DEFAULT, true, ts_config)?;
+        (None, true, ts_config)?;
     let mut input_factory
         = InputFactory::new(None, Some(input_config), None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
@@ -44,7 +44,7 @@ fn setup_graph(inputs: Vec<&str>, output: &str, ts_config: TimestampConfig) -> C
         sources.push(source);
     }
 
-    let csv_output_config = CSVOutputConfig::new(DELIMITER_DEFAULT, true);
+    let csv_output_config = CSVOutputConfig::new(OUTPUT_DELIMITER_DEFAULT, true);
     let header_sink = factory::new_header_sink
         (Some(output), Some(csv_output_config))?;
     let node_output = HeaderNode::HeaderSink(header_sink);

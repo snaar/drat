@@ -150,7 +150,7 @@ fn setup_graph(inputs: Option<Vec<&str>>,
 }
 
 fn parse_csv_config(matches: &ArgMatches, timezone: Tz) -> CliResult<CSVInputConfig> {
-    let input_delimiter = matches.value_of("csv_input_delimiter").unwrap();
+    let input_delimiter = matches.value_of("csv_input_delimiter");
     let has_header = matches.is_present("csv_has_header");
 
     // timestamp config

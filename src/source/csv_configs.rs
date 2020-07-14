@@ -5,7 +5,7 @@ use chrono_tz::Tz;
 use crate::error::CliResult;
 use crate::util::{csv_util, timestamp_util};
 
-pub static DELIMITER_DEFAULT: &str = ",";
+pub static OUTPUT_DELIMITER_DEFAULT: &str = ",";
 pub static TIMESTAMP_COL_DATE_DEFAULT: usize = 0;
 
 pub type DateCol = usize;
@@ -54,7 +54,7 @@ impl TimestampConfig {
 
 #[derive(Clone)]
 pub struct CSVInputConfig {
-    delimiter: u8,
+    delimiter: Option<u8>,
     has_header: bool,
     timestamp_config: TimestampConfig,
 }
@@ -66,25 +66,27 @@ pub struct CSVOutputConfig {
 }
 
 impl CSVInputConfig {
-    pub fn new(delimiter: &str,
+    pub fn new(delimiter: Option<&str>,
                has_header: bool,
                timestamp_config: TimestampConfig) -> CliResult<Self>
     {
-        let delimiter = csv_util::parse_into_delimiter(delimiter)?;
+        let delimiter = match delimiter {
+            None => None,
+            Some(x) => Some(csv_util::parse_into_delimiter(x)?)
+        };
         Ok(CSVInputConfig { delimiter, has_header, timestamp_config })
     }
 
     pub fn new_default() -> CliResult<Self> {
-        let delimiter = csv_util::parse_into_delimiter(DELIMITER_DEFAULT)?;
         let timestamp_config = TimestampConfig::default();
-        Ok(CSVInputConfig { delimiter, has_header: false, timestamp_config })
+        Ok(CSVInputConfig { delimiter: None, has_header: false, timestamp_config })
     }
 
     pub fn has_header(&self) -> bool {
         self.has_header
     }
 
-    pub fn delimiter(&self) -> u8 {
+    pub fn delimiter(&self) -> Option<u8> {
         self.delimiter
     }
 
@@ -99,7 +101,7 @@ impl CSVOutputConfig {
     }
 
     pub fn new_default() -> Self {
-        CSVOutputConfig { delimiter: DELIMITER_DEFAULT.to_string(), print_timestamp: true }
+        CSVOutputConfig { delimiter: OUTPUT_DELIMITER_DEFAULT.to_string(), print_timestamp: true }
     }
 
     pub fn delimiter(&self) -> &String {

@@ -8,8 +8,8 @@ use chopper_lib::driver::driver::Driver;
 use chopper_lib::driver::merge_join::MergeJoin;
 use chopper_lib::error::{self, CliResult};
 use chopper_lib::input::input_factory::InputFactory;
-use chopper_lib::source::csv_configs::{self, CSVInputConfig, CSVOutputConfig, DELIMITER_DEFAULT};
-use chopper_lib::source::csv_configs::{TimestampConfig, TimestampCol};
+use chopper_lib::source::csv_configs::{CSVInputConfig, CSVOutputConfig, OUTPUT_DELIMITER_DEFAULT};
+use chopper_lib::source::csv_configs::{TimestampCol, TimestampConfig};
 use chopper_lib::write::factory;
 
 #[test]
@@ -17,7 +17,7 @@ fn test_merge() {
     error::handle_drive_error(test());
     assert!(is_same_file
         ("./tests/output/test_merge.csv",
-         "./tests/reference/merge.csv"
+         "./tests/reference/merge.csv",
         ).unwrap());
 }
 
@@ -35,7 +35,7 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let ts_config = TimestampConfig::new
         (TimestampCol::Timestamp(0), None, New_York);
     let input_config = CSVInputConfig::new
-        (csv_configs::DELIMITER_DEFAULT, true, ts_config)?;
+        (None, true, ts_config)?;
     let mut input_factory
         = InputFactory::new(None, Some(input_config), None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
@@ -58,7 +58,7 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let merge = MergeJoin::new(2)?;
     let num_of_header_to_process = merge.num_of_header_to_process();
     let node_merge_sink = HeaderNode::MergeHeaderSink(merge, num_of_header_to_process);
-    let csv_output_config = CSVOutputConfig::new(DELIMITER_DEFAULT, true);
+    let csv_output_config = CSVOutputConfig::new(OUTPUT_DELIMITER_DEFAULT, true);
     let header_sink = factory::new_header_sink
         (Some(output), Some(csv_output_config))?;
     let node_output = HeaderNode::HeaderSink(header_sink);

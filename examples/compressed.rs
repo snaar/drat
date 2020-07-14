@@ -4,7 +4,7 @@ use chopper_lib::chopper::types::{self, Header};
 use chopper_lib::driver::driver::Driver;
 use chopper_lib::error::{self, CliResult};
 use chopper_lib::input::input_factory::InputFactory;
-use chopper_lib::source::csv_configs::{CSVInputConfig, CSVOutputConfig, DELIMITER_DEFAULT, TimestampConfig};
+use chopper_lib::source::csv_configs::{CSVInputConfig, CSVOutputConfig, OUTPUT_DELIMITER_DEFAULT, TimestampConfig};
 use chopper_lib::write::factory;
 
 fn main() {
@@ -17,7 +17,7 @@ fn compressed_example() -> CliResult<()> {
 
 fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let ts_config = TimestampConfig::default();
-    let csv_config = CSVInputConfig::new(",", true, ts_config)?;
+    let csv_config = CSVInputConfig::new(None, true, ts_config)?;
     let input = "./examples/files/uspop_time.csv.gz";
     let inputs = vec![input];
     let output = None;
@@ -33,7 +33,7 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
         sources.push(source);
     }
 
-    let csv_output_config = CSVOutputConfig::new(DELIMITER_DEFAULT, false);
+    let csv_output_config = CSVOutputConfig::new(OUTPUT_DELIMITER_DEFAULT, false);
     let header_sink = factory::new_header_sink(output, Some(csv_output_config))?;
     let node_output = HeaderNode::HeaderSink(header_sink);
     let chain = HeaderChain::new(vec![node_output]);
