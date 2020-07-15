@@ -7,7 +7,7 @@ use crate::chopper::chopper::Source;
 use crate::chopper::types::{FieldType, FieldValue, Header, Nanos, Row};
 use crate::error::{CliResult, Error};
 use crate::source::csv_configs::{CSVInputConfig, TimestampCol};
-use crate::util::reader::{ChopperBufReader, ChopperHeaderPreview};
+use crate::util::reader::{ChopperBufPreviewer, ChopperBufReader};
 use crate::util::{csv_util, timestamp_util};
 
 const DELIMITERS: &[u8] = b", ";
@@ -22,7 +22,7 @@ pub struct CSVSource<R> {
 
 impl<R: io::Read> CSVSource<R> {
     pub fn new(reader: R, csv_config: &CSVInputConfig) -> CliResult<Self> {
-        let header_preview = ChopperHeaderPreview::new(reader).unwrap();
+        let header_preview = ChopperBufPreviewer::new(reader).unwrap();
         let delimiter = match csv_config.delimiter() {
             None => csv_util::guess_delimiter(header_preview.header.as_str(), DELIMITERS),
             Some(d) => d,

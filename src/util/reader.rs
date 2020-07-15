@@ -11,21 +11,21 @@ pub struct ChopperBufReader<R> {
     cap: usize,
 }
 
-pub struct ChopperHeaderPreview<R> {
+pub struct ChopperBufPreviewer<R> {
     reader: ChopperBufReader<R>,
     pub header: String,
 }
 
-impl<R: Read> ChopperHeaderPreview<R> {
-    pub fn new(inner: R) -> io::Result<ChopperHeaderPreview<R>> {
+impl<R: Read> ChopperBufPreviewer<R> {
+    pub fn new(inner: R) -> io::Result<ChopperBufPreviewer<R>> {
         let mut reader = ChopperBufReader::with_capacity(DEFAULT_BUF_SIZE, inner);
-        let header_end = ChopperHeaderPreview::fill_buffer_until_newline(&mut reader)?;
+        let header_end = ChopperBufPreviewer::fill_buffer_until_newline(&mut reader)?;
         //TODO fix unwrap and error handling in this impl in general
         let header = std::str::from_utf8(&reader.buf[0..header_end])
             .unwrap()
             .to_string();
 
-        Ok(ChopperHeaderPreview { reader, header })
+        Ok(ChopperBufPreviewer { reader, header })
     }
 
     pub fn rewind_and_get_reader(self) -> ChopperBufReader<R> {
@@ -131,7 +131,7 @@ impl<R: Read> BufRead for ChopperBufReader<R> {
     }
 }
 
-impl<R: fmt::Debug> fmt::Debug for ChopperHeaderPreview<R> {
+impl<R: fmt::Debug> fmt::Debug for ChopperBufPreviewer<R> {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt.debug_struct("ChopperHeaderPreview")
             .field("reader", &self.reader)
@@ -156,7 +156,7 @@ impl<R: fmt::Debug> fmt::Debug for ChopperBufReader<R> {
 mod tests {
     use std::io::{BufRead, BufReader, Read};
 
-    use crate::util::reader::{ChopperBufReader, ChopperHeaderPreview};
+    use crate::util::reader::{ChopperBufPreviewer, ChopperBufReader};
 
     const TEST_BYTES: &[u8] = "aaaaa\nbbbbb\nccccc".as_bytes();
 
@@ -164,7 +164,7 @@ mod tests {
     fn test_capacity_too_small() {
         let inner = BufReader::new(TEST_BYTES);
         let mut reader = ChopperBufReader::with_capacity(5, inner);
-        let result = ChopperHeaderPreview::fill_buffer_until_newline(&mut reader);
+        let result = ChopperBufPreviewer::fill_buffer_until_newline(&mut reader);
 
         assert!(result.is_err());
     }
@@ -179,7 +179,7 @@ mod tests {
     fn test_normal_with_capacity(capacity: usize) {
         let inner = BufReader::new(TEST_BYTES);
         let mut reader = ChopperBufReader::with_capacity(capacity, inner);
-        let result = ChopperHeaderPreview::fill_buffer_until_newline(&mut reader);
+        let result = ChopperBufPreviewer::fill_buffer_until_newline(&mut reader);
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), 5);
