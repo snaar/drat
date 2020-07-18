@@ -22,12 +22,18 @@ pub struct CSVSource<R> {
 
 impl<R: io::Read> CSVSource<R> {
     pub fn new(reader: R, csv_config: &CSVInputConfig) -> CliResult<Self> {
-        let header_preview = ChopperBufPreviewer::new(reader).unwrap();
+        let mut previewer = ChopperBufPreviewer::new(reader).unwrap();
         let delimiter = match csv_config.delimiter() {
-            None => csv_util::guess_delimiter(header_preview.header.as_str(), DELIMITERS),
+            None => {
+                previewer.populate_lines_idempotent()?;
+                match &previewer.line1 {
+                    Some(line) => csv_util::guess_delimiter(line.as_str(), DELIMITERS),
+                    None => DELIMITERS[0], // doesn't really matter, since file is empty, just give something back
+                }
+            }
             Some(d) => d,
         };
-        let reader = header_preview.rewind_and_get_reader();
+        let reader = previewer.get_reader();
 
         let mut reader = csv::ReaderBuilder::new()
             .delimiter(delimiter)
