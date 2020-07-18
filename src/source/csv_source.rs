@@ -10,7 +10,7 @@ use crate::source::csv_configs::{CSVInputConfig, TimestampCol};
 use crate::util::reader::{ChopperBufPreviewer, ChopperBufReader};
 use crate::util::{csv_util, timestamp_util};
 
-const DELIMITERS: &[u8] = b", ";
+const DELIMITERS: &[u8] = b",\t ";
 
 pub struct CSVSource<R> {
     reader: csv::Reader<ChopperBufReader<R>>,
