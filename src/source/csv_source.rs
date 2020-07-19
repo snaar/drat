@@ -5,6 +5,7 @@ use csv::{self, Trim};
 
 use crate::chopper::chopper::Source;
 use crate::chopper::types::{FieldType, FieldValue, Header, Nanos, Row};
+use crate::cli::util::YesNoAuto;
 use crate::error::{CliResult, Error};
 use crate::source::csv_configs::{CSVInputConfig, TimestampCol};
 use crate::util::reader::{ChopperBufPreviewer, ChopperBufReader};
@@ -23,6 +24,7 @@ pub struct CSVSource<R> {
 impl<R: io::Read> CSVSource<R> {
     pub fn new(reader: R, csv_config: &CSVInputConfig) -> CliResult<Self> {
         let mut previewer = ChopperBufPreviewer::new(reader).unwrap();
+
         let delimiter = match csv_config.delimiter() {
             None => {
                 previewer.populate_lines_idempotent()?;
@@ -33,11 +35,21 @@ impl<R: io::Read> CSVSource<R> {
             }
             Some(d) => d,
         };
+
+        let has_header = match csv_config.has_header() {
+            YesNoAuto::Yes => true,
+            YesNoAuto::No => false,
+            YesNoAuto::Auto => {
+                previewer.populate_lines_idempotent()?;
+                csv_util::guess_has_header(&previewer.line1, &previewer.line2, delimiter)
+            }
+        };
+
         let reader = previewer.get_reader();
 
         let mut reader = csv::ReaderBuilder::new()
             .delimiter(delimiter)
-            .has_headers(csv_config.has_header())
+            .has_headers(has_header)
             .trim(Trim::All)
             .from_reader(reader);
 

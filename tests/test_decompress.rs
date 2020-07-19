@@ -4,6 +4,7 @@ use same_file::is_same_file;
 use chopper_lib::chopper::chopper::{ChopperDriver, Source};
 use chopper_lib::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper_lib::chopper::types::{self, Header};
+use chopper_lib::cli::util::YesNoAuto;
 use chopper_lib::driver::driver::Driver;
 use chopper_lib::error::{self, CliResult};
 use chopper_lib::input::input_factory::InputFactory;
@@ -36,7 +37,7 @@ fn setup_graph(
     ts_config: TimestampConfig,
 ) -> CliResult<Box<dyn ChopperDriver>> {
     // source reader and headers
-    let input_config = CSVInputConfig::new(None, true, ts_config)?;
+    let input_config = CSVInputConfig::new(None, YesNoAuto::Auto, ts_config)?;
     let mut input_factory = InputFactory::new(None, Some(input_config), None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();

@@ -2,6 +2,7 @@ use std::fmt;
 
 use chrono_tz::Tz;
 
+use crate::cli::util::YesNoAuto;
 use crate::error::CliResult;
 use crate::util::{csv_util, timestamp_util};
 
@@ -63,7 +64,7 @@ impl TimestampConfig {
 #[derive(Clone)]
 pub struct CSVInputConfig {
     delimiter: Option<u8>,
-    has_header: bool,
+    has_header: YesNoAuto,
     timestamp_config: TimestampConfig,
 }
 
@@ -76,7 +77,7 @@ pub struct CSVOutputConfig {
 impl CSVInputConfig {
     pub fn new(
         delimiter: Option<&str>,
-        has_header: bool,
+        has_header: YesNoAuto,
         timestamp_config: TimestampConfig,
     ) -> CliResult<Self> {
         let delimiter = match delimiter {
@@ -94,12 +95,12 @@ impl CSVInputConfig {
         let timestamp_config = TimestampConfig::default();
         Ok(CSVInputConfig {
             delimiter: None,
-            has_header: false,
+            has_header: YesNoAuto::Auto,
             timestamp_config,
         })
     }
 
-    pub fn has_header(&self) -> bool {
+    pub fn has_header(&self) -> YesNoAuto {
         self.has_header
     }
 

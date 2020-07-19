@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 
 use chrono_tz::Tz;
-use clap::ArgMatches;
+use clap::{value_t, ArgMatches};
 
 use crate::chopper::chopper::{ChopperDriver, Source};
 use crate::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use crate::chopper::types::{Header, TimestampRange};
+use crate::cli::util::YesNoAuto;
 use crate::cli_app::CliApp;
 use crate::driver::{driver::Driver, merge_join::MergeJoin};
 use crate::error::{self, CliResult};
@@ -69,8 +70,8 @@ pub fn parse_cli_args(
     let csv_output_delimiter = matches.value_of("csv_output_delimiter").unwrap();
     let csv_output_print_timestamp = match matches.value_of("csv_print_ts").unwrap() {
         "auto" => None,
-        "true" => Some(true),
-        "false" => Some(false),
+        "yes" => Some(true),
+        "no" => Some(false),
         _ => unreachable!(),
     };
 
@@ -159,7 +160,7 @@ fn setup_graph(
 
 fn parse_csv_config(matches: &ArgMatches, timezone: Tz) -> CliResult<CSVInputConfig> {
     let input_delimiter = matches.value_of("csv_input_delimiter");
-    let has_header = matches.is_present("csv_has_header");
+    let has_header = value_t!(matches, "csv_input_has_header", YesNoAuto)?;
 
     // timestamp config
     let mut ts_fmt: Option<String> = None;

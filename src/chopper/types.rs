@@ -168,7 +168,7 @@ impl fmt::Display for FieldValue {
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Debug)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug)]
 pub enum FieldType {
     Boolean,
     Byte,

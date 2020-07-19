@@ -1,6 +1,7 @@
 use chopper_lib::chopper::chopper::{ChopperDriver, Source};
 use chopper_lib::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper_lib::chopper::types::{self, Header};
+use chopper_lib::cli::util::YesNoAuto;
 use chopper_lib::driver::driver::Driver;
 use chopper_lib::error::{self, CliResult};
 use chopper_lib::input::input_factory::InputFactory;
@@ -19,7 +20,7 @@ fn compressed_example() -> CliResult<()> {
 
 fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let ts_config = TimestampConfig::default();
-    let csv_config = CSVInputConfig::new(None, true, ts_config)?;
+    let csv_config = CSVInputConfig::new(None, YesNoAuto::Auto, ts_config)?;
     let input = "./examples/files/uspop_time.csv.gz";
     let inputs = vec![input];
     let output = None;

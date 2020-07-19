@@ -24,7 +24,7 @@ impl CliApp {
             .arg(
                 Arg::with_name("fallback_file_ext")
                     .long("fallback-file-ext")
-                    .help("file format extention to assume when cannot deduce input file format")
+                    .help("file format extension to assume when cannot deduce input file format")
                     .takes_value(true)
                     .default_value("csv")
                     .value_name("ext"),
@@ -63,7 +63,7 @@ impl CliApp {
             .arg(
                 Arg::with_name("csv_input_delimiter")
                     .long("csv-in-delimiter")
-                    .help("csv input only: column delimiter [default: try ',' then ' ']")
+                    .help("csv input only: column delimiter [default: try each of ',\\t ']")
                     .takes_value(true)
                     .value_name("arg"),
             )
@@ -75,11 +75,15 @@ impl CliApp {
                     .default_value(",")
                     .value_name("arg"),
             )
-            // has header
             .arg(
-                Arg::with_name("csv_has_header")
-                    .long("csv-has-header")
-                    .help("csv only: input files have header"),
+                Arg::with_name("csv_input_has_header")
+                    .long("csv-in-has-header")
+                    .help("csv input only: has header row?")
+                    .takes_value(true)
+                    .default_value("auto")
+                    .possible_values(&["yes", "no", "auto"])
+                    .case_insensitive(true)
+                    .value_name("arg"),
             )
             // print timestamp
             .arg(
@@ -88,7 +92,7 @@ impl CliApp {
                     .help("csv only: print timestamp as first column")
                     .takes_value(true)
                     .default_value("auto")
-                    .possible_values(&["true", "false", "auto"])
+                    .possible_values(&["yes", "no", "auto"])
                     .case_insensitive(true)
                     .value_name("arg"),
             )
