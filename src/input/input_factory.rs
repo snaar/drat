@@ -91,7 +91,7 @@ impl InputFactory {
                     match &self.fallback_file_ext {
                         Some(x) => x.clone(),
                         None => {
-                            return Err(Error::from(format!("Unkown file type: [{:?}].\n\
+                            return Err(Error::from(format!("Unknown file type: [{:?}].\n\
                                 No file extension found. Neither file extension override, nor default file extension was specified.", path)));
                         }
                     }
