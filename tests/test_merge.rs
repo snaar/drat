@@ -36,7 +36,7 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     // source reader and headers
     let ts_config = TimestampConfig::new(TimestampCol::Timestamp(0), None, New_York);
     let input_config = CSVInputConfig::new(None, YesNoAuto::Auto, ts_config)?;
-    let mut input_factory = InputFactory::new(None, Some(input_config), None, None)?;
+    let mut input_factory = InputFactory::new(Some(input_config), None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {

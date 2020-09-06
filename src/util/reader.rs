@@ -4,6 +4,9 @@ use std::io::{BufRead, Error, ErrorKind, Read};
 
 const DEFAULT_BUF_SIZE: usize = 8 * 1024;
 
+//TODO: figure out how to split this into more files; tricky part is private
+// ChopperBufReader.buf field being used by ChopperBufPreviewer impl
+
 pub struct ChopperBufReader<R> {
     inner: R,
     buf: Box<[u8]>,

@@ -10,6 +10,7 @@ use crate::cli::util::YesNoAuto;
 use crate::cli_app::CliApp;
 use crate::driver::{driver::Driver, merge_join::MergeJoin};
 use crate::error::{self, CliResult};
+use crate::input::input::{Input, InputFormat, InputType};
 use crate::input::input_factory::InputFactory;
 use crate::source::csv_configs::{CSVInputConfig, CSVOutputConfig, TimestampCol, TimestampConfig};
 use crate::source::source_factory::SourceFactory;
@@ -51,19 +52,42 @@ pub fn parse_cli_args(
     let timestamp_range =
         TimestampRange::new(matches.value_of("begin"), matches.value_of("end"), timezone)?;
 
-    let inputs = match matches.values_of("input") {
-        None => None,
-        Some(i) => {
-            let mut inputs_vec: Vec<&str> = Vec::new();
-            for s in i {
-                inputs_vec.push(s);
+    let mut input_formats: Vec<InputFormat> = Vec::new();
+    for format in matches.values_of("format").unwrap() {
+        input_formats.push(if format == "auto" {
+            InputFormat::Auto
+        } else {
+            InputFormat::Extension(format.to_string())
+        });
+    }
+    debug_assert!(!input_formats.is_empty());
+    let last_format = input_formats.last().unwrap();
+
+    let mut inputs: Vec<Input> = Vec::new();
+    match matches.values_of("input") {
+        //TODO: add check here that there is only one format provided
+        None => inputs.push(Input {
+            input: InputType::StdIn,
+            format: input_formats[0].clone(),
+        }),
+        //TODO: add check here that number of formats provided is no more than number of inputs
+        // it's okay if it's less, because last format will be used for rest of inputs
+        Some(input_strings) => {
+            for (i, str) in input_strings.enumerate() {
+                inputs.push(Input {
+                    input: InputType::Path(str.to_string()),
+                    format: if i < input_formats.len() {
+                        input_formats[i].clone()
+                    } else {
+                        last_format.clone()
+                    },
+                });
             }
-            Some(inputs_vec)
         }
     };
+    debug_assert!(!inputs.is_empty());
 
-    let outputs = matches.value_of("output");
-    let fallback_file_ext = matches.value_of("fallback_file_ext");
+    let output = matches.value_of("output");
 
     // csv only
     let csv_input_config = parse_csv_config(&matches, timezone)?;
@@ -77,11 +101,10 @@ pub fn parse_cli_args(
 
     setup_graph(
         inputs,
-        outputs,
+        output,
         transport_factories,
         source_factories,
         timestamp_range,
-        fallback_file_ext,
         csv_input_config,
         csv_output_delimiter,
         csv_output_print_timestamp,
@@ -89,12 +112,11 @@ pub fn parse_cli_args(
 }
 
 fn setup_graph(
-    inputs: Option<Vec<&str>>,
+    inputs: Vec<Input>,
     output: Option<&str>,
     transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
     source_factories: Option<Vec<Box<dyn SourceFactory>>>,
     timestamp_range: TimestampRange,
-    fallback_file_ext: Option<&str>,
     csv_input_config: CSVInputConfig,
     csv_output_delimiter: &str,
     csv_output_print_timestamp: Option<bool>,
@@ -103,7 +125,6 @@ fn setup_graph(
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     let mut input_factory = InputFactory::new(
-        fallback_file_ext,
         Some(csv_input_config),
         source_factories,
         transport_factories,
@@ -116,34 +137,28 @@ fn setup_graph(
 
     let mut header_nodes: Vec<HeaderNode> = Vec::new();
     let mut chains: Vec<HeaderChain> = Vec::new();
-    match inputs {
-        Some(inputs) => {
-            for i in 0..inputs.len() {
-                let source = input_factory.create_source_from_path(inputs.get(i).unwrap())?;
-                headers.push(source.header().clone());
-                sources.push(source);
-                // add Merge to chains if multiple input files
-                if inputs.len() > 1 {
-                    let merge = HeaderNode::Merge(inputs.len(), i);
-                    let chain = HeaderChain::new(vec![merge]);
-                    chains.push(chain);
-                }
-            }
-            // add MergeHeaderSink as first header node if multiple input files
-            if inputs.len() > 1 {
-                let merge = MergeJoin::new(inputs.len())?;
-                let num_of_header_to_process = merge.num_of_header_to_process();
-                let node_merge_sink = HeaderNode::MergeHeaderSink(merge, num_of_header_to_process);
-                header_nodes.push(node_merge_sink);
-            }
-        }
-        None => {
-            // default source factory is csv
-            let source = input_factory.create_source_from_stdin("csv")?;
-            headers.push(source.header().clone());
-            sources.push(source);
+
+    for (i, input) in inputs.iter().enumerate() {
+        let source = input_factory.create_source_from_input(&input)?;
+        headers.push(source.header().clone());
+        sources.push(source);
+
+        // add Merge to chains if multiple input files
+        if inputs.len() > 1 {
+            let merge = HeaderNode::Merge(inputs.len(), i);
+            let chain = HeaderChain::new(vec![merge]);
+            chains.push(chain);
         }
     }
+
+    // add MergeHeaderSink as first header node if multiple input files
+    if inputs.len() > 1 {
+        let merge = MergeJoin::new(inputs.len())?;
+        let num_of_header_to_process = merge.num_of_header_to_process();
+        let node_merge_sink = HeaderNode::MergeHeaderSink(merge, num_of_header_to_process);
+        header_nodes.push(node_merge_sink);
+    }
+
     let header_sink = factory::new_header_sink(output, Some(csv_output_config))?;
     let node_hs = HeaderNode::HeaderSink(header_sink);
     header_nodes.push(node_hs);

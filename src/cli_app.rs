@@ -22,12 +22,19 @@ impl CliApp {
                     .value_name("file"),
             )
             .arg(
-                Arg::with_name("fallback_file_ext")
-                    .long("fallback-file-ext")
-                    .help("file format extension to assume when cannot deduce input file format")
+                Arg::with_name("format")
+                    .short("f")
+                    .long("format")
+                    .help(
+                        "input file format override list; \
+                        applied in order of input file arguments; \
+                        if there are more input files than file format overrides, \
+                        last format override will be used for remaining files; \
+                        controls stdin format as appropriate",
+                    )
                     .takes_value(true)
-                    .default_value("csv")
-                    .value_name("ext"),
+                    .default_value("auto")
+                    .multiple(true),
             )
             .arg(
                 Arg::with_name("timezone")
