@@ -28,13 +28,15 @@ impl CliApp {
                     .help(
                         "input file format override list; \
                         applied in order of input file arguments; \
+                        can use 'auto' to ask for file format autodetection; \
                         if there are more input files than file format overrides, \
                         last format override will be used for remaining files; \
-                        controls stdin format as appropriate",
+                        controls stdin format as appropriate; if missing, will attempt \
+                        to autodetect file format first using file name, then using file contents",
                     )
                     .takes_value(true)
-                    .default_value("auto")
-                    .multiple(true),
+                    .require_delimiter(true)
+                    .value_name("f1[,f2[,etc]]"),
             )
             .arg(
                 Arg::with_name("timezone")

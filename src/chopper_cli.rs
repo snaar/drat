@@ -53,13 +53,18 @@ pub fn parse_cli_args(
         TimestampRange::new(matches.value_of("begin"), matches.value_of("end"), timezone)?;
 
     let mut input_formats: Vec<InputFormat> = Vec::new();
-    for format in matches.values_of("format").unwrap() {
-        input_formats.push(if format == "auto" {
-            InputFormat::Auto
-        } else {
-            InputFormat::Extension(format.to_string())
-        });
-    }
+    match matches.values_of("format") {
+        None => input_formats.push(InputFormat::Auto),
+        Some(formats) => {
+            for format in formats {
+                input_formats.push(if format == "auto" {
+                    InputFormat::Auto
+                } else {
+                    InputFormat::Extension(format.to_string())
+                });
+            }
+        }
+    };
     debug_assert!(!input_formats.is_empty());
     let last_format = input_formats.last().unwrap();
 
