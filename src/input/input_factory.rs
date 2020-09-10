@@ -5,7 +5,7 @@ use crate::chopper::chopper::Source;
 use crate::error::{CliResult, Error};
 use crate::input::input::{Input, InputFormat, InputType};
 use crate::source::csv_configs::CSVInputConfig;
-use crate::source::decompress;
+use crate::source::decompress::{self, DecompressionFormat};
 use crate::source::{
     csv_factory::CSVFactory, dc_factory::DCFactory, source_factory::SourceFactory,
 };
@@ -114,14 +114,14 @@ impl InputFactory {
         match format {
             Format::UserSpecified(format) => {
                 // user told us exactly what they want, don't do any autodetection
-                let (_, previewer, format) = self.decompress_using_format(previewer, format)?;
+                let (_, previewer, format) = Self::decompress_using_format(previewer, format)?;
                 self.create_source_from_format(previewer, format)
             }
             Format::DetectUsingFileNameThenContents(format) => {
                 // first try using the file name alone
 
                 let (decompression_result, previewer, format) =
-                    self.decompress_using_format(previewer, format)?;
+                    Self::decompress_using_format(previewer, format)?;
 
                 // can theoretically somehow share this code with create_source_from_reader_and_format,
                 // but seems hard due to ownership of reader needed later in this match block;
@@ -140,7 +140,7 @@ impl InputFactory {
                 let previewer = match decompression_result {
                     FormatAutodetectResult::Detected => previewer,
                     FormatAutodetectResult::NotDetected => {
-                        let (_, previewer) = self.decompress_by_autodetecting_format(previewer)?;
+                        let (_, previewer) = Self::decompress_by_autodetecting_format(previewer)?;
                         previewer
                     }
                 };
@@ -150,34 +150,47 @@ impl InputFactory {
             Format::DetectUsingFileContents => {
                 // we didn't even get a file name as hint, try to figure out using the
                 // contents of the file right away
-                let (_, previewer) = self.decompress_by_autodetecting_format(previewer)?;
+                let (_, previewer) = Self::decompress_by_autodetecting_format(previewer)?;
                 self.create_source_by_autodetecting_format(previewer)
             }
         }
     }
 
     fn decompress_using_format(
-        &self,
         previewer: Box<dyn Preview>,
         format: String,
     ) -> CliResult<(FormatAutodetectResult, Box<dyn Preview>, String)> {
-        match decompress::is_compressed(&format) {
-            true => {
-                let reader = previewer.get_reader();
-                let (new_reader, new_format) = decompress::decompress(&format, reader)?;
-                let new_previewer = Box::new(ChopperBufPreviewer::new(new_reader)?);
+        match decompress::is_compressed_using_format(&format) {
+            Some((decompression_format, new_format)) => {
+                let new_previewer = Self::decompress(decompression_format, previewer)?;
                 Ok((FormatAutodetectResult::Detected, new_previewer, new_format))
             }
-            false => Ok((FormatAutodetectResult::NotDetected, previewer, format)),
+            None => Ok((FormatAutodetectResult::NotDetected, previewer, format)),
         }
     }
 
     fn decompress_by_autodetecting_format(
-        &self,
         previewer: Box<dyn Preview>,
     ) -> CliResult<(FormatAutodetectResult, Box<dyn Preview>)> {
-        //TODO: actually try to autodetect
-        Ok((FormatAutodetectResult::NotDetected, previewer))
+        match decompress::is_compressed_using_previewer(previewer.as_ref()) {
+            Some(decompression_format) => {
+                let new_previewer = Self::decompress(decompression_format, previewer)?;
+                Ok((FormatAutodetectResult::Detected, new_previewer))
+            }
+            None => Ok((FormatAutodetectResult::NotDetected, previewer)),
+        }
+    }
+
+    fn decompress(
+        decompression_format: DecompressionFormat,
+        previewer: Box<dyn Preview>,
+    ) -> CliResult<Box<dyn Preview>> {
+        let reader = previewer.get_reader();
+        let new_reader = match decompression_format {
+            DecompressionFormat::GZ => decompress::decompress_gz(reader)?,
+            DecompressionFormat::LZF => decompress::decompress_lzf(reader)?,
+        };
+        Ok(Box::new(ChopperBufPreviewer::new(new_reader)?))
     }
 
     fn create_source_from_format(
