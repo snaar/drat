@@ -20,8 +20,12 @@ impl SourceFactory for CSVFactory {
         format.ends_with(".csv")
     }
 
-    fn can_create_from_previewer(&self, _previewer: &Box<dyn Preview>) -> bool {
-        return false;
+    fn can_create_from_previewer(&self, previewer: &Box<dyn Preview>) -> bool {
+        // if we were able to get lines of text which were parsed into utf8, then
+        // it's probably a fair guess that it's a csv; it's a good idea to have this
+        // factory as last one in the list of factories because of generous acceptance
+        // criteria
+        previewer.get_lines().is_some()
     }
 
     fn create_source(&mut self, preview: Box<dyn Preview>) -> CliResult<Box<dyn Source>> {
