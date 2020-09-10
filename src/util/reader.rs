@@ -18,6 +18,9 @@ pub struct ChopperBufReader<R> {
 
 pub struct ChopperBufPreviewer<R> {
     reader: ChopperBufReader<R>,
+    /// difference with reader.buf is that this buf is cut down to size of how many bytes
+    /// were actually read when filling the reader.buf for preview
+    trimmed_buf: Box<[u8]>,
     /// if present, then file had well-formed utf8 strings
     /// it will only have complete strings, if string was cut off then it will not be present
     lines: Option<Vec<String>>,
@@ -28,6 +31,10 @@ impl<R: 'static + Read> Preview for ChopperBufPreviewer<R> {
         &self.lines
     }
 
+    fn get_buf(&self) -> &Box<[u8]> {
+        &self.trimmed_buf
+    }
+
     fn get_reader(self: Box<Self>) -> Box<dyn Read> {
         Box::new(self.reader)
     }
@@ -35,9 +42,15 @@ impl<R: 'static + Read> Preview for ChopperBufPreviewer<R> {
 
 impl<R: Read> ChopperBufPreviewer<R> {
     pub fn new(inner: R) -> io::Result<ChopperBufPreviewer<R>> {
-        let reader = ChopperBufReader::with_capacity(DEFAULT_BUF_SIZE, inner);
+        let mut reader = ChopperBufReader::with_capacity(DEFAULT_BUF_SIZE, inner);
+        reader.fill_buffer()?;
+
+        let trimmed_slice = &reader.buf[..reader.cap];
+        let trimmed_buf: Box<[u8]> = trimmed_slice.into();
+
         let mut previewer = ChopperBufPreviewer {
             reader,
+            trimmed_buf,
             lines: None,
         };
 
@@ -51,8 +64,6 @@ impl<R: Read> ChopperBufPreviewer<R> {
     }
 
     fn prepare_preview(&mut self) -> io::Result<()> {
-        Self::fill_buffer(&mut self.reader)?;
-
         // we want to make all the lines we find in the filled buffer available for easy
         // preview individually
         //
@@ -164,34 +175,6 @@ impl<R: Read> ChopperBufPreviewer<R> {
             Err(e) => Err(e),
         }
     }
-
-    fn fill_buffer(reader: &mut ChopperBufReader<R>) -> io::Result<()> {
-        debug_assert!(reader.pos == 0);
-        debug_assert!(reader.cap == 0);
-
-        loop {
-            let bytes_read = Self::fill_buffer_one_shot(reader)?;
-            if bytes_read == 0 || reader.cap == reader.buf.len() {
-                break;
-            }
-        }
-
-        Ok(())
-    }
-
-    fn fill_buffer_one_shot(reader: &mut ChopperBufReader<R>) -> io::Result<usize> {
-        if reader.cap == reader.buf.len() {
-            return Err(Error::new(
-                ErrorKind::Other,
-                "asked to fill buffer when it was already at capacity",
-            ));
-        }
-
-        let bytes_read = reader.inner.read(&mut reader.buf[reader.cap..])?;
-        reader.cap += bytes_read;
-        debug_assert!(reader.cap <= reader.buf.len());
-        Ok(bytes_read)
-    }
 }
 
 impl<R: Read> ChopperBufReader<R> {
@@ -218,6 +201,36 @@ impl<R> ChopperBufReader<R> {
     fn discard_buffer(&mut self) {
         self.pos = 0;
         self.cap = 0;
+    }
+}
+
+impl<R: Read> ChopperBufReader<R> {
+    fn fill_buffer(&mut self) -> io::Result<()> {
+        debug_assert!(self.pos == 0);
+        debug_assert!(self.cap == 0);
+
+        loop {
+            let bytes_read = self.fill_buffer_one_shot()?;
+            if bytes_read == 0 || self.cap == self.buf.len() {
+                break;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn fill_buffer_one_shot(&mut self) -> io::Result<usize> {
+        if self.cap == self.buf.len() {
+            return Err(Error::new(
+                ErrorKind::Other,
+                "asked to fill buffer when it was already at capacity",
+            ));
+        }
+
+        let bytes_read = self.inner.read(&mut self.buf[self.cap..])?;
+        self.cap += bytes_read;
+        debug_assert!(self.cap <= self.buf.len());
+        Ok(bytes_read)
     }
 }
 
@@ -290,7 +303,7 @@ mod tests {
     fn test_capacity_too_small() {
         let inner = BufReader::new(TEST_BYTES);
         let mut reader = ChopperBufReader::with_capacity(5, inner);
-        let result = ChopperBufPreviewer::fill_buffer(&mut reader);
+        let result = reader.fill_buffer();
 
         assert!(result.is_ok());
         assert_eq!(reader.cap, reader.buf.len());
@@ -306,7 +319,7 @@ mod tests {
     fn test_normal_with_capacity(capacity: usize) {
         let inner = BufReader::new(TEST_BYTES);
         let mut reader = ChopperBufReader::with_capacity(capacity, inner);
-        let result = ChopperBufPreviewer::fill_buffer(&mut reader);
+        let result = reader.fill_buffer();
 
         assert!(result.is_ok());
 
@@ -422,21 +435,23 @@ mod tests {
 
     #[test]
     fn test_preview_2_4() {
-        let inner = BufReader::new("zzz\r\nxxx\nxxx".as_bytes());
+        let inner = BufReader::new("zzz\r\nxxx\nyyy".as_bytes());
         let previewer = ChopperBufPreviewer::new(inner).unwrap();
         assert!(previewer.lines.is_some());
         let lines = previewer.lines.unwrap();
         assert_eq!(lines.len(), 3);
         assert_eq!(lines.get(0).unwrap(), "zzz");
         assert_eq!(lines.get(1).unwrap(), "xxx");
-        assert_eq!(lines.get(2).unwrap(), "xxx");
+        assert_eq!(lines.get(2).unwrap(), "yyy");
     }
 
     fn setup_test_preview_3(capacity: usize) -> Box<dyn Preview> {
         let inner = BufReader::new("zzz\nxxx\nyyy".as_bytes());
-        let reader = ChopperBufReader::with_capacity(capacity, inner);
+        let mut reader = ChopperBufReader::with_capacity(capacity, inner);
+        reader.fill_buffer().unwrap();
         let mut previewer = ChopperBufPreviewer {
             reader,
+            trimmed_buf: [].into(),
             lines: None,
         };
         previewer.prepare_preview().unwrap();
@@ -507,5 +522,13 @@ mod tests {
         assert_eq!(lines.get(0).unwrap(), "zzz");
         assert_eq!(lines.get(1).unwrap(), "xxx");
         assert_eq!(lines.get(2).unwrap(), "yyy");
+    }
+
+    #[test]
+    fn test_preview_trimmed_buf() {
+        let inner = BufReader::new("zzz".as_bytes());
+        let previewer = ChopperBufPreviewer::new(inner).unwrap();
+        assert_eq!(previewer.get_buf().len(), 3);
+        assert_eq!(previewer.get_buf().as_ref(), "zzz".as_bytes());
     }
 }

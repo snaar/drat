@@ -1,7 +1,10 @@
 use crate::chopper::chopper::Source;
 use crate::error::CliResult;
 use crate::source::{dc_source::DCSource, source_factory::SourceFactory};
+use crate::util::dc_util;
 use crate::util::preview::Preview;
+use byteorder::{BigEndian, ReadBytesExt};
+use std::io::BufReader;
 
 pub struct DCFactory;
 
@@ -10,8 +13,29 @@ impl SourceFactory for DCFactory {
         format.ends_with(".dc")
     }
 
-    fn can_create_from_previewer(&self, _previewer: &Box<dyn Preview>) -> bool {
-        return false;
+    fn can_create_from_previewer(&self, previewer: &Box<dyn Preview>) -> bool {
+        let buf = previewer.get_buf();
+        let mut reader = BufReader::new(buf.as_ref());
+
+        match reader.read_u64::<BigEndian>() {
+            Ok(magic_num) => {
+                if &magic_num != &dc_util::MAGIC_NUM {
+                    return false;
+                }
+            }
+            Err(_) => return false,
+        }
+
+        match reader.read_u16::<BigEndian>() {
+            Ok(version) => {
+                if &version != &dc_util::VERSION {
+                    return false;
+                }
+            }
+            Err(_) => return false,
+        };
+
+        true
     }
 
     fn create_source(&mut self, previewer: Box<dyn Preview>) -> CliResult<Box<dyn Source>> {
