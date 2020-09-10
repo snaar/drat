@@ -1,11 +1,9 @@
-use std::io;
-
 use crate::chopper::chopper::Source;
 use crate::error::CliResult;
 use crate::source::csv_configs::CSVInputConfig;
 use crate::source::csv_source::CSVSource;
 use crate::source::source_factory::SourceFactory;
-use std::io::Read;
+use crate::util::preview::Preview;
 
 pub struct CSVFactory {
     pub csv_input_config: CSVInputConfig,
@@ -22,11 +20,11 @@ impl SourceFactory for CSVFactory {
         format.ends_with(".csv")
     }
 
-    fn can_create_from_previewer(&self, _previewer: &Box<dyn Read>) -> bool {
+    fn can_create_from_previewer(&self, _previewer: &Box<dyn Preview>) -> bool {
         return false;
     }
 
-    fn create_source(&mut self, reader: Box<dyn io::Read>) -> CliResult<Box<dyn Source>> {
-        Ok(Box::new(CSVSource::new(reader, &self.csv_input_config)?))
+    fn create_source(&mut self, preview: Box<dyn Preview>) -> CliResult<Box<dyn Source>> {
+        Ok(Box::new(CSVSource::new(preview, &self.csv_input_config)?))
     }
 }

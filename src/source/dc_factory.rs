@@ -1,9 +1,7 @@
-use std::io;
-
 use crate::chopper::chopper::Source;
 use crate::error::CliResult;
 use crate::source::{dc_source::DCSource, source_factory::SourceFactory};
-use std::io::Read;
+use crate::util::preview::Preview;
 
 pub struct DCFactory;
 
@@ -12,11 +10,12 @@ impl SourceFactory for DCFactory {
         format.ends_with(".dc")
     }
 
-    fn can_create_from_previewer(&self, _previewer: &Box<dyn Read>) -> bool {
+    fn can_create_from_previewer(&self, _previewer: &Box<dyn Preview>) -> bool {
         return false;
     }
 
-    fn create_source(&mut self, reader: Box<dyn io::Read>) -> CliResult<Box<dyn Source>> {
+    fn create_source(&mut self, previewer: Box<dyn Preview>) -> CliResult<Box<dyn Source>> {
+        let reader = previewer.get_reader();
         Ok(Box::new(DCSource::new(reader)?))
     }
 }

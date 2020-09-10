@@ -10,6 +10,8 @@ use crate::source::{
     csv_factory::CSVFactory, dc_factory::DCFactory, source_factory::SourceFactory,
 };
 use crate::transport::{file::FileInput, http::Http, transport_factory::TransportFactory};
+use crate::util::preview::Preview;
+use crate::util::reader::ChopperBufPreviewer;
 
 pub struct InputFactory {
     transport_factories: Vec<Box<dyn TransportFactory>>,
@@ -75,9 +77,9 @@ impl InputFactory {
     }
 
     pub fn create_source_from_input(&mut self, input: &Input) -> CliResult<Box<dyn Source>> {
-        let reader = match &input.input {
-            InputType::Path(path) => self.create_io_reader(Path::new(path))?,
-            InputType::StdIn => Box::new(io::stdin()),
+        let previewer = match &input.input {
+            InputType::Path(path) => self.create_previewer(Path::new(path))?,
+            InputType::StdIn => Box::new(ChopperBufPreviewer::new(io::stdin())?),
         };
 
         let file_name = match &input.input {
@@ -112,21 +114,21 @@ impl InputFactory {
         match format {
             Format::UserSpecified(format) => {
                 // user told us exactly what they want, don't do any autodetection
-                let (_, reader, format) = self.decompress_using_format(reader, format)?;
-                self.create_source_from_reader_and_format(reader, format)
+                let (_, previewer, format) = self.decompress_using_format(previewer, format)?;
+                self.create_source_from_format(previewer, format)
             }
             Format::DetectUsingFileNameThenContents(format) => {
                 // first try using the file name alone
 
-                let (decompression_result, reader, format) =
-                    self.decompress_using_format(reader, format)?;
+                let (decompression_result, previewer, format) =
+                    self.decompress_using_format(previewer, format)?;
 
                 // can theoretically somehow share this code with create_source_from_reader_and_format,
                 // but seems hard due to ownership of reader needed later in this match block;
                 // maybe revisit one day as learning experience
                 for sf in &mut self.source_factories {
                     if sf.can_create_from_format(&format) {
-                        return sf.create_source(reader);
+                        return sf.create_source(previewer);
                     }
                 }
 
@@ -135,55 +137,57 @@ impl InputFactory {
 
                 // first, check if we were able to decompress above, if so, don't need to
                 // decompress again
-                let reader = match decompression_result {
-                    FormatAutodetectResult::Detected => reader,
+                let previewer = match decompression_result {
+                    FormatAutodetectResult::Detected => previewer,
                     FormatAutodetectResult::NotDetected => {
-                        let (_, reader) = self.decompress_autodetecting_format(reader)?;
-                        reader
+                        let (_, previewer) = self.decompress_by_autodetecting_format(previewer)?;
+                        previewer
                     }
                 };
 
-                self.create_source_from_reader_and_autodetect_format(reader)
+                self.create_source_by_autodetecting_format(previewer)
             }
             Format::DetectUsingFileContents => {
                 // we didn't even get a file name as hint, try to figure out using the
                 // contents of the file right away
-                let (_, reader) = self.decompress_autodetecting_format(reader)?;
-                self.create_source_from_reader_and_autodetect_format(reader)
+                let (_, previewer) = self.decompress_by_autodetecting_format(previewer)?;
+                self.create_source_by_autodetecting_format(previewer)
             }
         }
     }
 
     fn decompress_using_format(
         &self,
-        reader: Box<dyn io::Read>,
+        previewer: Box<dyn Preview>,
         format: String,
-    ) -> CliResult<(FormatAutodetectResult, Box<dyn io::Read>, String)> {
+    ) -> CliResult<(FormatAutodetectResult, Box<dyn Preview>, String)> {
         match decompress::is_compressed(&format) {
             true => {
+                let reader = previewer.get_reader();
                 let (new_reader, new_format) = decompress::decompress(&format, reader)?;
-                Ok((FormatAutodetectResult::Detected, new_reader, new_format))
+                let new_previewer = Box::new(ChopperBufPreviewer::new(new_reader)?);
+                Ok((FormatAutodetectResult::Detected, new_previewer, new_format))
             }
-            false => Ok((FormatAutodetectResult::NotDetected, reader, format)),
+            false => Ok((FormatAutodetectResult::NotDetected, previewer, format)),
         }
     }
 
-    fn decompress_autodetecting_format(
+    fn decompress_by_autodetecting_format(
         &self,
-        reader: Box<dyn io::Read>,
-    ) -> CliResult<(FormatAutodetectResult, Box<dyn io::Read>)> {
+        previewer: Box<dyn Preview>,
+    ) -> CliResult<(FormatAutodetectResult, Box<dyn Preview>)> {
         //TODO: actually try to autodetect
-        Ok((FormatAutodetectResult::NotDetected, reader))
+        Ok((FormatAutodetectResult::NotDetected, previewer))
     }
 
-    fn create_source_from_reader_and_format(
+    fn create_source_from_format(
         &mut self,
-        reader: Box<dyn io::Read>,
+        previewer: Box<dyn Preview>,
         format: String,
     ) -> CliResult<Box<dyn Source>> {
         for sf in &mut self.source_factories {
             if sf.can_create_from_format(&format) {
-                return sf.create_source(reader);
+                return sf.create_source(previewer);
             }
         }
 
@@ -194,13 +198,13 @@ impl InputFactory {
         )))
     }
 
-    fn create_source_from_reader_and_autodetect_format(
+    fn create_source_by_autodetecting_format(
         &mut self,
-        reader: Box<dyn io::Read>,
+        previewer: Box<dyn Preview>,
     ) -> CliResult<Box<dyn Source>> {
         for sf in &mut self.source_factories {
-            if sf.can_create_from_previewer(&reader) {
-                return sf.create_source(reader);
+            if sf.can_create_from_previewer(&previewer) {
+                return sf.create_source(previewer);
             }
         }
 
@@ -209,15 +213,15 @@ impl InputFactory {
         ))
     }
 
-    fn create_io_reader(&mut self, path: &Path) -> CliResult<Box<dyn io::Read>> {
-        let mut io_reader: Option<Box<dyn io::Read>> = None;
+    fn create_previewer(&mut self, path: &Path) -> CliResult<Box<dyn Preview>> {
+        let mut reader: Option<Box<dyn io::Read>> = None;
         for factory in &mut self.transport_factories.iter() {
             match factory.can_open(path) {
                 false => continue,
-                true => io_reader = Some(factory.open(path)?),
+                true => reader = Some(factory.open(path)?),
             }
         }
-        match io_reader {
+        match reader {
             None => {
                 let msg = format!(
                     "Cannot open file {:?}. \
@@ -227,7 +231,10 @@ impl InputFactory {
                 let err = io::Error::new(io::ErrorKind::Other, msg);
                 Err(Error::Io(err))
             }
-            Some(r) => Ok(Box::new(r)),
+            Some(reader) => {
+                let previewer = ChopperBufPreviewer::new(reader)?;
+                Ok(Box::new(previewer))
+            }
         }
     }
 }

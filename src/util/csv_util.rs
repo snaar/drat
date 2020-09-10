@@ -65,7 +65,7 @@ pub fn guess_delimiter(row: &str, possible_delimiters: &[u8]) -> u8 {
 /// skipping the first data row by mistaking it for header;
 /// returning false when confused is safest thing - in worst case parsing will fail
 /// later and user will have to manually configure the csv file format
-pub fn guess_has_header(line1: &Option<String>, line2: &Option<String>, delimiter: u8) -> bool {
+pub fn guess_has_header(line1: Option<&String>, line2: Option<&String>, delimiter: u8) -> bool {
     let line1 = match line1 {
         None => return false,
         Some(line) => line,
@@ -141,38 +141,38 @@ mod tests {
     #[test]
     fn test_guess_has_header() {
         assert!(guess_has_header(
-            &Some("zzz".to_string()),
-            &Some("123".to_string()),
+            Some(&"zzz".to_string()),
+            Some(&"123".to_string()),
             b','
         ));
         assert!(!guess_has_header(
-            &Some("zzz".to_string()),
-            &Some("zzz".to_string()),
+            Some(&"zzz".to_string()),
+            Some(&"zzz".to_string()),
             b','
         ));
         assert!(!guess_has_header(
-            &Some("123".to_string()),
-            &Some("123".to_string()),
+            Some(&"123".to_string()),
+            Some(&"123".to_string()),
             b','
         ));
         assert!(guess_has_header(
-            &Some("zzz".to_string()),
-            &Some("123".to_string()),
+            Some(&"zzz".to_string()),
+            Some(&"123".to_string()),
             b','
         ));
         assert!(guess_has_header(
-            &Some("zzz,zzz,zzz,zzz".to_string()),
-            &Some("zzz,zzz,123,zzz".to_string()),
+            Some(&"zzz,zzz,zzz,zzz".to_string()),
+            Some(&"zzz,zzz,123,zzz".to_string()),
             b','
         ));
         assert!(!guess_has_header(
-            &Some("zzz,zzz,123,zzz".to_string()),
-            &Some("zzz,zzz, 123 ,zzz".to_string()),
+            Some(&"zzz,zzz,123,zzz".to_string()),
+            Some(&"zzz,zzz, 123 ,zzz".to_string()),
             b','
         ));
         assert!(guess_has_header(
-            &Some("123".to_string()),
-            &Some("123.4".to_string()),
+            Some(&"123".to_string()),
+            Some(&"123.4".to_string()),
             b','
         ));
     }

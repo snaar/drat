@@ -4,6 +4,7 @@ use std::path::Path;
 
 pub trait TransportFactory {
     fn can_open(&self, path: &Path) -> bool;
+    /// returned reader should do minimal buffering, caller should do buffering if needed
     fn open(&self, path: &Path) -> io::Result<Box<dyn io::Read>>;
     fn box_clone(&self) -> Box<dyn TransportFactory>;
     fn factory_name(&self) -> &str;

@@ -1,5 +1,3 @@
-use std::io;
-
 use chrono::{NaiveDateTime, TimeZone};
 use csv::{self, Trim};
 
@@ -8,27 +6,30 @@ use crate::chopper::types::{FieldType, FieldValue, Header, Nanos, Row};
 use crate::cli::util::YesNoAuto;
 use crate::error::{CliResult, Error};
 use crate::source::csv_configs::{CSVInputConfig, TimestampCol};
-use crate::util::reader::{ChopperBufPreviewer, ChopperBufReader};
+use crate::util::preview::Preview;
 use crate::util::{csv_util, timestamp_util};
+use std::io::Read;
 
 const DELIMITERS: &[u8] = b",\t ";
 
-pub struct CSVSource<R> {
-    reader: csv::Reader<ChopperBufReader<R>>,
+pub struct CSVSource {
+    reader: csv::Reader<Box<dyn Read>>,
     header: Header,
     csv_config: CSVInputConfig,
     next_row: Row,
     has_next_row: bool,
 }
 
-impl<R: io::Read> CSVSource<R> {
-    pub fn new(reader: R, csv_config: &CSVInputConfig) -> CliResult<Self> {
-        let mut previewer = ChopperBufPreviewer::new(reader).unwrap();
+impl CSVSource {
+    pub fn new(previewer: Box<dyn Preview>, csv_config: &CSVInputConfig) -> CliResult<Self> {
+        let (line1, line2) = match previewer.get_lines() {
+            None => (None, None),
+            Some(lines) => (lines.get(0), lines.get(1)),
+        };
 
         let delimiter = match csv_config.delimiter() {
             None => {
-                previewer.populate_lines_idempotent()?;
-                match &previewer.line1 {
+                match line1 {
                     Some(line) => csv_util::guess_delimiter(line.as_str(), DELIMITERS),
                     None => DELIMITERS[0], // doesn't really matter, since file is empty, just give something back
                 }
@@ -39,10 +40,7 @@ impl<R: io::Read> CSVSource<R> {
         let has_header = match csv_config.has_header() {
             YesNoAuto::Yes => true,
             YesNoAuto::No => false,
-            YesNoAuto::Auto => {
-                previewer.populate_lines_idempotent()?;
-                csv_util::guess_has_header(&previewer.line1, &previewer.line2, delimiter)
-            }
+            YesNoAuto::Auto => csv_util::guess_has_header(line1, line2, delimiter),
         };
 
         let reader = previewer.get_reader();
@@ -187,7 +185,7 @@ impl<R: io::Read> CSVSource<R> {
     }
 }
 
-impl<R: io::Read> Source for CSVSource<R> {
+impl Source for CSVSource {
     fn header(&self) -> &Header {
         &self.header
     }
