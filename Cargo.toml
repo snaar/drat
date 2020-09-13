@@ -24,7 +24,6 @@ csv = "1"
 dtoa = "0.4"
 flate2 = "1"
 lazy_static = "1"
-lzf = "0.3"
 reqwest = { version = "0.10", features = ["blocking"] }
 backtrace = "0.3"
 

@@ -1,8 +1,8 @@
 use std::io;
 
 use flate2::read::GzDecoder;
-use lzf;
 
+use crate::decompress::lzf::LzfReader;
 use crate::error::CliResult;
 use crate::util::preview::Preview;
 use byteorder::{BigEndian, ReadBytesExt};
@@ -44,11 +44,17 @@ pub fn is_compressed_using_previewer(previewer: &dyn Preview) -> Option<Decompre
     let buf = previewer.get_buf();
     let mut reader = BufReader::new(buf.as_ref());
 
-    if let Ok(gz_header) = reader.read_u32::<BigEndian>() {
-        if gz_header & 0xFFFFFF00 == 0x1F8B0800 {
+    let first_four_bytes_big_endian = reader.read_u32::<BigEndian>();
+    if let Ok(header) = first_four_bytes_big_endian {
+        let header24be = header & 0xFFFFFF00;
+        if header24be == 0x1F8B0800 {
             return Some(DecompressionFormat::GZ);
         }
+        if header24be == 0x5A560100 || header24be == 0x5A560000 {
+            return Some(DecompressionFormat::LZF);
+        }
     }
+
     None
 }
 
@@ -58,12 +64,6 @@ pub fn decompress_gz(reader: Box<dyn io::Read>) -> CliResult<Box<dyn io::Read>> 
 }
 
 pub fn decompress_lzf(reader: Box<dyn io::Read>) -> CliResult<Box<dyn io::Read>> {
-    //TODO: make this streaming #24
-    let mut file = reader;
-    let mut buf = Vec::new();
-    file.read_to_end(&mut buf)?;
-    let decompressed = lzf::decompress(&buf[..], buf.len() * 100).unwrap();
-    let cursor = io::Cursor::new(decompressed);
-
-    Ok(Box::new(cursor))
+    let decoder = LzfReader::new(reader);
+    Ok(Box::new(decoder))
 }

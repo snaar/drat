@@ -243,12 +243,12 @@ impl<R: Read> Read for ChopperBufReader<R> {
             self.discard_buffer();
             return self.inner.read(buf);
         }
-        let nread = {
+        let bytes_read = {
             let mut rem = self.fill_buf()?;
             rem.read(buf)?
         };
-        self.consume(nread);
-        Ok(nread)
+        self.consume(bytes_read);
+        Ok(bytes_read)
     }
 }
 
