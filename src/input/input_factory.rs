@@ -186,10 +186,7 @@ impl InputFactory {
         previewer: Box<dyn Preview>,
     ) -> CliResult<Box<dyn Preview>> {
         let reader = previewer.get_reader();
-        let new_reader = match decompression_format {
-            DecompressionFormat::GZ => decompress::decompress_gz(reader)?,
-            DecompressionFormat::LZF => decompress::decompress_lzf(reader)?,
-        };
+        let new_reader = decompress::decompress(decompression_format, reader)?;
         Ok(Box::new(ChopperBufPreviewer::new(new_reader)?))
     }
 
