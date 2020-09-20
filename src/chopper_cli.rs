@@ -127,11 +127,6 @@ fn setup_graph(
     let mut input_factory =
         InputFactory::new(csv_input_config, source_factories, transport_factories)?;
 
-    let csv_output_config = match csv_output_print_timestamp {
-        Some(b) => CSVOutputConfig::new(csv_output_delimiter, b),
-        None => csv_util::create_csv_output_config_from_source(&mut sources, csv_output_delimiter),
-    };
-
     let mut header_nodes: Vec<HeaderNode> = Vec::new();
     let mut chains: Vec<HeaderChain> = Vec::new();
 
@@ -147,6 +142,11 @@ fn setup_graph(
             chains.push(chain);
         }
     }
+
+    let csv_output_config = match csv_output_print_timestamp {
+        Some(b) => CSVOutputConfig::new(csv_output_delimiter, b),
+        None => csv_util::create_csv_output_config_from_source(&mut sources, csv_output_delimiter),
+    };
 
     // add MergeHeaderSink as first header node if multiple input files
     if inputs.len() > 1 {
