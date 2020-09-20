@@ -42,7 +42,12 @@ impl CliApp {
                 Arg::with_name("timezone")
                     .short("z")
                     .long("timezone")
-                    .help("specify time zone for timestamp.")
+                    .help(
+                        "specify time zone to use when reading/writing fields with \
+                        no explicit timezone; optional but chopper will fail if timezone \
+                        ends up being required; if CHOPPER_TZ env var is present, \
+                        then that will be used if cli arg is missing",
+                    )
                     .takes_value(true)
                     .case_insensitive(true)
                     .value_name("arg"),

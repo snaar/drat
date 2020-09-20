@@ -13,7 +13,7 @@ use chopper_lib::filter::row_filter_greater_value::RowFilterGreaterValue;
 use chopper_lib::input::input_factory::InputFactory;
 use chopper_lib::source::csv_configs::{CSVInputConfig, CSVOutputConfig, OUTPUT_DELIMITER_DEFAULT};
 use chopper_lib::source::csv_configs::{TimestampCol, TimestampConfig};
-use chopper_lib::util::timestamp_util;
+use chopper_lib::util::{timestamp_util, tz::ChopperTz};
 use chopper_lib::write::factory;
 
 #[test]
@@ -35,16 +35,18 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let inputs = vec![input];
     let output = "./tests/reference/filters.csv";
 
-    let begin = timestamp_util::parse_timestamp_range("2018".to_string(), New_York)?;
+    let begin =
+        timestamp_util::parse_timestamp_range("2018".to_string(), &ChopperTz::from(New_York))?;
     let timestamp_range = TimestampRange {
         begin: Some(begin),
         end: None,
     };
 
     // source reader and headers
-    let ts_config = TimestampConfig::new(TimestampCol::Timestamp(0), None, New_York);
-    let input_config = CSVInputConfig::new(None, YesNoAuto::Auto, ts_config)?;
-    let mut input_factory = InputFactory::new(Some(input_config), None, None)?;
+    let ts_config =
+        TimestampConfig::new(TimestampCol::Timestamp(0), None, ChopperTz::from(New_York));
+    let csv_input_config = CSVInputConfig::new(None, YesNoAuto::Auto, ts_config)?;
+    let mut input_factory = InputFactory::new(csv_input_config, None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {

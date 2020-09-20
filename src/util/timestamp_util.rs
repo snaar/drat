@@ -1,14 +1,12 @@
-use chrono::{NaiveDateTime, TimeZone};
-use chrono_tz::{Tz, UTC};
+use chrono::NaiveDateTime;
 
 use crate::chopper::types::Nanos;
 use crate::error::{CliResult, Error};
+use crate::util::tz::ChopperTz;
 
 pub static DEFAULT_MONTH: &str = "01";
 pub static DEFAULT_DAY: &str = "01";
 pub static DEFAULT_TIME: &str = "00:00:00";
-pub static DEFAULT_ZONE: Tz = UTC;
-pub static DEFAULT_ZONE_FORMAT: &str = "%z";
 
 // list of timestamp formats
 lazy_static! {
@@ -29,7 +27,7 @@ fn create_date_time_formats() -> Vec<String> {
     format
 }
 
-pub fn parse_timestamp_range(timestamp: String, timezone: Tz) -> CliResult<Nanos> {
+pub fn parse_timestamp_range(timestamp: String, timezone: &ChopperTz) -> CliResult<Nanos> {
     let timestamp = complete_timestamp(timestamp);
 
     // try available datetime formats
@@ -68,14 +66,6 @@ pub fn complete_timestamp(mut timestamp: String) -> String {
     timestamp
 }
 
-pub fn parse_time_zone(timezone: Option<&str>) -> Tz {
-    let tz: Tz = match timezone {
-        Some(z) => z.parse().unwrap(),
-        None => DEFAULT_ZONE,
-    };
-    tz
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -83,9 +73,10 @@ mod tests {
 
     #[test]
     fn test_parse_timestamp_range() {
-        let timestamp_year = parse_timestamp_range("2019".to_string(), New_York).unwrap();
+        let timezone = ChopperTz::from(New_York);
+        let timestamp_year = parse_timestamp_range("2019".to_string(), &timezone).unwrap();
         let timestamp_datetime =
-            parse_timestamp_range("20190101-00:00:00".to_string(), New_York).unwrap();
+            parse_timestamp_range("20190101-00:00:00".to_string(), &timezone).unwrap();
         assert_eq!(timestamp_year, 1546318800);
         assert_eq!(timestamp_datetime, 1546318800);
     }

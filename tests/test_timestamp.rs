@@ -10,6 +10,7 @@ use chopper_lib::error::{self, CliResult};
 use chopper_lib::input::input_factory::InputFactory;
 use chopper_lib::source::csv_configs::{CSVInputConfig, CSVOutputConfig, OUTPUT_DELIMITER_DEFAULT};
 use chopper_lib::source::csv_configs::{TimestampCol, TimestampConfig};
+use chopper_lib::util::tz::ChopperTz;
 use chopper_lib::write::factory;
 
 #[test]
@@ -19,7 +20,11 @@ fn test_timestamp() {
     let inputs = vec![input];
     let output = "./tests/output/test_timestamp.csv";
     let ts_fmt = "%Y/%m/%d-%H:%M:%S".to_string();
-    let ts_config = TimestampConfig::new(TimestampCol::Timestamp(1), Some(ts_fmt), New_York);
+    let ts_config = TimestampConfig::new(
+        TimestampCol::Timestamp(1),
+        Some(ts_fmt),
+        ChopperTz::from(New_York),
+    );
     error::handle_drive_error(test(inputs, output, ts_config));
 
     assert!(is_same_file(
@@ -32,7 +37,11 @@ fn test_timestamp() {
     let input = "./tests/input/time_city.csv";
     let inputs = vec![input];
     let output = "./tests/output/test_timestamp.csv";
-    let ts_config = TimestampConfig::new(TimestampCol::DateAndTime(0, 2), None, New_York);
+    let ts_config = TimestampConfig::new(
+        TimestampCol::DateAndTime(0, 2),
+        None,
+        ChopperTz::from(New_York),
+    );
     error::handle_drive_error(test(inputs, output, ts_config));
 
     assert!(is_same_file(
@@ -53,8 +62,8 @@ fn setup_graph(
 ) -> CliResult<Box<dyn ChopperDriver>> {
     // source reader and headers
 
-    let input_config = CSVInputConfig::new(None, YesNoAuto::Auto, ts_config)?;
-    let mut input_factory = InputFactory::new(Some(input_config), None, None)?;
+    let csv_input_config = CSVInputConfig::new(None, YesNoAuto::Auto, ts_config)?;
+    let mut input_factory = InputFactory::new(csv_input_config, None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {

@@ -1,10 +1,9 @@
 use std::cmp::Ordering;
 use std::fmt;
 
-use chrono_tz::Tz;
-
 use crate::error::{CliResult, Error};
 use crate::util::timestamp_util;
+use crate::util::tz::ChopperTz;
 
 pub type Nanos = u64;
 
@@ -20,7 +19,7 @@ pub static TIMESTAMP_RANGE_DEFAULT: TimestampRange = TimestampRange {
 };
 
 impl TimestampRange {
-    pub fn new(begin: Option<&str>, end: Option<&str>, timezone: Tz) -> CliResult<Self> {
+    pub fn new(begin: Option<&str>, end: Option<&str>, timezone: &ChopperTz) -> CliResult<Self> {
         let begin = match begin {
             Some(t) => Some(timestamp_util::parse_timestamp_range(
                 t.to_string(),

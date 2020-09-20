@@ -6,8 +6,9 @@ use chopper_lib::driver::driver::Driver;
 use chopper_lib::error::{self, CliResult};
 use chopper_lib::input::input_factory::InputFactory;
 use chopper_lib::source::csv_configs::{
-    CSVInputConfig, CSVOutputConfig, TimestampConfig, OUTPUT_DELIMITER_DEFAULT,
+    CSVInputConfig, CSVOutputConfig, TimestampCol, TimestampConfig, OUTPUT_DELIMITER_DEFAULT,
 };
+use chopper_lib::util::tz::ChopperTz;
 use chopper_lib::write::factory;
 
 fn main() {
@@ -19,13 +20,17 @@ fn compressed_example() -> CliResult<()> {
 }
 
 fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
-    let ts_config = TimestampConfig::default();
+    let ts_config = TimestampConfig::new(
+        TimestampCol::Timestamp(0),
+        None,
+        ChopperTz::new_always_fails(),
+    );
     let csv_config = CSVInputConfig::new(None, YesNoAuto::Auto, ts_config)?;
     let input = "./examples/files/uspop_time.csv.gz";
     let inputs = vec![input];
     let output = None;
 
-    let mut input_factory = InputFactory::new(Some(csv_config), None, None)?;
+    let mut input_factory = InputFactory::new(csv_config, None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {

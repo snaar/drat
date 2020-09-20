@@ -32,7 +32,26 @@ enum Format {
 }
 
 impl InputFactory {
+    pub fn new_without_csv(
+        user_source_factories: Option<Vec<Box<dyn SourceFactory>>>,
+        user_transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
+    ) -> CliResult<Self> {
+        Self::new_with_optional_csv(None, user_source_factories, user_transport_factories)
+    }
+
     pub fn new(
+        csv_input_config: CSVInputConfig,
+        user_source_factories: Option<Vec<Box<dyn SourceFactory>>>,
+        user_transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
+    ) -> CliResult<Self> {
+        Self::new_with_optional_csv(
+            Some(csv_input_config),
+            user_source_factories,
+            user_transport_factories,
+        )
+    }
+
+    fn new_with_optional_csv(
         csv_input_config: Option<CSVInputConfig>,
         user_source_factories: Option<Vec<Box<dyn SourceFactory>>>,
         user_transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
@@ -48,10 +67,6 @@ impl InputFactory {
         };
 
         // source factories
-        let csv_input_config = match csv_input_config {
-            Some(c) => c,
-            None => CSVInputConfig::new_default()?,
-        };
         let mut default_source_factories = create_default_source_factories(csv_input_config);
         let source_factories = match user_source_factories {
             Some(mut s) => {
@@ -250,12 +265,13 @@ impl InputFactory {
 }
 
 pub fn create_default_source_factories(
-    csv_input_config: CSVInputConfig,
+    csv_input_config: Option<CSVInputConfig>,
 ) -> Vec<Box<dyn SourceFactory>> {
-    let source_factories: Vec<Box<dyn SourceFactory>> = vec![
-        Box::new(CSVFactory::new(csv_input_config)),
-        Box::new(DCFactory),
-    ];
+    let mut source_factories: Vec<Box<dyn SourceFactory>> = Vec::new();
+    if let Some(csv_input_config) = csv_input_config {
+        source_factories.push(Box::new(CSVFactory::new(csv_input_config)));
+    }
+    source_factories.push(Box::new(DCFactory));
     source_factories
 }
 

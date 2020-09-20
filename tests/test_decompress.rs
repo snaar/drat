@@ -10,6 +10,7 @@ use chopper_lib::error::{self, CliResult};
 use chopper_lib::input::input_factory::InputFactory;
 use chopper_lib::source::csv_configs::{CSVInputConfig, CSVOutputConfig, OUTPUT_DELIMITER_DEFAULT};
 use chopper_lib::source::csv_configs::{TimestampCol, TimestampConfig};
+use chopper_lib::util::tz::ChopperTz;
 use chopper_lib::write::factory;
 
 #[test]
@@ -17,7 +18,8 @@ fn test_decompress() {
     let input = "./tests/input/time_city.csv.gz";
     let inputs = vec![input];
     let output = "./tests/output/output_time_city.csv";
-    let ts_config = TimestampConfig::new(TimestampCol::Timestamp(0), None, New_York);
+    let ts_config =
+        TimestampConfig::new(TimestampCol::Timestamp(0), None, ChopperTz::from(New_York));
     error::handle_drive_error(test(inputs, output, ts_config));
 
     assert!(is_same_file(
@@ -37,8 +39,8 @@ fn setup_graph(
     ts_config: TimestampConfig,
 ) -> CliResult<Box<dyn ChopperDriver>> {
     // source reader and headers
-    let input_config = CSVInputConfig::new(None, YesNoAuto::Auto, ts_config)?;
-    let mut input_factory = InputFactory::new(Some(input_config), None, None)?;
+    let csv_input_config = CSVInputConfig::new(None, YesNoAuto::Auto, ts_config)?;
+    let mut input_factory = InputFactory::new(csv_input_config, None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {

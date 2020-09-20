@@ -1,10 +1,9 @@
 use std::fmt;
 
-use chrono_tz::Tz;
-
 use crate::cli::util::YesNoAuto;
 use crate::error::CliResult;
-use crate::util::{csv_util, timestamp_util};
+use crate::util::csv_util;
+use crate::util::tz::ChopperTz;
 
 pub static OUTPUT_DELIMITER_DEFAULT: &str = ",";
 pub static TIMESTAMP_COL_DATE_DEFAULT: usize = 0;
@@ -22,24 +21,18 @@ pub enum TimestampCol {
 pub struct TimestampConfig {
     timestamp_col: TimestampCol,
     timestamp_fmt: Option<String>,
-    timezone: Tz,
+    timezone: ChopperTz,
 }
 
 impl TimestampConfig {
-    pub fn new(timestamp_col: TimestampCol, timestamp_fmt: Option<String>, timezone: Tz) -> Self {
+    pub fn new(
+        timestamp_col: TimestampCol,
+        timestamp_fmt: Option<String>,
+        timezone: ChopperTz,
+    ) -> Self {
         TimestampConfig {
             timestamp_col,
             timestamp_fmt,
-            timezone,
-        }
-    }
-
-    pub fn default() -> Self {
-        let timestamp_col = TimestampCol::Timestamp(0);
-        let timezone = timestamp_util::DEFAULT_ZONE;
-        TimestampConfig {
-            timestamp_col,
-            timestamp_fmt: None,
             timezone,
         }
     }
@@ -56,8 +49,8 @@ impl TimestampConfig {
         self.timestamp_fmt = Some(fmt)
     }
 
-    pub fn timezone(&self) -> Tz {
-        self.timezone
+    pub fn timezone(&self) -> &ChopperTz {
+        &self.timezone
     }
 }
 
@@ -87,15 +80,6 @@ impl CSVInputConfig {
         Ok(CSVInputConfig {
             delimiter,
             has_header,
-            timestamp_config,
-        })
-    }
-
-    pub fn new_default() -> CliResult<Self> {
-        let timestamp_config = TimestampConfig::default();
-        Ok(CSVInputConfig {
-            delimiter: None,
-            has_header: YesNoAuto::Auto,
             timestamp_config,
         })
     }

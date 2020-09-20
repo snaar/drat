@@ -15,7 +15,8 @@ use crate::input::input_factory::InputFactory;
 use crate::source::csv_configs::{CSVInputConfig, CSVOutputConfig, TimestampCol, TimestampConfig};
 use crate::source::source_factory::SourceFactory;
 use crate::transport::transport_factory::TransportFactory;
-use crate::util::{csv_util, timestamp_util};
+use crate::util::csv_util;
+use crate::util::tz::ChopperTz;
 use crate::write::factory;
 
 pub fn chopper_cli(
@@ -38,19 +39,13 @@ pub fn parse_cli_args(
         error::turn_on_backtrace()
     }
 
-    let timezone: Tz = match matches.value_of("timezone") {
-        None => timestamp_util::DEFAULT_ZONE,
-        Some(t) => match timezone_map {
-            None => t.parse().unwrap(),
-            Some(map) => match map.get(t) {
-                None => t.parse().unwrap(),
-                Some(tz) => *tz,
-            },
-        },
-    };
+    let timezone = ChopperTz::new_from_cli_arg(matches.value_of("timezone"), timezone_map);
 
-    let timestamp_range =
-        TimestampRange::new(matches.value_of("begin"), matches.value_of("end"), timezone)?;
+    let timestamp_range = TimestampRange::new(
+        matches.value_of("begin"),
+        matches.value_of("end"),
+        &timezone,
+    )?;
 
     let mut input_formats: Vec<InputFormat> = Vec::new();
     match matches.values_of("format") {
@@ -129,11 +124,8 @@ fn setup_graph(
     // get sources and headers
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
-    let mut input_factory = InputFactory::new(
-        Some(csv_input_config),
-        source_factories,
-        transport_factories,
-    )?;
+    let mut input_factory =
+        InputFactory::new(csv_input_config, source_factories, transport_factories)?;
 
     let csv_output_config = match csv_output_print_timestamp {
         Some(b) => CSVOutputConfig::new(csv_output_delimiter, b),
@@ -178,7 +170,7 @@ fn setup_graph(
     )?))
 }
 
-fn parse_csv_config(matches: &ArgMatches, timezone: Tz) -> CliResult<CSVInputConfig> {
+fn parse_csv_config(matches: &ArgMatches, timezone: ChopperTz) -> CliResult<CSVInputConfig> {
     let input_delimiter = matches.value_of("csv_input_delimiter");
     let has_header = value_t!(matches, "csv_input_has_header", YesNoAuto)?;
 

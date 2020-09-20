@@ -1,6 +1,3 @@
-use chrono::{NaiveDateTime, TimeZone};
-use csv::{self, Trim};
-
 use crate::chopper::chopper::Source;
 use crate::chopper::types::{FieldType, FieldValue, Header, Nanos, Row};
 use crate::cli::util::YesNoAuto;
@@ -8,6 +5,9 @@ use crate::error::{CliResult, Error};
 use crate::source::csv_configs::{CSVInputConfig, TimestampCol};
 use crate::util::preview::Preview;
 use crate::util::{csv_util, timestamp_util};
+
+use chrono::NaiveDateTime;
+use csv::{self, Trim};
 use std::io::Read;
 
 const DELIMITERS: &[u8] = b",\t ";
