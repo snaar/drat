@@ -175,34 +175,39 @@ fn parse_csv_config(matches: &ArgMatches, timezone: ChopperTz) -> CliResult<CSVI
     let has_header = value_t!(matches, "csv_input_has_header", YesNoAuto)?;
 
     // timestamp config
-    let mut ts_fmt: Option<String> = None;
-    let ts_col = match matches.value_of("csv_ts_col_date") {
+    let (ts_col, ts_fmt) = match matches.value_of("csv_in_ts_col_date") {
         None => {
             // format
-            match matches.value_of("csv_ts_fmt") {
-                None => (),
-                Some(fmt) => ts_fmt = Some(fmt.to_string()),
-            }
-            // col
-            let ts = matches.value_of("csv_ts_col").unwrap();
-            TimestampCol::Timestamp(ts.parse::<usize>().unwrap())
+            let fmt = match matches.value_of("csv_in_ts_fmt") {
+                None => None,
+                Some(fmt) => Some(fmt.to_string()),
+            };
+
+            // column
+            let ts = matches.value_of("csv_in_ts_col").unwrap();
+            let col = TimestampCol::Timestamp(ts.parse::<usize>().unwrap());
+
+            (col, fmt)
         }
         Some(d) => {
             // format
-            match matches.value_of("csv_ts_fmt_date") {
-                None => (),
+            let fmt = match matches.value_of("csv_in_ts_fmt_date") {
+                None => None,
                 Some(d) => {
-                    let t = matches.value_of("csv_ts_fmt_time").unwrap();
-                    ts_fmt = Some(format!("{}{}", d, t))
+                    let t = matches.value_of("csv_in_ts_fmt_time").unwrap();
+                    Some(format!("{}{}", d, t))
                 }
             };
-            // col
+
+            // column
             let date = d.parse::<usize>().unwrap();
-            let time = match matches.value_of("csv_ts_col_time") {
+            let time = match matches.value_of("csv_in_ts_col_time") {
                 Some(t) => t.parse::<usize>().unwrap(),
                 None => unreachable!(),
             };
-            TimestampCol::DateAndTime(date, time)
+            let col = TimestampCol::DateAndTime(date, time);
+
+            (col, fmt)
         }
     };
     let ts_config = TimestampConfig::new(ts_col, ts_fmt, timezone);

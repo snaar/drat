@@ -112,71 +112,71 @@ impl CliApp {
             )
             // timestamp column
             .arg(
-                Arg::with_name("csv_ts_col")
-                    .long("csv-ts")
-                    .help("csv only: specify the timestamp column index")
+                Arg::with_name("csv_in_ts_col")
+                    .long("csv-in-ts-col")
+                    .help("csv input only: specify the timestamp column index")
                     .takes_value(true)
                     .default_value("0")
                     .value_name("arg")
-                    .conflicts_with_all(&["csv_ts_col_date", "csv_ts_col_time"]),
+                    .conflicts_with_all(&["csv_in_ts_col_date", "csv_in_ts_col_time"]),
             )
             // timestamp column date
             .arg(
-                Arg::with_name("csv_ts_col_date")
-                    .long("csv-ts-date")
+                Arg::with_name("csv_in_ts_col_date")
+                    .long("csv-in-ts-col-date")
                     .help(
-                        "csv only: specify the timestamp date column index. \
+                        "csv input only: specify the split timestamp date-only column index. \
                         \nused when date and time are in separate columns",
                     )
                     .takes_value(true)
                     .value_name("arg")
-                    .requires("csv_ts_col_time")
-                    .conflicts_with("csv_ts_col"),
+                    .requires("csv_in_ts_col_time")
+                    .conflicts_with("csv_in_ts_col"),
             )
             // timestamp column time
             .arg(
-                Arg::with_name("csv_ts_col_time")
-                    .long("csv-ts-time")
+                Arg::with_name("csv_in_ts_col_time")
+                    .long("csv-in-ts-col-time")
                     .help(
-                        "csv only: specify the timestamp time column index. \
+                        "csv input only: specify the split timestamp time-only column index. \
                         \nused when date and time are in separate columns",
                     )
                     .takes_value(true)
                     .value_name("arg")
-                    .requires("csv_ts_col_date")
-                    .conflicts_with("csv_ts_col"),
+                    .requires("csv_in_ts_col_date")
+                    .conflicts_with("csv_in_ts_col"),
             )
             // timestamp format
             .arg(
-                Arg::with_name("csv_ts_fmt")
-                    .long("csv-ts-fmt")
-                    .help("csv only: specify the timestamp datetime format")
+                Arg::with_name("csv_in_ts_fmt")
+                    .long("csv-in-ts-fmt")
+                    .help("csv input only: specify the timestamp column format")
                     .takes_value(true)
                     .value_name("arg")
-                    .conflicts_with_all(&["csv_ts_fmt_date", "csv_ts_fmt_time"]),
+                    .conflicts_with_all(&["csv_in_ts_fmt_date", "csv_in_ts_fmt_time"]),
             )
             // timestamp format date
             .arg(
-                Arg::with_name("csv_ts_fmt_date")
-                    .long("csv-ts-fmt-date")
-                    .help("csv only: specify the timestamp date format")
+                Arg::with_name("csv_in_ts_fmt_date")
+                    .long("csv-in-ts-fmt-date")
+                    .help("csv input only: specify the split timestamp date-only column format")
                     .takes_value(true)
                     .value_name("arg")
-                    .requires("csv_ts_fmt_time")
-                    .conflicts_with("csv_ts_fmt_datetime"),
+                    .requires("csv_in_ts_fmt_time")
+                    .conflicts_with("csv_in_ts_fmt"),
             )
             // timestamp format time
             .arg(
-                Arg::with_name("csv_ts_fmt_time")
-                    .long("csv-ts-fmt-time")
+                Arg::with_name("csv_in_ts_fmt_time")
+                    .long("csv-in-ts-fmt-time")
                     .help(
-                        "csv only: specify the timestamp time format \
+                        "csv input only: specify the split timestamp time-only column format \
                         \n[default: %H:%M:%S]",
                     )
                     .takes_value(true)
                     .value_name("arg")
-                    .requires("csv_timestamp_format_date")
-                    .conflicts_with("csv_ts_fmt_datetime"),
+                    .requires("csv_in_ts_fmt_date")
+                    .conflicts_with("csv_in_ts_fmt"),
             );
         app
     }
