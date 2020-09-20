@@ -6,7 +6,7 @@ use chopper_lib::driver::driver::Driver;
 use chopper_lib::error::{self, CliResult};
 use chopper_lib::input::input_factory::InputFactory;
 use chopper_lib::source::csv_configs::{
-    CSVInputConfig, CSVOutputConfig, TimestampCol, TimestampConfig, OUTPUT_DELIMITER_DEFAULT,
+    CSVInputConfig, CSVOutputConfig, TimestampColConfig, TimestampConfig, OUTPUT_DELIMITER_DEFAULT,
 };
 use chopper_lib::util::tz::ChopperTz;
 use chopper_lib::write::factory;
@@ -21,7 +21,7 @@ fn compressed_example() -> CliResult<()> {
 
 fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let ts_config = TimestampConfig::new(
-        TimestampCol::Timestamp(0),
+        TimestampColConfig::Index(0),
         None,
         ChopperTz::new_always_fails(),
     );

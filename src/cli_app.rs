@@ -114,7 +114,7 @@ impl CliApp {
             .arg(
                 Arg::with_name("csv_in_ts_col")
                     .long("csv-in-ts-col")
-                    .help("csv input only: specify the timestamp column index")
+                    .help("csv input only: specify the timestamp column name or index")
                     .takes_value(true)
                     .default_value("0")
                     .value_name("arg")
@@ -125,7 +125,7 @@ impl CliApp {
                 Arg::with_name("csv_in_ts_col_date")
                     .long("csv-in-ts-col-date")
                     .help(
-                        "csv input only: specify the split timestamp date-only column index. \
+                        "csv input only: specify the split timestamp date-only column name or index; \
                         \nused when date and time are in separate columns",
                     )
                     .takes_value(true)
@@ -138,7 +138,7 @@ impl CliApp {
                 Arg::with_name("csv_in_ts_col_time")
                     .long("csv-in-ts-col-time")
                     .help(
-                        "csv input only: specify the split timestamp time-only column index. \
+                        "csv input only: specify the split timestamp time-only column name or index; \
                         \nused when date and time are in separate columns",
                     )
                     .takes_value(true)

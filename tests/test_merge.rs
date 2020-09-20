@@ -10,7 +10,7 @@ use chopper_lib::driver::merge_join::MergeJoin;
 use chopper_lib::error::{self, CliResult};
 use chopper_lib::input::input_factory::InputFactory;
 use chopper_lib::source::csv_configs::{CSVInputConfig, CSVOutputConfig, OUTPUT_DELIMITER_DEFAULT};
-use chopper_lib::source::csv_configs::{TimestampCol, TimestampConfig};
+use chopper_lib::source::csv_configs::{TimestampColConfig, TimestampConfig};
 use chopper_lib::util::tz::ChopperTz;
 use chopper_lib::write::factory;
 
@@ -35,8 +35,11 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let output = "./tests/output/test_merge.csv";
 
     // source reader and headers
-    let ts_config =
-        TimestampConfig::new(TimestampCol::Timestamp(0), None, ChopperTz::from(New_York));
+    let ts_config = TimestampConfig::new(
+        TimestampColConfig::Index(0),
+        None,
+        ChopperTz::from(New_York),
+    );
     let csv_input_config = CSVInputConfig::new(None, YesNoAuto::Auto, ts_config)?;
     let mut input_factory = InputFactory::new(csv_input_config, None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();

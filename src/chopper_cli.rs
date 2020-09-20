@@ -1,7 +1,6 @@
-use std::collections::HashMap;
-
 use chrono_tz::Tz;
 use clap::{value_t, ArgMatches};
+use std::collections::HashMap;
 
 use crate::chopper::chopper::{ChopperDriver, Source};
 use crate::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
@@ -12,7 +11,9 @@ use crate::driver::{driver::Driver, merge_join::MergeJoin};
 use crate::error::{self, CliResult};
 use crate::input::input::{Input, InputFormat, InputType};
 use crate::input::input_factory::InputFactory;
-use crate::source::csv_configs::{CSVInputConfig, CSVOutputConfig, TimestampCol, TimestampConfig};
+use crate::source::csv_configs::{
+    CSVInputConfig, CSVOutputConfig, TimestampColConfig, TimestampConfig,
+};
 use crate::source::source_factory::SourceFactory;
 use crate::transport::transport_factory::TransportFactory;
 use crate::util::csv_util;
@@ -185,11 +186,14 @@ fn parse_csv_config(matches: &ArgMatches, timezone: ChopperTz) -> CliResult<CSVI
 
             // column
             let ts = matches.value_of("csv_in_ts_col").unwrap();
-            let col = TimestampCol::Timestamp(ts.parse::<usize>().unwrap());
+            let col = match ts.parse::<usize>() {
+                Ok(i) => TimestampColConfig::Index(i),
+                Err(_) => TimestampColConfig::Name(ts.to_string()),
+            };
 
             (col, fmt)
         }
-        Some(d) => {
+        Some(date_col) => {
             // format
             let fmt = match matches.value_of("csv_in_ts_fmt_date") {
                 None => None,
@@ -200,12 +204,19 @@ fn parse_csv_config(matches: &ArgMatches, timezone: ChopperTz) -> CliResult<CSVI
             };
 
             // column
-            let date = d.parse::<usize>().unwrap();
-            let time = match matches.value_of("csv_in_ts_col_time") {
-                Some(t) => t.parse::<usize>().unwrap(),
-                None => unreachable!(),
+            // we should always have time column if we have date column
+            let time_col = matches.value_of("csv_in_ts_col_time").unwrap();
+            let col = match date_col.parse::<usize>() {
+                Ok(d_idx) => match time_col.parse::<usize>() {
+                    Ok(t_idx) => TimestampColConfig::DateTimeIndex(d_idx, t_idx),
+                    Err(_) => {
+                        TimestampColConfig::DateTimeName(date_col.to_owned(), time_col.to_owned())
+                    }
+                },
+                Err(_) => {
+                    TimestampColConfig::DateTimeName(date_col.to_owned(), time_col.to_owned())
+                }
             };
-            let col = TimestampCol::DateAndTime(date, time);
 
             (col, fmt)
         }

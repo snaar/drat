@@ -8,25 +8,27 @@ use crate::util::tz::ChopperTz;
 pub static OUTPUT_DELIMITER_DEFAULT: &str = ",";
 pub static TIMESTAMP_COL_DATE_DEFAULT: usize = 0;
 
-pub type DateCol = usize;
-pub type TimeCol = usize;
+pub type DateColIdx = usize;
+pub type TimeColIdx = usize;
 
 #[derive(Clone)]
-pub enum TimestampCol {
-    Timestamp(usize),
-    DateAndTime(DateCol, TimeCol),
+pub enum TimestampColConfig {
+    Index(usize),
+    DateTimeIndex(DateColIdx, TimeColIdx),
+    Name(String),
+    DateTimeName(String, String),
 }
 
 #[derive(Clone)]
 pub struct TimestampConfig {
-    timestamp_col: TimestampCol,
+    timestamp_col: TimestampColConfig,
     timestamp_fmt: Option<String>,
     timezone: ChopperTz,
 }
 
 impl TimestampConfig {
     pub fn new(
-        timestamp_col: TimestampCol,
+        timestamp_col: TimestampColConfig,
         timestamp_fmt: Option<String>,
         timezone: ChopperTz,
     ) -> Self {
@@ -37,12 +39,12 @@ impl TimestampConfig {
         }
     }
 
-    pub fn timestamp_col(&mut self) -> &mut TimestampCol {
-        &mut self.timestamp_col
+    pub fn timestamp_col(&self) -> &TimestampColConfig {
+        &self.timestamp_col
     }
 
-    pub fn timestamp_fmt(&mut self) -> &mut Option<String> {
-        &mut self.timestamp_fmt
+    pub fn timestamp_fmt(&self) -> &Option<String> {
+        &self.timestamp_fmt
     }
 
     pub fn set_timestamp_fmt(&mut self, fmt: String) {
@@ -92,7 +94,11 @@ impl CSVInputConfig {
         self.delimiter
     }
 
-    pub fn timestamp_config(&mut self) -> &mut TimestampConfig {
+    pub fn timestamp_config(&self) -> &TimestampConfig {
+        &self.timestamp_config
+    }
+
+    pub fn timestamp_config_as_mut(&mut self) -> &mut TimestampConfig {
         &mut self.timestamp_config
     }
 }

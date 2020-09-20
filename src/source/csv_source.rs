@@ -2,7 +2,7 @@ use crate::chopper::chopper::Source;
 use crate::chopper::types::{FieldType, FieldValue, Header, Nanos, Row};
 use crate::cli::util::YesNoAuto;
 use crate::error::{CliResult, Error};
-use crate::source::csv_configs::{CSVInputConfig, TimestampCol};
+use crate::source::csv_configs::{CSVInputConfig, DateColIdx, TimeColIdx, TimestampColConfig};
 use crate::util::preview::Preview;
 use crate::util::{csv_util, timestamp_util};
 
@@ -12,10 +12,16 @@ use std::io::Read;
 
 const DELIMITERS: &[u8] = b",\t ";
 
+enum TimestampCol {
+    Index(usize),
+    DateTimeIndex(DateColIdx, TimeColIdx),
+}
+
 pub struct CSVSource {
     reader: csv::Reader<Box<dyn Read>>,
     header: Header,
     csv_config: CSVInputConfig,
+    timestamp_col: TimestampCol,
     next_row: Row,
     has_next_row: bool,
 }
@@ -80,10 +86,20 @@ impl CSVSource {
         let header: Header = Header::new(field_names, field_types);
         let csv_config = csv_config.clone();
 
+        let timestamp_col = match csv_config.timestamp_config().timestamp_col() {
+            TimestampColConfig::Index(i) => TimestampCol::Index(*i),
+            TimestampColConfig::DateTimeIndex(d, t) => TimestampCol::DateTimeIndex(*d, *t),
+            TimestampColConfig::Name(name) => TimestampCol::Index(header.get_field_index(name)?),
+            TimestampColConfig::DateTimeName(d, t) => {
+                TimestampCol::DateTimeIndex(header.get_field_index(d)?, header.get_field_index(t)?)
+            }
+        };
+
         let mut csv_reader = CSVSource {
             reader,
             header,
             csv_config,
+            timestamp_col,
             next_row,
             has_next_row: true,
         };
@@ -102,7 +118,7 @@ impl CSVSource {
                 if NaiveDateTime::parse_from_str(timestamp.as_ref(), fmt.as_ref()).is_ok() {
                     csv_reader
                         .csv_config
-                        .timestamp_config()
+                        .timestamp_config_as_mut()
                         .set_timestamp_fmt(fmt.clone());
                 }
             }
@@ -161,11 +177,11 @@ impl CSVSource {
     }
 
     fn get_timestamp(&mut self, record: &csv::StringRecord) -> String {
-        match self.csv_config.timestamp_config().timestamp_col() {
-            TimestampCol::Timestamp(i) => record.get(*i).unwrap().to_string(),
-            TimestampCol::DateAndTime(d, t) => {
-                let date = record.get(*d).unwrap();
-                let time = record.get(*t).unwrap();
+        match self.timestamp_col {
+            TimestampCol::Index(i) => record.get(i).unwrap().to_string(),
+            TimestampCol::DateTimeIndex(d, t) => {
+                let date = record.get(d).unwrap();
+                let time = record.get(t).unwrap();
                 format!("{}{}", date, time)
             }
         }

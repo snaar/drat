@@ -73,6 +73,16 @@ impl Header {
     pub fn field_types_mut(&mut self) -> &mut Vec<FieldType> {
         &mut self.field_types
     }
+
+    pub fn get_field_index(&self, name: &str) -> CliResult<usize> {
+        match self.field_names.iter().position(|s| s == name) {
+            None => Err(Error::Custom(format!(
+                "Failed to find column named '{}'.",
+                name
+            ))),
+            Some(i) => Ok(i),
+        }
+    }
 }
 
 #[derive(Clone)]
