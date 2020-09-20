@@ -17,7 +17,7 @@ impl CliApp {
                 Arg::with_name("output")
                     .long("output")
                     .short("o")
-                    .help("output to a file")
+                    .help("output to a file; default output is stdout")
                     .takes_value(true)
                     .value_name("file"),
             )
