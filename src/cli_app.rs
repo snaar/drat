@@ -101,9 +101,9 @@ impl CliApp {
             )
             // print timestamp
             .arg(
-                Arg::with_name("csv_print_ts")
-                    .long("csv-print-ts")
-                    .help("csv only: print timestamp as first column")
+                Arg::with_name("csv_out_print_ts")
+                    .long("csv-out-print-ts")
+                    .help("csv output only: print timestamp as first column")
                     .takes_value(true)
                     .default_value("auto")
                     .possible_values(&["yes", "no", "auto"])

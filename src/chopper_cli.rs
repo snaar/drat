@@ -92,7 +92,7 @@ pub fn parse_cli_args(
     // csv only
     let csv_input_config = parse_csv_config(&matches, timezone)?;
     let csv_output_delimiter = matches.value_of("csv_output_delimiter").unwrap();
-    let csv_output_print_timestamp = match matches.value_of("csv_print_ts").unwrap() {
+    let csv_output_print_timestamp = match matches.value_of("csv_out_print_ts").unwrap() {
         "auto" => None,
         "yes" => Some(true),
         "no" => Some(false),
