@@ -32,14 +32,14 @@ pub fn create_csv_output_config_from_source(
     sources: &mut Vec<Box<dyn Source>>,
     delimiter: &str,
 ) -> CSVOutputConfig {
-    let mut all_sources_have_native_timestamps = true;
+    let mut some_sources_have_native_timestamps = false;
     for source in sources {
-        if !source.has_native_timestamp_column() {
-            all_sources_have_native_timestamps = false;
+        if source.has_native_timestamp_column() {
+            some_sources_have_native_timestamps = true;
             break;
         }
     }
-    CSVOutputConfig::new(delimiter, all_sources_have_native_timestamps)
+    CSVOutputConfig::new(delimiter, some_sources_have_native_timestamps)
 }
 
 pub fn guess_delimiter(row: &str, possible_delimiters: &[u8]) -> u8 {
