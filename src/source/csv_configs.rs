@@ -13,6 +13,7 @@ pub type TimeColIdx = usize;
 
 #[derive(Clone)]
 pub enum TimestampColConfig {
+    Auto,
     Index(usize),
     DateTimeIndex(DateColIdx, TimeColIdx),
     Name(String),

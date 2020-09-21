@@ -86,14 +86,8 @@ impl CSVSource {
         let header: Header = Header::new(field_names, field_types);
         let csv_config = csv_config.clone();
 
-        let timestamp_col = match csv_config.timestamp_config().timestamp_col() {
-            TimestampColConfig::Index(i) => TimestampCol::Index(*i),
-            TimestampColConfig::DateTimeIndex(d, t) => TimestampCol::DateTimeIndex(*d, *t),
-            TimestampColConfig::Name(name) => TimestampCol::Index(header.get_field_index(name)?),
-            TimestampColConfig::DateTimeName(d, t) => {
-                TimestampCol::DateTimeIndex(header.get_field_index(d)?, header.get_field_index(t)?)
-            }
-        };
+        let timestamp_col =
+            Self::get_timestamp_col(&header, csv_config.timestamp_config().timestamp_col())?;
 
         let mut csv_reader = CSVSource {
             reader,
@@ -140,6 +134,99 @@ impl CSVSource {
         csv_reader.update_row(first_row)?;
 
         Ok(csv_reader)
+    }
+
+    fn get_timestamp_col(
+        header: &Header,
+        timestamp_col_config: &TimestampColConfig,
+    ) -> CliResult<TimestampCol> {
+        let timestamp_col = match timestamp_col_config {
+            TimestampColConfig::Auto => {
+                let time_units: Vec<&str> = vec!["seconds", "millis", "micros", "nanos"];
+
+                // these are listed here in relative priority order as a reference
+                let mut time_with_units: Option<(usize, String)> = None;
+                let mut date: Option<usize> = None;
+                let mut time: Option<usize> = None;
+                let mut prefixed_time_with_units: Option<(String, usize, String)> = None;
+                let mut prefixed_date: Option<(String, usize)> = None;
+                let mut prefixed_time: Option<(String, usize)> = None;
+
+                for (i, name) in header
+                    .field_names()
+                    .iter()
+                    .map(|s| s.to_lowercase())
+                    .enumerate()
+                    .rev()
+                {
+                    match name.as_str() {
+                        name if name == "time" => time = Some(i),
+                        name if name == "date" => date = Some(i),
+                        name if name.starts_with("time") => {
+                            let units = &name[4..];
+                            if time_units.contains(&units) {
+                                time_with_units = Some((i, units.to_string()))
+                            }
+                        }
+                        name if name.ends_with("date") => {
+                            prefixed_date = Some((name[..name.len() - 4].to_string(), i))
+                        }
+                        name if name.ends_with("time") => {
+                            prefixed_time = Some((name[..name.len() - 4].to_string(), i))
+                        }
+                        name if name.contains("time") => {
+                            // we want to find the last one, so that we have chance at units suffix
+                            let mut split_name = name.rsplitn(2, "time");
+                            let suffix = split_name.next().unwrap();
+                            if time_units.contains(&suffix) {
+                                let prefix = split_name.next().unwrap();
+                                prefixed_time_with_units =
+                                    Some((prefix.to_owned(), i, suffix.to_owned()));
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+
+                if let Some((i, _units)) = time_with_units {
+                    //TODO: use units for column format
+                    TimestampCol::Index(i)
+                } else if let Some(date_idx) = date {
+                    match time {
+                        None => TimestampCol::Index(date_idx),
+                        Some(time_idx) => TimestampCol::DateTimeIndex(date_idx, time_idx),
+                    }
+                } else if let Some(i) = time {
+                    TimestampCol::Index(i)
+                } else if let Some((_prefix, i, _units)) = prefixed_time_with_units {
+                    //TODO: use units for column format
+                    TimestampCol::Index(i)
+                } else if let Some((date_prefix, date_idx)) = prefixed_date {
+                    match prefixed_time {
+                        None => TimestampCol::Index(date_idx),
+                        Some((time_prefix, time_idx)) => {
+                            if date_prefix == time_prefix {
+                                TimestampCol::DateTimeIndex(date_idx, time_idx)
+                            } else {
+                                TimestampCol::Index(date_idx)
+                            }
+                        }
+                    }
+                } else if let Some((_prefix, i)) = prefixed_time {
+                    TimestampCol::Index(i)
+                } else {
+                    // if can't find anything just try first column
+                    TimestampCol::Index(0)
+                }
+            }
+            TimestampColConfig::Index(i) => TimestampCol::Index(*i),
+            TimestampColConfig::DateTimeIndex(d, t) => TimestampCol::DateTimeIndex(*d, *t),
+            TimestampColConfig::Name(name) => TimestampCol::Index(header.get_field_index(name)?),
+            TimestampColConfig::DateTimeName(d, t) => {
+                TimestampCol::DateTimeIndex(header.get_field_index(d)?, header.get_field_index(t)?)
+            }
+        };
+        Ok(timestamp_col)
     }
 
     fn update_row(&mut self, next_record: csv::StringRecord) -> CliResult<()> {

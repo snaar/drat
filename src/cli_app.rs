@@ -99,7 +99,6 @@ impl CliApp {
                     .case_insensitive(true)
                     .value_name("arg"),
             )
-            // print timestamp
             .arg(
                 Arg::with_name("csv_out_print_ts")
                     .long("csv-out-print-ts")
@@ -110,17 +109,14 @@ impl CliApp {
                     .case_insensitive(true)
                     .value_name("arg"),
             )
-            // timestamp column
             .arg(
                 Arg::with_name("csv_in_ts_col")
                     .long("csv-in-ts-col")
-                    .help("csv input only: specify the timestamp column name or index")
+                    .help("csv input only: specify the timestamp column name or index; will try to guess using obvious names, then fall back to column 0")
                     .takes_value(true)
-                    .default_value("0")
                     .value_name("arg")
                     .conflicts_with_all(&["csv_in_ts_col_date", "csv_in_ts_col_time"]),
             )
-            // timestamp column date
             .arg(
                 Arg::with_name("csv_in_ts_col_date")
                     .long("csv-in-ts-col-date")
@@ -133,7 +129,6 @@ impl CliApp {
                     .requires("csv_in_ts_col_time")
                     .conflicts_with("csv_in_ts_col"),
             )
-            // timestamp column time
             .arg(
                 Arg::with_name("csv_in_ts_col_time")
                     .long("csv-in-ts-col-time")
@@ -146,7 +141,6 @@ impl CliApp {
                     .requires("csv_in_ts_col_date")
                     .conflicts_with("csv_in_ts_col"),
             )
-            // timestamp format
             .arg(
                 Arg::with_name("csv_in_ts_fmt")
                     .long("csv-in-ts-fmt")
@@ -155,7 +149,6 @@ impl CliApp {
                     .value_name("arg")
                     .conflicts_with_all(&["csv_in_ts_fmt_date", "csv_in_ts_fmt_time"]),
             )
-            // timestamp format date
             .arg(
                 Arg::with_name("csv_in_ts_fmt_date")
                     .long("csv-in-ts-fmt-date")
@@ -165,7 +158,6 @@ impl CliApp {
                     .requires("csv_in_ts_fmt_time")
                     .conflicts_with("csv_in_ts_fmt"),
             )
-            // timestamp format time
             .arg(
                 Arg::with_name("csv_in_ts_fmt_time")
                     .long("csv-in-ts-fmt-time")

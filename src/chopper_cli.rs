@@ -185,10 +185,12 @@ fn parse_csv_config(matches: &ArgMatches, timezone: ChopperTz) -> CliResult<CSVI
             };
 
             // column
-            let ts = matches.value_of("csv_in_ts_col").unwrap();
-            let col = match ts.parse::<usize>() {
-                Ok(i) => TimestampColConfig::Index(i),
-                Err(_) => TimestampColConfig::Name(ts.to_string()),
+            let col = match matches.value_of("csv_in_ts_col") {
+                None => TimestampColConfig::Auto,
+                Some(ts) => match ts.parse::<usize>() {
+                    Ok(i) => TimestampColConfig::Index(i),
+                    Err(_) => TimestampColConfig::Name(ts.to_string()),
+                },
             };
 
             (col, fmt)
