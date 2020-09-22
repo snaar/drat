@@ -61,7 +61,7 @@ pub fn parse_cli_args(
             }
         }
     };
-    debug_assert!(!input_formats.is_empty());
+    assert!(!input_formats.is_empty());
     let last_format = input_formats.last().unwrap();
 
     let mut inputs: Vec<Input> = Vec::new();
@@ -86,7 +86,7 @@ pub fn parse_cli_args(
             }
         }
     };
-    debug_assert!(!inputs.is_empty());
+    assert!(!inputs.is_empty());
 
     let output = matches.value_of("output");
 

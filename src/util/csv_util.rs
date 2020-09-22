@@ -43,7 +43,7 @@ pub fn create_csv_output_config_from_source(
 }
 
 pub fn guess_delimiter(row: &str, possible_delimiters: &[u8]) -> u8 {
-    debug_assert_ne!(possible_delimiters.len(), 0);
+    assert_ne!(possible_delimiters.len(), 0);
 
     let mut counts: HashMap<u8, u32> = HashMap::new();
 
