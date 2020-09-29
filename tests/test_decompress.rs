@@ -8,7 +8,9 @@ use chopper_lib::cli::util::YesNoAuto;
 use chopper_lib::driver::driver::Driver;
 use chopper_lib::error::{self, CliResult};
 use chopper_lib::input::input_factory::InputFactory;
-use chopper_lib::source::csv_configs::{CSVInputConfig, CSVOutputConfig, OUTPUT_DELIMITER_DEFAULT};
+use chopper_lib::source::csv_configs::{
+    CSVInputConfig, CSVOutputConfig, TimestampFmtConfig, OUTPUT_DELIMITER_DEFAULT,
+};
 use chopper_lib::source::csv_configs::{TimestampColConfig, TimestampConfig};
 use chopper_lib::util::tz::ChopperTz;
 use chopper_lib::write::factory;
@@ -19,8 +21,8 @@ fn test_decompress() {
     let inputs = vec![input];
     let output = "./tests/output/output_time_city.csv";
     let ts_config = TimestampConfig::new(
-        TimestampColConfig::Index(0),
-        None,
+        TimestampColConfig::Name("DateTime".to_owned()),
+        TimestampFmtConfig::Auto,
         ChopperTz::from(New_York),
     );
     error::handle_drive_error(test(inputs, output, ts_config));

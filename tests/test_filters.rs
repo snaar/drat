@@ -11,7 +11,9 @@ use chopper_lib::filter::column_filter_delete_col::ColumnFilterDelete;
 use chopper_lib::filter::row_filter_equal_value::RowFilterEqualValue;
 use chopper_lib::filter::row_filter_greater_value::RowFilterGreaterValue;
 use chopper_lib::input::input_factory::InputFactory;
-use chopper_lib::source::csv_configs::{CSVInputConfig, CSVOutputConfig, OUTPUT_DELIMITER_DEFAULT};
+use chopper_lib::source::csv_configs::{
+    CSVInputConfig, CSVOutputConfig, TimestampFmtConfig, OUTPUT_DELIMITER_DEFAULT,
+};
 use chopper_lib::source::csv_configs::{TimestampColConfig, TimestampConfig};
 use chopper_lib::util::{timestamp_util, tz::ChopperTz};
 use chopper_lib::write::factory;
@@ -44,8 +46,8 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
 
     // source reader and headers
     let ts_config = TimestampConfig::new(
-        TimestampColConfig::Index(0),
-        None,
+        TimestampColConfig::Name("DateTime".to_owned()),
+        TimestampFmtConfig::Auto,
         ChopperTz::from(New_York),
     );
     let csv_input_config = CSVInputConfig::new(None, YesNoAuto::Auto, ts_config)?;

@@ -1,9 +1,11 @@
-use crate::error::CliResult;
-use crate::error::Error::Custom;
-use chrono::{DateTime, LocalResult, NaiveDateTime, TimeZone};
-use chrono_tz::Tz;
 use std::collections::HashMap;
 use std::env;
+
+use chrono::{DateTime, LocalResult, NaiveDateTime, TimeZone};
+use chrono_tz::Tz;
+
+use crate::error::CliResult;
+use crate::error::Error::Custom;
 
 #[derive(Clone)]
 pub struct ChopperTz {

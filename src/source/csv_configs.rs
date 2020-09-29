@@ -12,6 +12,13 @@ pub type DateColIdx = usize;
 pub type TimeColIdx = usize;
 
 #[derive(Clone)]
+pub enum TimestampFmtConfig {
+    Auto,
+    Explicit(String),
+    DateTimeExplicit(String, String),
+}
+
+#[derive(Clone)]
 pub enum TimestampColConfig {
     Auto,
     Index(usize),
@@ -23,14 +30,14 @@ pub enum TimestampColConfig {
 #[derive(Clone)]
 pub struct TimestampConfig {
     timestamp_col: TimestampColConfig,
-    timestamp_fmt: Option<String>,
+    timestamp_fmt: TimestampFmtConfig,
     timezone: ChopperTz,
 }
 
 impl TimestampConfig {
     pub fn new(
         timestamp_col: TimestampColConfig,
-        timestamp_fmt: Option<String>,
+        timestamp_fmt: TimestampFmtConfig,
         timezone: ChopperTz,
     ) -> Self {
         TimestampConfig {
@@ -44,12 +51,8 @@ impl TimestampConfig {
         &self.timestamp_col
     }
 
-    pub fn timestamp_fmt(&self) -> &Option<String> {
+    pub fn timestamp_fmt(&self) -> &TimestampFmtConfig {
         &self.timestamp_fmt
-    }
-
-    pub fn set_timestamp_fmt(&mut self, fmt: String) {
-        self.timestamp_fmt = Some(fmt)
     }
 
     pub fn timezone(&self) -> &ChopperTz {
@@ -97,10 +100,6 @@ impl CSVInputConfig {
 
     pub fn timestamp_config(&self) -> &TimestampConfig {
         &self.timestamp_config
-    }
-
-    pub fn timestamp_config_as_mut(&mut self) -> &mut TimestampConfig {
-        &mut self.timestamp_config
     }
 }
 

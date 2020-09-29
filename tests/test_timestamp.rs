@@ -8,7 +8,9 @@ use chopper_lib::cli::util::YesNoAuto;
 use chopper_lib::driver::driver::Driver;
 use chopper_lib::error::{self, CliResult};
 use chopper_lib::input::input_factory::InputFactory;
-use chopper_lib::source::csv_configs::{CSVInputConfig, CSVOutputConfig, OUTPUT_DELIMITER_DEFAULT};
+use chopper_lib::source::csv_configs::{
+    CSVInputConfig, CSVOutputConfig, TimestampFmtConfig, OUTPUT_DELIMITER_DEFAULT,
+};
 use chopper_lib::source::csv_configs::{TimestampColConfig, TimestampConfig};
 use chopper_lib::util::tz::ChopperTz;
 use chopper_lib::write::factory;
@@ -19,10 +21,9 @@ fn test_timestamp() {
     let input = "./tests/input/time_city.csv";
     let inputs = vec![input];
     let output = "./tests/output/test_timestamp.csv";
-    let ts_fmt = "%Y/%m/%d-%H:%M:%S".to_string();
     let ts_config = TimestampConfig::new(
         TimestampColConfig::Index(1),
-        Some(ts_fmt),
+        TimestampFmtConfig::Explicit("%Y/%m/%d-%H:%M:%S".to_string()),
         ChopperTz::from(New_York),
     );
     error::handle_drive_error(test(inputs, output, ts_config));
@@ -39,7 +40,7 @@ fn test_timestamp() {
     let output = "./tests/output/test_timestamp.csv";
     let ts_config = TimestampConfig::new(
         TimestampColConfig::DateTimeIndex(0, 2),
-        None,
+        TimestampFmtConfig::DateTimeExplicit("%Y%m%d".to_owned(), "%-H:%M".to_owned()),
         ChopperTz::from(New_York),
     );
     error::handle_drive_error(test(inputs, output, ts_config));

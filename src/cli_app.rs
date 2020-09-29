@@ -115,7 +115,6 @@ impl CliApp {
                     .help("csv input only: specify the timestamp column name or index; will try to guess using obvious names, then fall back to column 0")
                     .takes_value(true)
                     .value_name("arg")
-                    .conflicts_with_all(&["csv_in_ts_col_date", "csv_in_ts_col_time"]),
             )
             .arg(
                 Arg::with_name("csv_in_ts_col_date")
@@ -127,7 +126,7 @@ impl CliApp {
                     .takes_value(true)
                     .value_name("arg")
                     .requires("csv_in_ts_col_time")
-                    .conflicts_with("csv_in_ts_col"),
+                    .conflicts_with_all(&["csv_in_ts_col", "csv_in_ts_fmt"]),
             )
             .arg(
                 Arg::with_name("csv_in_ts_col_time")
@@ -139,7 +138,7 @@ impl CliApp {
                     .takes_value(true)
                     .value_name("arg")
                     .requires("csv_in_ts_col_date")
-                    .conflicts_with("csv_in_ts_col"),
+                    .conflicts_with_all(&["csv_in_ts_col", "csv_in_ts_fmt"]),
             )
             .arg(
                 Arg::with_name("csv_in_ts_fmt")
@@ -147,7 +146,6 @@ impl CliApp {
                     .help("csv input only: specify the timestamp column format")
                     .takes_value(true)
                     .value_name("arg")
-                    .conflicts_with_all(&["csv_in_ts_fmt_date", "csv_in_ts_fmt_time"]),
             )
             .arg(
                 Arg::with_name("csv_in_ts_fmt_date")
@@ -156,7 +154,7 @@ impl CliApp {
                     .takes_value(true)
                     .value_name("arg")
                     .requires("csv_in_ts_fmt_time")
-                    .conflicts_with("csv_in_ts_fmt"),
+                    .conflicts_with_all(&["csv_in_ts_col", "csv_in_ts_fmt"]),
             )
             .arg(
                 Arg::with_name("csv_in_ts_fmt_time")
@@ -168,7 +166,7 @@ impl CliApp {
                     .takes_value(true)
                     .value_name("arg")
                     .requires("csv_in_ts_fmt_date")
-                    .conflicts_with("csv_in_ts_fmt"),
+                    .conflicts_with_all(&["csv_in_ts_col", "csv_in_ts_fmt"]),
             );
         app
     }

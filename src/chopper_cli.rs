@@ -12,7 +12,7 @@ use crate::error::{self, CliResult};
 use crate::input::input::{Input, InputFormat, InputType};
 use crate::input::input_factory::InputFactory;
 use crate::source::csv_configs::{
-    CSVInputConfig, CSVOutputConfig, TimestampColConfig, TimestampConfig,
+    CSVInputConfig, CSVOutputConfig, TimestampColConfig, TimestampConfig, TimestampFmtConfig,
 };
 use crate::source::source_factory::SourceFactory;
 use crate::transport::transport_factory::TransportFactory;
@@ -175,40 +175,30 @@ fn parse_csv_config(matches: &ArgMatches, timezone: ChopperTz) -> CliResult<CSVI
     let input_delimiter = matches.value_of("csv_input_delimiter");
     let has_header = value_t!(matches, "csv_input_has_header", YesNoAuto)?;
 
-    // timestamp config
-    let (ts_col, ts_fmt) = match matches.value_of("csv_in_ts_col_date") {
-        None => {
-            // format
-            let fmt = match matches.value_of("csv_in_ts_fmt") {
-                None => None,
-                Some(fmt) => Some(fmt.to_string()),
-            };
-
-            // column
-            let col = match matches.value_of("csv_in_ts_col") {
-                None => TimestampColConfig::Auto,
-                Some(ts) => match ts.parse::<usize>() {
-                    Ok(i) => TimestampColConfig::Index(i),
-                    Err(_) => TimestampColConfig::Name(ts.to_string()),
-                },
-            };
-
-            (col, fmt)
+    let ts_fmt = match matches.value_of("csv_in_ts_fmt_date") {
+        None => match matches.value_of("csv_in_ts_fmt") {
+            None => TimestampFmtConfig::Auto,
+            Some(fmt) => TimestampFmtConfig::Explicit(fmt.to_string()),
+        },
+        Some(date_fmt) => {
+            // we should always have time format if we have date format
+            let time_fmt = matches.value_of("csv_in_ts_fmt_time").unwrap();
+            TimestampFmtConfig::DateTimeExplicit(date_fmt.to_string(), time_fmt.to_string())
         }
-        Some(date_col) => {
-            // format
-            let fmt = match matches.value_of("csv_in_ts_fmt_date") {
-                None => None,
-                Some(d) => {
-                    let t = matches.value_of("csv_in_ts_fmt_time").unwrap();
-                    Some(format!("{}{}", d, t))
-                }
-            };
+    };
 
-            // column
+    let ts_col = match matches.value_of("csv_in_ts_col_date") {
+        None => match matches.value_of("csv_in_ts_col") {
+            None => TimestampColConfig::Auto,
+            Some(ts) => match ts.parse::<usize>() {
+                Ok(i) => TimestampColConfig::Index(i),
+                Err(_) => TimestampColConfig::Name(ts.to_string()),
+            },
+        },
+        Some(date_col) => {
             // we should always have time column if we have date column
             let time_col = matches.value_of("csv_in_ts_col_time").unwrap();
-            let col = match date_col.parse::<usize>() {
+            match date_col.parse::<usize>() {
                 Ok(d_idx) => match time_col.parse::<usize>() {
                     Ok(t_idx) => TimestampColConfig::DateTimeIndex(d_idx, t_idx),
                     Err(_) => {
@@ -218,9 +208,7 @@ fn parse_csv_config(matches: &ArgMatches, timezone: ChopperTz) -> CliResult<CSVI
                 Err(_) => {
                     TimestampColConfig::DateTimeName(date_col.to_owned(), time_col.to_owned())
                 }
-            };
-
-            (col, fmt)
+            }
         }
     };
     let ts_config = TimestampConfig::new(ts_col, ts_fmt, timezone);
