@@ -104,7 +104,7 @@ impl CliApp {
                     .long("csv-out-print-ts")
                     .help("csv output only: print timestamp as first column")
                     .takes_value(true)
-                    .default_value("auto")
+                    .default_value("yes")
                     .possible_values(&["yes", "no", "auto"])
                     .case_insensitive(true)
                     .value_name("arg"),
