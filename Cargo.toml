@@ -26,8 +26,8 @@ dtoa = "0.4"
 flate2 = "1"
 lazy_static = "1"
 lz-fear = "0.1"
-reqwest = { version = "0.10", features = ["blocking"] }
 ruzstd = "0.2"
+ureq = { version = "1.5", features = ["charset"] }
 
 [lib]
 name = "chopper_lib"

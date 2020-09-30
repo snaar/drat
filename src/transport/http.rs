@@ -1,8 +1,6 @@
 use std::io;
 use std::path::Path;
 
-use reqwest::{blocking::Client, Url};
-
 use crate::transport::transport_factory::TransportFactory;
 
 #[derive(Clone)]
@@ -10,19 +8,25 @@ pub struct Http;
 
 impl TransportFactory for Http {
     fn can_open(&self, path: &Path) -> bool {
-        path.starts_with("http://") || path.starts_with("https://") || path.starts_with("ftp://")
+        path.starts_with("http://") || path.starts_with("https://")
     }
 
     fn open(&self, path: &Path) -> io::Result<Box<dyn io::Read>> {
-        let url: Url = path.to_str().unwrap().parse().unwrap();
-        let client = Client::new();
-        let response = match client.get(url).send() {
-            Ok(r) => r,
-            Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err)),
-        };
+        let response = ureq::get(path.to_str().unwrap()).call();
 
-        let reader = io::BufReader::new(response);
-        Ok(Box::new(reader))
+        if response.ok() {
+            Ok(Box::new(response.into_reader()))
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::Other,
+                format!(
+                    "http error for {} - status: {}; string: {}",
+                    path.to_str().unwrap(),
+                    response.status(),
+                    response.into_string()?
+                ),
+            ))
+        }
     }
 
     fn box_clone(&self) -> Box<dyn TransportFactory> {
