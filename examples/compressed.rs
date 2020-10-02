@@ -7,7 +7,6 @@ use chopper_lib::error::{self, CliResult};
 use chopper_lib::input::input_factory::InputFactory;
 use chopper_lib::source::csv_configs::{
     CSVInputConfig, CSVOutputConfig, TimestampColConfig, TimestampConfig, TimestampFmtConfig,
-    OUTPUT_DELIMITER_DEFAULT,
 };
 use chopper_lib::util::tz::ChopperTz;
 use chopper_lib::write::factory;
@@ -40,7 +39,7 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
         sources.push(source);
     }
 
-    let csv_output_config = CSVOutputConfig::new(OUTPUT_DELIMITER_DEFAULT, false);
+    let csv_output_config = CSVOutputConfig::new_default();
     let header_sink = factory::new_header_sink(output, Some(csv_output_config))?;
     let node_output = HeaderNode::HeaderSink(header_sink);
     let chain = HeaderChain::new(vec![node_output]);

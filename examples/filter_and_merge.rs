@@ -7,7 +7,7 @@ use chopper_lib::error::{self, CliResult};
 use chopper_lib::filter::row_filter_equal_value::RowFilterEqualValue;
 use chopper_lib::filter::row_filter_greater_value::RowFilterGreaterValue;
 use chopper_lib::input::input_factory::InputFactory;
-use chopper_lib::source::csv_configs::{CSVOutputConfig, OUTPUT_DELIMITER_DEFAULT};
+use chopper_lib::source::csv_configs::CSVOutputConfig;
 use chopper_lib::write::factory;
 
 fn main() {
@@ -54,7 +54,7 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let merge = MergeJoin::new(2)?;
     let num_of_header_to_process = merge.num_of_header_to_process();
     let node_merge_sink = HeaderNode::MergeHeaderSink(merge, num_of_header_to_process);
-    let csv_output_config = CSVOutputConfig::new(OUTPUT_DELIMITER_DEFAULT, true);
+    let csv_output_config = CSVOutputConfig::new_default();
     let header_sink = factory::new_header_sink(output, Some(csv_output_config))?;
     let node_output = HeaderNode::HeaderSink(header_sink);
     let chain_3 = HeaderChain::new(vec![node_merge_sink, node_output]);

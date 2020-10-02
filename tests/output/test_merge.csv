@@ -1,4 +1,4 @@
-timestamp,Date,DateTime,Time,Int,Short,Double,Float,Byte,Char,String
+timestampNanos,Date,DateTime,Time,Int,Short,Double,Float,Byte,Char,String
 1451624400000000000,20160101,2016/01/01-00:00:00,0:00,1,1,10,10,1,1,New York
 1451624400000000000,20160101,2016/01/01-00:00:00,0:00,1,1,10,10,1,1,New York
 1451628000000000000,20160101,2016/01/01-01:00:00,1:00,2,2,20,20,2,2,Tokyo

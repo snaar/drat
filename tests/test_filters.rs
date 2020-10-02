@@ -11,9 +11,7 @@ use chopper_lib::filter::column_filter_delete_col::ColumnFilterDelete;
 use chopper_lib::filter::row_filter_equal_value::RowFilterEqualValue;
 use chopper_lib::filter::row_filter_greater_value::RowFilterGreaterValue;
 use chopper_lib::input::input_factory::InputFactory;
-use chopper_lib::source::csv_configs::{
-    CSVInputConfig, CSVOutputConfig, TimestampFmtConfig, OUTPUT_DELIMITER_DEFAULT,
-};
+use chopper_lib::source::csv_configs::{CSVInputConfig, CSVOutputConfig, TimestampFmtConfig};
 use chopper_lib::source::csv_configs::{TimestampColConfig, TimestampConfig};
 use chopper_lib::util::{timestamp_util, tz::ChopperTz};
 use chopper_lib::write::factory;
@@ -75,7 +73,7 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let node_3 = HeaderNode::HeaderSink(filter_delete);
 
     // header sink
-    let csv_output_config = CSVOutputConfig::new(OUTPUT_DELIMITER_DEFAULT, true);
+    let csv_output_config = CSVOutputConfig::new_default();
     let header_sink = factory::new_header_sink(Some(output), Some(csv_output_config))?;
     let node_output = HeaderNode::HeaderSink(header_sink);
     let chain = HeaderChain::new(vec![node_1, node_2, node_3, node_output]);

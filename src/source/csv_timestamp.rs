@@ -33,6 +33,17 @@ pub enum TimestampUnits {
     Nanos,
 }
 
+impl TimestampUnits {
+    pub fn to_suffix_str(&self) -> &str {
+        match self {
+            TimestampUnits::Seconds => "Seconds",
+            TimestampUnits::Millis => "Millis",
+            TimestampUnits::Micros => "Micros",
+            TimestampUnits::Nanos => "Nanos",
+        }
+    }
+}
+
 const TIMESTAMP_UNITS: [(TimestampUnits, &'static str); 4] = [
     (TimestampUnits::Seconds, "seconds"),
     (TimestampUnits::Millis, "millis"),

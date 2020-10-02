@@ -147,8 +147,4 @@ impl Source for CSVSource {
     fn next_row(&mut self) -> CliResult<Option<Row>> {
         self.next_row()
     }
-
-    fn has_native_timestamp_column(&self) -> bool {
-        false
-    }
 }

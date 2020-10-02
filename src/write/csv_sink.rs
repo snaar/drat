@@ -6,7 +6,8 @@ use crate::chopper::chopper::{DataSink, HeaderSink};
 use crate::chopper::header_graph::PinId;
 use crate::chopper::types::{FieldValue, Header, Row};
 use crate::error::{CliResult, Error};
-use crate::source::csv_configs::CSVOutputConfig;
+use crate::source::csv_configs::{CSVOutputConfig, TimestampStyle};
+use crate::source::csv_timestamp::TimestampUnits;
 
 pub struct CSVSink {
     writer: BufWriter<Box<dyn io::Write + 'static>>,
@@ -38,8 +39,8 @@ impl CSVSink {
         let field_name = header.field_names().clone();
         let mut first = true;
 
-        if self.csv_output_config.print_timestamp() {
-            write!(writer, "timestamp,")?;
+        if self.csv_output_config.print_time_col() {
+            write!(writer, "{},", self.csv_output_config.time_col_name())?;
         }
         for name in field_name {
             if first {
@@ -64,8 +65,30 @@ impl HeaderSink for CSVSink {
 impl DataSink for CSVSink {
     fn write_row(&mut self, row: Row) -> CliResult<Option<Row>> {
         let mut first_col = true;
-        if self.csv_output_config.print_timestamp() {
-            write!(self.writer, "{}", row.timestamp)?;
+        if self.csv_output_config.print_time_col() {
+            let time = match self.csv_output_config.time_col_style() {
+                TimestampStyle::Epoch => {
+                    let time = match self.csv_output_config.time_col_units() {
+                        TimestampUnits::Seconds => row.timestamp / 1_000_000_000,
+                        TimestampUnits::Millis => row.timestamp / 1_000_000,
+                        TimestampUnits::Micros => row.timestamp / 1_000,
+                        TimestampUnits::Nanos => row.timestamp,
+                    };
+                    time.to_string()
+                }
+                TimestampStyle::HumanReadable => {
+                    let format = match self.csv_output_config.time_col_units() {
+                        TimestampUnits::Seconds => "%Y-%m-%dT%H:%M:%S%:z",
+                        TimestampUnits::Millis => "%Y-%m-%dT%H:%M:%S%.3f%:z",
+                        TimestampUnits::Micros => "%Y-%m-%dT%H:%M:%S%.6f%:z",
+                        TimestampUnits::Nanos => "%Y-%m-%dT%H:%M:%S%.9f%:z",
+                    };
+                    let time = self.csv_output_config.timezone().timestamp(row.timestamp)?;
+                    time.format(format).to_string()
+                }
+            };
+
+            write!(self.writer, "{}", time)?;
             first_col = false;
         }
         let field_values = &row.field_values;

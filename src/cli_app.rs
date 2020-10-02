@@ -73,24 +73,56 @@ impl CliApp {
                     .long("backtrace")
                     .help("print backtrace"),
             )
-            //  below are csv only
             .arg(
-                Arg::with_name("csv_input_delimiter")
+                Arg::with_name("csv_out_time_col_name")
+                    .long("time-col-name")
+                    .help("csv output only: name override for the auto-generated time column; \
+                    default based on time column output format")
+                    .takes_value(true)
+            )
+            .arg(
+                Arg::with_name("csv_out_time_fmt_epoch")
+                    .short("E")
+                    .long("epoch")
+                    .help("csv output only: time column has epoch timestamps")
+                    .takes_value(false)
+                    .conflicts_with("human")
+            )
+            .arg(
+                Arg::with_name("csv_out_time_fmt_human")
+                    .short("H")
+                    .long("human")
+                    .help("csv output only: time column is human-readable; default")
+                    .takes_value(false)
+                    .conflicts_with("epoch")
+            )
+            .arg(
+                Arg::with_name("csv_out_time_col_units")
+                    .short("g")
+                    .long("granularity")
+                    .help("csv output only: units of the auto-generated time column")
+                    .takes_value(true)
+                    .default_value("ns")
+                    .possible_values(&["s", "ms", "us", "ns"])
+                    .value_name("units")
+            )
+            .arg(
+                Arg::with_name("csv_in_delimiter")
                     .long("csv-in-delimiter")
                     .help("csv input only: column delimiter [default: try each of ',\\t ']")
                     .takes_value(true)
                     .value_name("arg"),
             )
             .arg(
-                Arg::with_name("csv_output_delimiter")
-                    .long("csv-out-delimiter")
+                Arg::with_name("csv_out_delimiter")
+                    .long("delimiter")
                     .help("csv output only: column delimiter")
                     .takes_value(true)
                     .default_value(",")
                     .value_name("arg"),
             )
             .arg(
-                Arg::with_name("csv_input_has_header")
+                Arg::with_name("csv_in_has_header")
                     .long("csv-in-has-header")
                     .help("csv input only: has header row?")
                     .takes_value(true)
@@ -100,12 +132,12 @@ impl CliApp {
                     .value_name("arg"),
             )
             .arg(
-                Arg::with_name("csv_out_print_ts")
-                    .long("csv-out-print-ts")
-                    .help("csv output only: print timestamp as first column")
+                Arg::with_name("csv_out_print_time_col")
+                    .long("print-time")
+                    .help("csv output only: print time as first column")
                     .takes_value(true)
                     .default_value("yes")
-                    .possible_values(&["yes", "no", "auto"])
+                    .possible_values(&["yes", "no"])
                     .case_insensitive(true)
                     .value_name("arg"),
             )

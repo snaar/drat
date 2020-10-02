@@ -13,10 +13,11 @@ use crate::input::input::{Input, InputFormat, InputType};
 use crate::input::input_factory::InputFactory;
 use crate::source::csv_configs::{
     CSVInputConfig, CSVOutputConfig, TimestampColConfig, TimestampConfig, TimestampFmtConfig,
+    TimestampStyle,
 };
+use crate::source::csv_timestamp::TimestampUnits;
 use crate::source::source_factory::SourceFactory;
 use crate::transport::transport_factory::TransportFactory;
-use crate::util::csv_util;
 use crate::util::tz::ChopperTz;
 use crate::write::factory;
 
@@ -91,14 +92,8 @@ pub fn parse_cli_args(
     let output = matches.value_of("output");
 
     // csv only
-    let csv_input_config = parse_csv_config(&matches, timezone)?;
-    let csv_output_delimiter = matches.value_of("csv_output_delimiter").unwrap();
-    let csv_output_print_timestamp = match matches.value_of("csv_out_print_ts").unwrap() {
-        "auto" => None,
-        "yes" => Some(true),
-        "no" => Some(false),
-        _ => unreachable!(),
-    };
+    let csv_input_config = parse_csv_input_config(&matches, timezone.clone())?;
+    let csv_output_config = parse_csv_output_config(&matches, timezone);
 
     setup_graph(
         inputs,
@@ -107,8 +102,7 @@ pub fn parse_cli_args(
         source_factories,
         timestamp_range,
         csv_input_config,
-        csv_output_delimiter,
-        csv_output_print_timestamp,
+        csv_output_config,
     )
 }
 
@@ -119,8 +113,7 @@ fn setup_graph(
     source_factories: Option<Vec<Box<dyn SourceFactory>>>,
     timestamp_range: TimestampRange,
     csv_input_config: CSVInputConfig,
-    csv_output_delimiter: &str,
-    csv_output_print_timestamp: Option<bool>,
+    csv_output_config: CSVOutputConfig,
 ) -> CliResult<Box<dyn ChopperDriver>> {
     // get sources and headers
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
@@ -144,11 +137,6 @@ fn setup_graph(
         }
     }
 
-    let csv_output_config = match csv_output_print_timestamp {
-        Some(b) => CSVOutputConfig::new(csv_output_delimiter, b),
-        None => csv_util::create_csv_output_config_from_source(&mut sources, csv_output_delimiter),
-    };
-
     // add MergeHeaderSink as first header node if multiple input files
     if inputs.len() > 1 {
         let merge = MergeJoin::new(inputs.len())?;
@@ -171,9 +159,9 @@ fn setup_graph(
     )?))
 }
 
-fn parse_csv_config(matches: &ArgMatches, timezone: ChopperTz) -> CliResult<CSVInputConfig> {
-    let input_delimiter = matches.value_of("csv_input_delimiter");
-    let has_header = value_t!(matches, "csv_input_has_header", YesNoAuto)?;
+fn parse_csv_input_config(matches: &ArgMatches, timezone: ChopperTz) -> CliResult<CSVInputConfig> {
+    let input_delimiter = matches.value_of("csv_in_delimiter");
+    let has_header = value_t!(matches, "csv_in_has_header", YesNoAuto)?;
 
     let ts_fmt = match matches.value_of("csv_in_ts_fmt_date") {
         None => match matches.value_of("csv_in_ts_fmt") {
@@ -214,4 +202,44 @@ fn parse_csv_config(matches: &ArgMatches, timezone: ChopperTz) -> CliResult<CSVI
     let ts_config = TimestampConfig::new(ts_col, ts_fmt, timezone);
 
     CSVInputConfig::new(input_delimiter, has_header, ts_config)
+}
+
+fn parse_csv_output_config(matches: &ArgMatches, timezone: ChopperTz) -> CSVOutputConfig {
+    let csv_out_delimiter = matches.value_of("csv_out_delimiter").unwrap();
+    let csv_out_print_time_col = match matches.value_of("csv_out_print_time_col").unwrap() {
+        "yes" => true,
+        "no" => false,
+        _ => unreachable!(),
+    };
+
+    let time_col_name = match matches.value_of("csv_out_time_col_name") {
+        None => None,
+        Some(name) => Some(name.to_owned()),
+    };
+
+    let time_col_style = if matches.is_present("csv_out_time_fmt_epoch") {
+        TimestampStyle::Epoch
+    } else {
+        TimestampStyle::HumanReadable
+    };
+
+    let time_col_units = match matches.value_of("csv_out_time_col_units") {
+        None => TimestampUnits::Nanos,
+        Some(units) => match units {
+            "s" => TimestampUnits::Seconds,
+            "ms" => TimestampUnits::Millis,
+            "us" => TimestampUnits::Micros,
+            "ns" => TimestampUnits::Nanos,
+            _ => unreachable!(),
+        },
+    };
+
+    CSVOutputConfig::new(
+        csv_out_delimiter,
+        csv_out_print_time_col,
+        time_col_name,
+        time_col_style,
+        time_col_units,
+        timezone,
+    )
 }

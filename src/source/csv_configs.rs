@@ -2,6 +2,7 @@ use std::fmt;
 
 use crate::cli::util::YesNoAuto;
 use crate::error::CliResult;
+use crate::source::csv_timestamp::TimestampUnits;
 use crate::util::csv_util;
 use crate::util::tz::ChopperTz;
 
@@ -25,6 +26,12 @@ pub enum TimestampColConfig {
     DateTimeIndex(DateColIdx, TimeColIdx),
     Name(String),
     DateTimeName(String, String),
+}
+
+#[derive(Clone, Copy)]
+pub enum TimestampStyle {
+    Epoch,
+    HumanReadable,
 }
 
 #[derive(Clone)]
@@ -67,12 +74,6 @@ pub struct CSVInputConfig {
     timestamp_config: TimestampConfig,
 }
 
-#[derive(Clone)]
-pub struct CSVOutputConfig {
-    delimiter: String,
-    print_timestamp: bool,
-}
-
 impl CSVInputConfig {
     pub fn new(
         delimiter: Option<&str>,
@@ -103,30 +104,6 @@ impl CSVInputConfig {
     }
 }
 
-impl CSVOutputConfig {
-    pub fn new(delimiter: &str, print_timestamp: bool) -> Self {
-        CSVOutputConfig {
-            delimiter: delimiter.to_string(),
-            print_timestamp,
-        }
-    }
-
-    pub fn new_default() -> Self {
-        CSVOutputConfig {
-            delimiter: OUTPUT_DELIMITER_DEFAULT.to_string(),
-            print_timestamp: true,
-        }
-    }
-
-    pub fn delimiter(&self) -> &String {
-        &self.delimiter
-    }
-
-    pub fn print_timestamp(&self) -> bool {
-        self.print_timestamp
-    }
-}
-
 impl fmt::Debug for CSVInputConfig {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
@@ -134,5 +111,82 @@ impl fmt::Debug for CSVInputConfig {
             "delimiter: {:?}, has headers: {:?}",
             self.delimiter, self.has_header
         )
+    }
+}
+
+#[derive(Clone)]
+pub struct CSVOutputConfig {
+    delimiter: String,
+    print_time_col: bool,
+    time_col_name: String,
+    time_col_style: TimestampStyle,
+    time_col_units: TimestampUnits,
+    timezone: ChopperTz,
+}
+
+impl CSVOutputConfig {
+    pub fn new(
+        delimiter: &str,
+        print_time_col: bool,
+        time_col_name: Option<String>,
+        time_col_style: TimestampStyle,
+        time_col_units: TimestampUnits,
+        timezone: ChopperTz,
+    ) -> Self {
+        let time_col_name = match time_col_name {
+            None => {
+                let base_name = match time_col_style {
+                    TimestampStyle::Epoch => "timestamp",
+                    TimestampStyle::HumanReadable => "time",
+                }
+                .to_string();
+                let units = time_col_units.to_suffix_str();
+                base_name + units
+            }
+            Some(name) => name,
+        };
+
+        CSVOutputConfig {
+            delimiter: delimiter.to_string(),
+            print_time_col,
+            time_col_name,
+            time_col_style,
+            time_col_units,
+            timezone,
+        }
+    }
+
+    pub fn new_default() -> Self {
+        Self::new(
+            OUTPUT_DELIMITER_DEFAULT,
+            true,
+            None,
+            TimestampStyle::Epoch,
+            TimestampUnits::Nanos,
+            ChopperTz::new_always_fails(),
+        )
+    }
+
+    pub fn delimiter(&self) -> &String {
+        &self.delimiter
+    }
+
+    pub fn print_time_col(&self) -> bool {
+        self.print_time_col
+    }
+
+    pub fn time_col_name(&self) -> &String {
+        &self.time_col_name
+    }
+
+    pub fn time_col_style(&self) -> TimestampStyle {
+        self.time_col_style
+    }
+    pub fn time_col_units(&self) -> TimestampUnits {
+        self.time_col_units
+    }
+
+    pub fn timezone(&self) -> &ChopperTz {
+        &self.timezone
     }
 }

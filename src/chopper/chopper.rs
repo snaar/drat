@@ -11,7 +11,6 @@ pub trait ChopperDriver {
 pub trait Source {
     fn header(&self) -> &Header;
     fn next_row(&mut self) -> CliResult<Option<Row>>;
-    fn has_native_timestamp_column(&self) -> bool;
 }
 
 //TODO better debug format?

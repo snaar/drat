@@ -1,7 +1,5 @@
-use crate::chopper::chopper::Source;
 use crate::chopper::types::FieldType;
 use crate::error::{CliResult, Error};
-use crate::source::csv_configs::CSVOutputConfig;
 use std::collections::HashMap;
 
 pub fn parse_into_delimiter(str: &str) -> CliResult<u8> {
@@ -26,20 +24,6 @@ pub fn parse_into_delimiter(str: &str) -> CliResult<u8> {
             }
         }
     }
-}
-
-pub fn create_csv_output_config_from_source(
-    sources: &mut Vec<Box<dyn Source>>,
-    delimiter: &str,
-) -> CSVOutputConfig {
-    let mut some_sources_have_native_timestamps = false;
-    for source in sources {
-        if source.has_native_timestamp_column() {
-            some_sources_have_native_timestamps = true;
-            break;
-        }
-    }
-    CSVOutputConfig::new(delimiter, some_sources_have_native_timestamps)
 }
 
 pub fn guess_delimiter(row: &str, possible_delimiters: &[u8]) -> u8 {
