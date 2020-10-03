@@ -1,12 +1,14 @@
+use std::io;
+use std::io::{BufReader, Read};
+
+use byteorder::{BigEndian, ReadBytesExt};
+use flate2::read::GzDecoder;
+use lz_fear::LZ4FrameReader;
+
 use crate::decompress::lzf::LzfReader;
 use crate::decompress::zst::ZstReader;
 use crate::error::{CliResult, Error};
 use crate::util::preview::Preview;
-use byteorder::{BigEndian, ReadBytesExt};
-use flate2::read::GzDecoder;
-use lz_fear::LZ4FrameReader;
-use std::io;
-use std::io::{BufReader, Read};
 
 static GZ: &str = ".gz";
 static LZ4: &str = ".lz4";
@@ -84,12 +86,12 @@ pub fn decompress(
     }
 }
 
-pub fn decompress_gz(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
+fn decompress_gz(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
     let decoder = GzDecoder::new(reader);
     Ok(Box::new(decoder))
 }
 
-pub fn decompress_lz4(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
+fn decompress_lz4(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
     let frame_reader = match LZ4FrameReader::new(reader) {
         Ok(frame_reader) => frame_reader,
         Err(e) => {
@@ -99,12 +101,12 @@ pub fn decompress_lz4(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
     Ok(Box::new(frame_reader.into_read()))
 }
 
-pub fn decompress_lzf(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
+fn decompress_lzf(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
     let decoder = LzfReader::new(reader);
     Ok(Box::new(decoder))
 }
 
-pub fn decompress_zst(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
+fn decompress_zst(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
     let decoder = ZstReader::new(reader)?;
     Ok(Box::new(decoder))
 }

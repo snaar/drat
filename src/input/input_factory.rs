@@ -2,10 +2,10 @@ use std::io;
 use std::path::Path;
 
 use crate::chopper::chopper::Source;
+use crate::decompress::decompress::{self, DecompressionFormat};
 use crate::error::{CliResult, Error};
 use crate::input::input::{Input, InputFormat, InputType};
 use crate::source::csv_configs::CSVInputConfig;
-use crate::source::decompress::{self, DecompressionFormat};
 use crate::source::{
     csv_factory::CSVFactory, dc_factory::DCFactory, source_factory::SourceFactory,
 };
