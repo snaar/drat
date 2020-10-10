@@ -134,15 +134,14 @@ impl CSVOutputConfig {
         timezone: ChopperTz,
     ) -> Self {
         let time_col_name = match time_col_name {
-            None => {
-                let base_name = match time_col_style {
-                    TimestampStyle::Epoch => "timestamp",
-                    TimestampStyle::HumanReadable => "time",
+            None => match time_col_style {
+                TimestampStyle::Epoch => {
+                    let base_name = "timestamp".to_string();
+                    let units = time_col_units.to_suffix_str();
+                    base_name + units
                 }
-                .to_string();
-                let units = time_col_units.to_suffix_str();
-                base_name + units
-            }
+                TimestampStyle::HumanReadable => "time".to_string(),
+            },
             Some(name) => name,
         };
 
