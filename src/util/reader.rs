@@ -42,6 +42,10 @@ impl<R: 'static + Read> Preview for ChopperBufPreviewer<R> {
 
 impl<R: Read> ChopperBufPreviewer<R> {
     pub fn new(inner: R) -> io::Result<ChopperBufPreviewer<R>> {
+        // one peculiarity, that is probably not even worth mentioning, is that if previewer
+        // reaches EOF on the underlying reader while filling out the preview buffer,
+        // the underlying reader will typically still get at least one more "read" call later,
+        // even if it already reported EOF, since the first EOF was "consumed" by this previewer
         let mut reader = ChopperBufReader::with_capacity(DEFAULT_BUF_SIZE, inner);
         reader.fill_buffer()?;
 

@@ -5,6 +5,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 use flate2::read::GzDecoder;
 use lz_fear::LZ4FrameReader;
 
+use crate::decompress::lz4_jblock::Lz4JBlockReader;
 use crate::decompress::lzf::LzfReader;
 use crate::decompress::zst::ZstReader;
 use crate::error::{CliResult, Error};
@@ -61,7 +62,18 @@ pub fn is_compressed_using_previewer(previewer: &dyn Preview) -> Option<Decompre
             return Some(DecompressionFormat::GZ);
         }
         if header32be == 0x04224D18 {
+            // 0x04224D18 is lz4 frame format and is most common
             return Some(DecompressionFormat::LZ4);
+        }
+        if header32be == 0x4C5A3442 {
+            // 0x4C5A3442 is lz4 block format, which seems to be deprecated, but still in use;
+            // each block starts with "LZ4Block" text, which is "4C 5A 34 42 6C 6F 63 6B"
+            let next_four_bytes_big_endian = reader.read_u32::<BigEndian>();
+            if let Ok(next32be) = next_four_bytes_big_endian {
+                if next32be == 0x6C6F636B {
+                    return Some(DecompressionFormat::LZ4);
+                }
+            }
         }
         if header24be == 0x5A560100 || header24be == 0x5A560000 {
             return Some(DecompressionFormat::LZF);
@@ -76,13 +88,13 @@ pub fn is_compressed_using_previewer(previewer: &dyn Preview) -> Option<Decompre
 
 pub fn decompress(
     decompression_format: DecompressionFormat,
-    reader: Box<dyn Read>,
+    previewer: Box<dyn Preview>,
 ) -> CliResult<Box<dyn Read>> {
     match decompression_format {
-        DecompressionFormat::GZ => decompress_gz(reader),
-        DecompressionFormat::LZ4 => decompress_lz4(reader),
-        DecompressionFormat::LZF => decompress_lzf(reader),
-        DecompressionFormat::ZST => decompress_zst(reader),
+        DecompressionFormat::GZ => decompress_gz(previewer.get_reader()),
+        DecompressionFormat::LZ4 => decompress_lz4(previewer),
+        DecompressionFormat::LZF => decompress_lzf(previewer.get_reader()),
+        DecompressionFormat::ZST => decompress_zst(previewer.get_reader()),
     }
 }
 
@@ -91,7 +103,16 @@ fn decompress_gz(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
     Ok(Box::new(decoder))
 }
 
-fn decompress_lz4(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
+fn decompress_lz4(previewer: Box<dyn Preview>) -> CliResult<Box<dyn Read>> {
+    let buf = previewer.get_buf();
+    if buf.len() >= 8 && &buf[..8] == b"LZ4Block" {
+        decompress_lz4_jblock(previewer.get_reader())
+    } else {
+        decompress_lz4_frame(previewer.get_reader())
+    }
+}
+
+fn decompress_lz4_frame(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
     let frame_reader = match LZ4FrameReader::new(reader) {
         Ok(frame_reader) => frame_reader,
         Err(e) => {
@@ -99,6 +120,11 @@ fn decompress_lz4(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
         }
     };
     Ok(Box::new(frame_reader.into_read()))
+}
+
+fn decompress_lz4_jblock(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
+    let decoder = Lz4JBlockReader::new(reader, true, true);
+    Ok(Box::new(decoder))
 }
 
 fn decompress_lzf(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {

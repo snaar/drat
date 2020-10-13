@@ -200,8 +200,7 @@ impl InputFactory {
         decompression_format: DecompressionFormat,
         previewer: Box<dyn Preview>,
     ) -> CliResult<Box<dyn Preview>> {
-        let reader = previewer.get_reader();
-        let new_reader = decompress::decompress(decompression_format, reader)?;
+        let new_reader = decompress::decompress(decompression_format, previewer)?;
         Ok(Box::new(ChopperBufPreviewer::new(new_reader)?))
     }
 
