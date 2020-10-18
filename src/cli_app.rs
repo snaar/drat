@@ -199,6 +199,15 @@ impl CliApp {
                     .value_name("arg")
                     .requires("csv_in_ts_fmt_date")
                     .conflicts_with_all(&["csv_in_ts_col", "csv_in_ts_fmt"]),
+            )
+            .arg(Arg::with_name("csv_in_epoch")
+                .long("csv-in-epoch")
+                .help("csv input only: timestamp is in epoch format with given granularity")
+                .takes_value(true)
+                .default_value("ns")
+                .possible_values(&["s", "ms", "us", "ns"])
+                .value_name("arg")
+                .conflicts_with_all(&["csv_in_ts_col_date", "csv_in_ts_col_time", "csv_in_ts_fmt"])
             );
         app
     }

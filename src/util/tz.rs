@@ -67,8 +67,9 @@ impl ChopperTz {
     pub fn timestamp(&self, nanoseconds: u64) -> CliResult<DateTime<Tz>> {
         match self.timezone {
             None => Err(Custom(format!(
-                "Timezone is needed to convert timestamp {} to a human-readable time. None was provided. \
-                Either provide it by setting -z command line arg or by setting CHOPPER_TZ env var.",
+                "Timezone is needed to convert timestamp {} to a human-readable time for output. \
+                None was provided. Either provide it by setting -z command line arg or by setting \
+                CHOPPER_TZ env var or by using --epoch for raw timestamps.",
                 nanoseconds
             ))),
             Some(timezone) => {

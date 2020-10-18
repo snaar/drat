@@ -15,6 +15,7 @@ pub type TimeColIdx = usize;
 #[derive(Clone)]
 pub enum TimestampFmtConfig {
     Auto,
+    Epoch(TimestampUnits),
     Explicit(String),
     DateTimeExplicit(String, String),
 }

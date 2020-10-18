@@ -165,7 +165,10 @@ fn parse_csv_input_config(matches: &ArgMatches, timezone: ChopperTz) -> CliResul
 
     let ts_fmt = match matches.value_of("csv_in_ts_fmt_date") {
         None => match matches.value_of("csv_in_ts_fmt") {
-            None => TimestampFmtConfig::Auto,
+            None => match matches.value_of("csv_in_epoch") {
+                None => TimestampFmtConfig::Auto,
+                Some(units) => TimestampFmtConfig::Epoch(TimestampUnits::from_str(units)),
+            },
             Some(fmt) => TimestampFmtConfig::Explicit(fmt.to_string()),
         },
         Some(date_fmt) => {
@@ -225,13 +228,7 @@ fn parse_csv_output_config(matches: &ArgMatches, timezone: ChopperTz) -> CSVOutp
 
     let time_col_units = match matches.value_of("csv_out_time_col_units") {
         None => TimestampUnits::Nanos,
-        Some(units) => match units {
-            "s" => TimestampUnits::Seconds,
-            "ms" => TimestampUnits::Millis,
-            "us" => TimestampUnits::Micros,
-            "ns" => TimestampUnits::Nanos,
-            _ => unreachable!(),
-        },
+        Some(units) => TimestampUnits::from_str(units),
     };
 
     CSVOutputConfig::new(

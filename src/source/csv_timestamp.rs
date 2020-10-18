@@ -34,6 +34,16 @@ pub enum TimestampUnits {
 }
 
 impl TimestampUnits {
+    pub fn from_str(units: &str) -> TimestampUnits {
+        match units {
+            "s" => TimestampUnits::Seconds,
+            "ms" => TimestampUnits::Millis,
+            "us" => TimestampUnits::Micros,
+            "ns" => TimestampUnits::Nanos,
+            _ => panic!("unexpected timestamp units {}", units),
+        }
+    }
+
     pub fn to_suffix_str(&self) -> &str {
         match self {
             TimestampUnits::Seconds => "Seconds",
@@ -123,23 +133,9 @@ pub fn get_timestamp_col_and_fmt(
         TimestampFmtConfig::Auto => {
             get_timestamp_fmt_auto(&timestamp_col, timezone, &first_row, units_hint)?
         }
+        TimestampFmtConfig::Epoch(units) => TimestampFmt::Units(*units),
         TimestampFmtConfig::Explicit(t) => {
-            let mut fmt = get_timestamp_fmt_from_user_spec(
-                first_row,
-                &timestamp_col,
-                t.to_owned(),
-                timezone,
-            )?;
-
-            let t_lowered = t.to_lowercase();
-            for (candidate_units_enum, candidate_units_str) in &TIMESTAMP_UNITS {
-                if *candidate_units_str == t_lowered {
-                    fmt = TimestampFmt::Units(*candidate_units_enum);
-                    break;
-                }
-            }
-
-            fmt
+            get_timestamp_fmt_from_user_spec(first_row, &timestamp_col, t.to_owned(), timezone)?
         }
         TimestampFmtConfig::DateTimeExplicit(d, t) => {
             let format = format!("{}#{}", d, t);
