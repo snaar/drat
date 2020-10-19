@@ -61,11 +61,11 @@ const TIMESTAMP_UNITS: [(TimestampUnits, &'static str); 4] = [
     (TimestampUnits::Nanos, "nanos"),
 ];
 
-// these limit autodetection to dates starting sep 2001 until 2033, which is mostly fine
-const RANGE_NANOS: Range<u64> = 1_000_000_000_000_000_000..2_000_000_000_000_000_000;
-const RANGE_MICROS: Range<u64> = 1_000_000_000_000_000..2_000_000_000_000_000;
-const RANGE_MILLIS: Range<u64> = 1_000_000_000_000..2_000_000_000_000;
-const RANGE_SECONDS: Range<u64> = 1_000_000_000..2_000_000_000;
+// these limit autodetection to dates starting march 1992 until 2033, which is mostly fine
+const RANGE_NANOS: Range<u64> = 700_000_000_000_000_000..2_000_000_000_000_000_000;
+const RANGE_MICROS: Range<u64> = 700_000_000_000_000..2_000_000_000_000_000;
+const RANGE_MILLIS: Range<u64> = 700_000_000_000..2_000_000_000_000;
+const RANGE_SECONDS: Range<u64> = 700_000_000..2_000_000_000;
 
 pub enum TimestampCol {
     Index(usize),
