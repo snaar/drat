@@ -1,83 +1,169 @@
-use chrono::NaiveDateTime;
+use chrono::{DateTime, NaiveDateTime};
 
 use crate::chopper::types::Nanos;
 use crate::error::{CliResult, Error};
+use crate::source::csv_timestamp::{RANGE_MICROS, RANGE_MILLIS, RANGE_NANOS, RANGE_SECONDS};
 use crate::util::tz::ChopperTz;
 
 pub static DEFAULT_MONTH: &str = "01";
 pub static DEFAULT_DAY: &str = "01";
 pub static DEFAULT_TIME: &str = "00:00:00";
 
-// list of timestamp formats
+// %+ is the ISO 8601 / RFC 3339 format
+const DATETIME_RANGE_FORMATS_WITH_TZ: [&'static str; 1] = ["%+"];
+
 lazy_static! {
-    pub static ref DATE_TIME_FORMATS: Vec<String> = create_date_time_formats();
+    static ref DATETIME_RANGE_FORMATS_NEED_TZ: Vec<String> = create_datetime_range_formats();
 }
 
-fn create_date_time_formats() -> Vec<String> {
-    let mut format: Vec<String> = Vec::new();
-    let date_formats = vec![
-        "%Y%m%d", "%m%d%Y", "%d%m%Y", "%Y/%m/%d", "%m/%d/%Y", "%d/%m/%Y",
-    ];
-    let delimiter = vec!["", "-", ",", "/"];
-    for df in date_formats {
-        for d in &delimiter {
-            format.push(format!("{}{}{}", df, d, "%H:%M:%S"));
+fn create_datetime_range_formats() -> Vec<String> {
+    let mut formats: Vec<String> = Vec::new();
+    let date_formats = vec!["%Y%m%d", "%Y/%m/%d", "%Y-%m-%d"];
+    let delimiters = vec![" ", "-", "T"];
+    let time_formats = vec!["%H:%M:%S", "%H%M%S"];
+    let fractions = vec!["", "%.f"];
+    for df in &date_formats {
+        for d in &delimiters {
+            for tf in &time_formats {
+                for f in &fractions {
+                    formats.push(format!("{}{}{}{}", df, d, tf, f));
+                }
+            }
         }
     }
-    format
+    formats
 }
 
-pub fn parse_timestamp_range(timestamp: String, timezone: &ChopperTz) -> CliResult<Nanos> {
-    let timestamp = complete_timestamp(timestamp);
-
-    // try available datetime formats
-    for fmt in DATE_TIME_FORMATS.iter() {
-        // try parsing to naive datetime first
-        let naive_dt = NaiveDateTime::parse_from_str(timestamp.as_ref(), fmt.as_ref());
-        // if matching format is found, convert naive datetime to a timezone-aware datetime
-        if naive_dt.is_ok() {
-            return Ok(timezone
-                .from_local_datetime(&naive_dt?)
-                .unwrap()
-                .timestamp() as Nanos);
-        }
-    }
-    match timestamp.parse::<Nanos>() {
-        Ok(n) => Ok(n),
-        Err(_) => Err(Error::from(format!(
-            "Cannot parse timestamp: {}. Please provide format for parsing.",
-            timestamp
-        ))),
-    }
-}
-
-pub fn complete_timestamp(mut timestamp: String) -> String {
-    // if time is not specified
-    if timestamp.len() <= 8 {
-        let date = match timestamp.len() {
-            // add default month and/or day if not specified
-            4 => format!("{}{}{}", timestamp, DEFAULT_MONTH, DEFAULT_DAY),
-            6 => format!("{}{}", timestamp, DEFAULT_DAY),
-            _ => timestamp,
+pub fn parse_datetime_range_element(datetime: &str, timezone: &ChopperTz) -> CliResult<Nanos> {
+    let is_datetime_all_digits = datetime.chars().all(|c| c.is_ascii_digit());
+    if is_datetime_all_digits {
+        let n = match datetime.parse::<u64>() {
+            Ok(ts) => ts,
+            Err(err) => return Err(Error::Custom(err.to_string())),
         };
-        // add default time
-        timestamp = format!("{}{}", date, DEFAULT_TIME);
+        if RANGE_NANOS.contains(&n) {
+            return Ok(n);
+        }
+        if RANGE_MICROS.contains(&n) {
+            return Ok(n * 1_000);
+        }
+        if RANGE_MILLIS.contains(&n) {
+            return Ok(n * 1_000_000);
+        }
+        if RANGE_SECONDS.contains(&n) {
+            return Ok(n * 1_000_000_000);
+        }
     }
-    timestamp
+
+    let datetime_raw = datetime;
+    let datetime = if is_datetime_all_digits {
+        // as a special case, handle inputs like YYYY and YYYYMM by autocompleting them
+        match datetime.len() {
+            4 => format!(
+                "{}{}{}-{}",
+                datetime, DEFAULT_MONTH, DEFAULT_DAY, DEFAULT_TIME
+            ),
+            6 => format!("{}{}-{}", datetime, DEFAULT_DAY, DEFAULT_TIME),
+            8 => format!("{}-{}", datetime, DEFAULT_TIME),
+            _ => datetime.to_owned(),
+        }
+    } else {
+        datetime.to_owned()
+    };
+
+    // try the formats that don't need external TZ first
+    for format in &DATETIME_RANGE_FORMATS_WITH_TZ {
+        if let Ok(dt) = DateTime::parse_from_str(&datetime, format) {
+            return Ok(dt.timestamp_nanos() as Nanos);
+        };
+    }
+
+    // try available datetime formats that need external TZ
+    for format in DATETIME_RANGE_FORMATS_NEED_TZ.iter() {
+        if let Ok(ndt) = NaiveDateTime::parse_from_str(&datetime, &format) {
+            return Ok(timezone.from_local_datetime(&ndt)?.timestamp_nanos() as Nanos);
+        }
+    }
+
+    Err(Error::from(format!(
+        "Cannot parse either begin or end datetime provided: {}",
+        datetime_raw
+    )))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use chrono_tz::America::New_York;
+    use chrono_tz::Etc::UTC;
 
     #[test]
     fn test_parse_timestamp_range() {
-        let timezone = ChopperTz::from(New_York);
-        let timestamp_year = parse_timestamp_range("2019".to_string(), &timezone).unwrap();
-        let timestamp_datetime =
-            parse_timestamp_range("20190101-00:00:00".to_string(), &timezone).unwrap();
-        assert_eq!(timestamp_year, 1546318800);
-        assert_eq!(timestamp_datetime, 1546318800);
+        let ts = parse_datetime_range_element(
+            "2001-07-08T00:34:60.026490+09:30",
+            &ChopperTz::new_always_fails(),
+        )
+        .unwrap();
+        assert_eq!(ts, 994518300026490000);
+
+        let ts = parse_datetime_range_element(
+            "2019-01-01T00:00:00.001000+00:00",
+            &ChopperTz::new_always_fails(),
+        )
+        .unwrap();
+        assert_eq!(ts, 1546300800001000000);
+
+        let ts = parse_datetime_range_element(
+            "2019-01-01T00:00:00.001000-05:00",
+            &ChopperTz::new_always_fails(),
+        )
+        .unwrap();
+        assert_eq!(ts, 1546318800001000000);
+
+        let utc = ChopperTz::from(UTC);
+        let nyc = ChopperTz::from(New_York);
+
+        let ts = parse_datetime_range_element("2019", &utc).unwrap();
+        assert_eq!(ts, 1546300800000000000);
+        let ts = parse_datetime_range_element("2019", &nyc).unwrap();
+        assert_eq!(ts, 1546318800000000000);
+        let ts = parse_datetime_range_element("201901", &nyc).unwrap();
+        assert_eq!(ts, 1546318800000000000);
+        let ts = parse_datetime_range_element("20190101", &nyc).unwrap();
+        assert_eq!(ts, 1546318800000000000);
+        let ts = parse_datetime_range_element("20190101-00:00:00", &nyc).unwrap();
+        assert_eq!(ts, 1546318800000000000);
+        let ts = parse_datetime_range_element("20190101-00:00:00.0", &nyc).unwrap();
+        assert_eq!(ts, 1546318800000000000);
+        let ts = parse_datetime_range_element("20190101-00:00:00.1", &nyc).unwrap();
+        assert_eq!(ts, 1546318800100000000);
+        let ts = parse_datetime_range_element("20190101-00:00:00.000", &nyc).unwrap();
+        assert_eq!(ts, 1546318800000000000);
+        let ts = parse_datetime_range_element("20190101-00:00:00.001", &nyc).unwrap();
+        assert_eq!(ts, 1546318800001000000);
+        let ts = parse_datetime_range_element("20190101-00:00:00.000000", &nyc).unwrap();
+        assert_eq!(ts, 1546318800000000000);
+        let ts = parse_datetime_range_element("20190101-00:00:00.000001", &nyc).unwrap();
+        assert_eq!(ts, 1546318800000001000);
+        let ts = parse_datetime_range_element("20190101-00:00:00.000000000", &nyc).unwrap();
+        assert_eq!(ts, 1546318800000000000);
+        let ts = parse_datetime_range_element("20190101-00:00:00.000000001", &nyc).unwrap();
+        assert_eq!(ts, 1546318800000000001);
+
+        // nanos
+        let ts = parse_datetime_range_element("630000000000000000", &ChopperTz::new_always_fails())
+            .unwrap();
+        assert_eq!(ts, 630_000_000_000_000_000);
+        // micros
+        let ts = parse_datetime_range_element("630000000000000", &ChopperTz::new_always_fails())
+            .unwrap();
+        assert_eq!(ts, 630_000_000_000_000_000);
+        // millis
+        let ts =
+            parse_datetime_range_element("630000000000", &ChopperTz::new_always_fails()).unwrap();
+        assert_eq!(ts, 630_000_000_000_000_000);
+        // seconds
+        let ts = parse_datetime_range_element("630000000", &ChopperTz::new_always_fails()).unwrap();
+        assert_eq!(ts, 630_000_000_000_000_000);
     }
 }

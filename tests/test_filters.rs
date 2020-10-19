@@ -35,8 +35,7 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let inputs = vec![input];
     let output = "./tests/reference/filters.csv";
 
-    let begin =
-        timestamp_util::parse_timestamp_range("2018".to_string(), &ChopperTz::from(New_York))?;
+    let begin = timestamp_util::parse_datetime_range_element("2018", &ChopperTz::from(New_York))?;
     let timestamp_range = TimestampRange {
         begin: Some(begin),
         end: None,

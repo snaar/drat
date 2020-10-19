@@ -56,17 +56,22 @@ impl CliApp {
                 Arg::with_name("begin")
                     .short("b")
                     .long("begin")
-                    .help("set begin timestamp (inclusive); \ndate: yyyymmdd, time: hh:mm:ss")
+                    .help("set inclusive begin time to use to skip input data outside \
+                    of the [begin, end) interval; auto-detects multiple formats \
+                    including YYYY, YYYYMM, YYYYMMDD, YYYYMMDD-HHMMSS, \
+                    some other select full date/time formats, ISO 8601, epoch timestamps in \
+                    s/ms/us/ns between 1990 to 2033")
                     .takes_value(true)
-                    .value_name("timestamp"),
+                    .value_name("time"),
             )
             .arg(
                 Arg::with_name("end")
                     .short("e")
                     .long("end")
-                    .help("set end timestamp (exclusive); \ndate: yyyymmdd, time: hh:mm:ss")
+                    .help("set exclusive end time to use to skip input data outside \
+                    of the [begin, end) interval; same format as --begin")
                     .takes_value(true)
-                    .value_name("timestamp"),
+                    .value_name("time"),
             )
             .arg(
                 Arg::with_name("backtrace")

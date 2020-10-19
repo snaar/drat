@@ -21,17 +21,11 @@ pub static TIMESTAMP_RANGE_DEFAULT: TimestampRange = TimestampRange {
 impl TimestampRange {
     pub fn new(begin: Option<&str>, end: Option<&str>, timezone: &ChopperTz) -> CliResult<Self> {
         let begin = match begin {
-            Some(t) => Some(timestamp_util::parse_timestamp_range(
-                t.to_string(),
-                timezone,
-            )?),
+            Some(t) => Some(timestamp_util::parse_datetime_range_element(t, timezone)?),
             None => None,
         };
         let end = match end {
-            Some(t) => Some(timestamp_util::parse_timestamp_range(
-                t.to_string(),
-                timezone,
-            )?),
+            Some(t) => Some(timestamp_util::parse_datetime_range_element(t, timezone)?),
             None => None,
         };
         Ok(TimestampRange { begin, end })
