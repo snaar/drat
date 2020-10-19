@@ -4,9 +4,9 @@ use std::io::{BufReader, Read};
 use byteorder::{BigEndian, ReadBytesExt};
 use flate2::read::GzDecoder;
 use lz_fear::LZ4FrameReader;
+use paku::lz4_jblock::Lz4JBlockReader;
+use paku::lzf::LzfReader;
 
-use crate::decompress::lz4_jblock::Lz4JBlockReader;
-use crate::decompress::lzf::LzfReader;
 use crate::decompress::zst::ZstReader;
 use crate::error::{CliResult, Error};
 use crate::util::preview::Preview;

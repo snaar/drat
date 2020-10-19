@@ -26,6 +26,7 @@ dtoa = "0.4"
 flate2 = "1"
 lazy_static = "1"
 lz-fear = "0.1"
+paku = "0.0.1"
 ruzstd = "0.2"
 ureq = { version = "1.5", features = ["charset"] }
 
