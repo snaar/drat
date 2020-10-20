@@ -1,4 +1,4 @@
-use std::io;
+use std::io::{self, Read};
 use std::path::Path;
 
 use crate::chopper::chopper::Source;
@@ -10,7 +10,6 @@ use crate::source::{
     csv_factory::CSVFactory, dc_factory::DCFactory, source_factory::SourceFactory,
 };
 use crate::transport::{file::FileInput, http::Http, transport_factory::TransportFactory};
-use crate::util::preview::Preview;
 use crate::util::reader::ChopperBufPreviewer;
 
 pub struct InputFactory {
@@ -94,7 +93,7 @@ impl InputFactory {
     pub fn create_source_from_input(&mut self, input: &Input) -> CliResult<Box<dyn Source>> {
         let previewer = match &input.input {
             InputType::Path(path) => self.create_previewer(Path::new(path))?,
-            InputType::StdIn => Box::new(ChopperBufPreviewer::new(io::stdin())?),
+            InputType::StdIn => ChopperBufPreviewer::new(Box::new(io::stdin()) as Box<dyn Read>)?,
         };
 
         let file_name = match &input.input {
@@ -172,9 +171,13 @@ impl InputFactory {
     }
 
     fn decompress_using_format(
-        previewer: Box<dyn Preview>,
+        previewer: ChopperBufPreviewer<Box<dyn Read>>,
         format: String,
-    ) -> CliResult<(FormatAutodetectResult, Box<dyn Preview>, String)> {
+    ) -> CliResult<(
+        FormatAutodetectResult,
+        ChopperBufPreviewer<Box<dyn Read>>,
+        String,
+    )> {
         match decompress::is_compressed_using_format(&format) {
             Some((decompression_format, new_format)) => {
                 let new_previewer = Self::decompress(decompression_format, previewer)?;
@@ -185,9 +188,9 @@ impl InputFactory {
     }
 
     fn decompress_by_autodetecting_format(
-        previewer: Box<dyn Preview>,
-    ) -> CliResult<(FormatAutodetectResult, Box<dyn Preview>)> {
-        match decompress::is_compressed_using_previewer(previewer.as_ref()) {
+        previewer: ChopperBufPreviewer<Box<dyn Read>>,
+    ) -> CliResult<(FormatAutodetectResult, ChopperBufPreviewer<Box<dyn Read>>)> {
+        match decompress::is_compressed_using_previewer(&previewer) {
             Some(decompression_format) => {
                 let new_previewer = Self::decompress(decompression_format, previewer)?;
                 Ok((FormatAutodetectResult::Detected, new_previewer))
@@ -198,15 +201,15 @@ impl InputFactory {
 
     fn decompress(
         decompression_format: DecompressionFormat,
-        previewer: Box<dyn Preview>,
-    ) -> CliResult<Box<dyn Preview>> {
+        previewer: ChopperBufPreviewer<Box<dyn Read>>,
+    ) -> CliResult<ChopperBufPreviewer<Box<dyn Read>>> {
         let new_reader = decompress::decompress(decompression_format, previewer)?;
-        Ok(Box::new(ChopperBufPreviewer::new(new_reader)?))
+        Ok(ChopperBufPreviewer::new(new_reader)?)
     }
 
     fn create_source_from_format(
         &mut self,
-        previewer: Box<dyn Preview>,
+        previewer: ChopperBufPreviewer<Box<dyn Read>>,
         format: String,
     ) -> CliResult<Box<dyn Source>> {
         for sf in &mut self.source_factories {
@@ -224,7 +227,7 @@ impl InputFactory {
 
     fn create_source_by_autodetecting_format(
         &mut self,
-        previewer: Box<dyn Preview>,
+        previewer: ChopperBufPreviewer<Box<dyn Read>>,
     ) -> CliResult<Box<dyn Source>> {
         for sf in &mut self.source_factories {
             if sf.can_create_from_previewer(&previewer) {
@@ -237,8 +240,8 @@ impl InputFactory {
         ))
     }
 
-    fn create_previewer(&mut self, path: &Path) -> CliResult<Box<dyn Preview>> {
-        let mut reader: Option<Box<dyn io::Read>> = None;
+    fn create_previewer(&mut self, path: &Path) -> CliResult<ChopperBufPreviewer<Box<dyn Read>>> {
+        let mut reader: Option<Box<dyn Read>> = None;
         for factory in &mut self.transport_factories.iter() {
             match factory.can_open(path) {
                 false => continue,
@@ -255,10 +258,7 @@ impl InputFactory {
                 let err = io::Error::new(io::ErrorKind::Other, msg);
                 Err(Error::Io(err))
             }
-            Some(reader) => {
-                let previewer = ChopperBufPreviewer::new(reader)?;
-                Ok(Box::new(previewer))
-            }
+            Some(reader) => Ok(ChopperBufPreviewer::new(reader)?),
         }
     }
 }

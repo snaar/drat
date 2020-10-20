@@ -1,13 +1,13 @@
 use ruzstd::{BlockDecodingStrategy, FrameDecoder};
 use std::io::{self, Read};
 
-pub struct ZstReader {
-    inner: Box<dyn Read>,
+pub struct ZstReader<R> {
+    inner: R,
     decoder: FrameDecoder,
 }
 
-impl ZstReader {
-    pub fn new(reader: Box<dyn Read>) -> io::Result<ZstReader> {
+impl<R: Read> ZstReader<R> {
+    pub fn new(reader: R) -> io::Result<ZstReader<R>> {
         let mut zst_reader = ZstReader {
             inner: reader,
             decoder: FrameDecoder::new(),
@@ -17,14 +17,14 @@ impl ZstReader {
     }
 
     fn init(&mut self) -> io::Result<()> {
-        match self.decoder.init(self.inner.as_mut()) {
+        match self.decoder.init(&mut self.inner) {
             Ok(o) => Ok(o),
             Err(e) => Err(io::Error::new(io::ErrorKind::Other, e)),
         }
     }
 }
 
-impl Read for ZstReader {
+impl<R: Read> Read for ZstReader<R> {
     /// this impl works best with buffered reader on top of it, since it
     /// tries to fill the buf as much as possible by potentially decoding
     /// on every invocation
@@ -37,7 +37,7 @@ impl Read for ZstReader {
 
             let additional_bytes_needed = buf.len() - bytes_available;
             if let Err(e) = self.decoder.decode_blocks(
-                self.inner.as_mut(),
+                &mut self.inner,
                 BlockDecodingStrategy::UptoBytes(additional_bytes_needed),
             ) {
                 return Err(io::Error::new(io::ErrorKind::Other, e));

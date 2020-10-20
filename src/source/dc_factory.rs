@@ -1,10 +1,12 @@
+use std::io::{BufReader, Read};
+
+use byteorder::{BigEndian, ReadBytesExt};
+
 use crate::chopper::chopper::Source;
 use crate::error::CliResult;
 use crate::source::{dc_source::DCSource, source_factory::SourceFactory};
 use crate::util::dc_util;
-use crate::util::preview::Preview;
-use byteorder::{BigEndian, ReadBytesExt};
-use std::io::BufReader;
+use crate::util::reader::ChopperBufPreviewer;
 
 pub struct DCFactory;
 
@@ -13,7 +15,7 @@ impl SourceFactory for DCFactory {
         format.ends_with(".dc")
     }
 
-    fn can_create_from_previewer(&self, previewer: &Box<dyn Preview>) -> bool {
+    fn can_create_from_previewer(&self, previewer: &ChopperBufPreviewer<Box<dyn Read>>) -> bool {
         let buf = previewer.get_buf();
         let mut reader = BufReader::new(buf.as_ref());
 
@@ -38,7 +40,10 @@ impl SourceFactory for DCFactory {
         true
     }
 
-    fn create_source(&mut self, previewer: Box<dyn Preview>) -> CliResult<Box<dyn Source>> {
+    fn create_source(
+        &mut self,
+        previewer: ChopperBufPreviewer<Box<dyn Read>>,
+    ) -> CliResult<Box<dyn Source>> {
         let reader = previewer.get_reader();
         Ok(Box::new(DCSource::new(reader)?))
     }

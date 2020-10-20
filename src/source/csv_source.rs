@@ -9,13 +9,13 @@ use crate::error::CliResult;
 use crate::source::csv_configs::CSVInputConfig;
 use crate::source::csv_timestamp::{self, TimestampCol, TimestampFmt};
 use crate::util::csv_util;
-use crate::util::preview::Preview;
+use crate::util::reader::{ChopperBufPreviewer, ChopperBufReader};
 use crate::util::tz::ChopperTz;
 
 const DELIMITERS: &[u8] = b",\t ";
 
 pub struct CSVSource {
-    reader: csv::Reader<Box<dyn Read>>,
+    reader: csv::Reader<ChopperBufReader<Box<dyn Read>>>,
     header: Header,
     timestamp_col: TimestampCol,
     timestamp_fmt: TimestampFmt,
@@ -25,7 +25,10 @@ pub struct CSVSource {
 }
 
 impl CSVSource {
-    pub fn new(previewer: Box<dyn Preview>, csv_config: &CSVInputConfig) -> CliResult<Self> {
+    pub fn new(
+        previewer: ChopperBufPreviewer<Box<dyn Read>>,
+        csv_config: &CSVInputConfig,
+    ) -> CliResult<Self> {
         let (line1, line2) = match previewer.get_lines() {
             None => (None, None),
             Some(lines) => (lines.get(0), lines.get(1)),

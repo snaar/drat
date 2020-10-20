@@ -1,4 +1,3 @@
-use crate::util::preview::Preview;
 use core::{cmp, fmt};
 use std::io;
 use std::io::{BufRead, Error, ErrorKind, Read};
@@ -26,20 +25,6 @@ pub struct ChopperBufPreviewer<R> {
     lines: Option<Vec<String>>,
 }
 
-impl<R: 'static + Read> Preview for ChopperBufPreviewer<R> {
-    fn get_lines(&self) -> &Option<Vec<String>> {
-        &self.lines
-    }
-
-    fn get_buf(&self) -> &Box<[u8]> {
-        &self.trimmed_buf
-    }
-
-    fn get_reader(self: Box<Self>) -> Box<dyn Read> {
-        Box::new(self.reader)
-    }
-}
-
 impl<R: Read> ChopperBufPreviewer<R> {
     pub fn new(inner: R) -> io::Result<ChopperBufPreviewer<R>> {
         // one peculiarity, that is probably not even worth mentioning, is that if previewer
@@ -63,6 +48,14 @@ impl<R: Read> ChopperBufPreviewer<R> {
         Ok(previewer)
     }
 
+    pub fn get_lines(&self) -> &Option<Vec<String>> {
+        &self.lines
+    }
+
+    pub fn get_buf(&self) -> &Box<[u8]> {
+        &self.trimmed_buf
+    }
+
     pub fn get_reader(self) -> ChopperBufReader<R> {
         self.reader
     }
@@ -81,7 +74,7 @@ impl<R: Read> ChopperBufPreviewer<R> {
         // smaller than the buffer) then line is processed same as above;
         // if last line does not end before the buffer ends, then it's discarded
 
-        self.lines = match Self::get_lines(&self.reader) {
+        self.lines = match Self::get_lines_from_reader(&self.reader) {
             Ok(lines) => Some(lines),
             Err(_) => None,
         };
@@ -89,7 +82,7 @@ impl<R: Read> ChopperBufPreviewer<R> {
         Ok(())
     }
 
-    fn get_lines(reader: &ChopperBufReader<R>) -> Result<Vec<String>, Utf8Error> {
+    fn get_lines_from_reader(reader: &ChopperBufReader<R>) -> Result<Vec<String>, Utf8Error> {
         let mut lines: Vec<String> = Vec::new();
         let mut next_line_start = 0;
         loop {
@@ -298,7 +291,6 @@ impl<R: fmt::Debug> fmt::Debug for ChopperBufReader<R> {
 mod tests {
     use std::io::{BufRead, BufReader, Read};
 
-    use crate::util::preview::Preview;
     use crate::util::reader::{ChopperBufPreviewer, ChopperBufReader};
 
     const TEST_BYTES: &[u8] = "aaaaa\nbbbbb\nccccc".as_bytes();
@@ -449,8 +441,8 @@ mod tests {
         assert_eq!(lines.get(2).unwrap(), "yyy");
     }
 
-    fn setup_test_preview_3(capacity: usize) -> Box<dyn Preview> {
-        let inner = BufReader::new("zzz\nxxx\nyyy".as_bytes());
+    fn setup_test_preview_3(capacity: usize) -> ChopperBufPreviewer<Box<dyn Read>> {
+        let inner: Box<dyn Read> = Box::new(BufReader::new("zzz\nxxx\nyyy".as_bytes()));
         let mut reader = ChopperBufReader::with_capacity(capacity, inner);
         reader.fill_buffer().unwrap();
         let mut previewer = ChopperBufPreviewer {
@@ -459,7 +451,7 @@ mod tests {
             lines: None,
         };
         previewer.prepare_preview().unwrap();
-        Box::new(previewer)
+        previewer
     }
 
     #[test]

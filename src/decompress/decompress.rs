@@ -9,7 +9,7 @@ use paku::lzf::LzfReader;
 
 use crate::decompress::zst::ZstReader;
 use crate::error::{CliResult, Error};
-use crate::util::preview::Preview;
+use crate::util::reader::{ChopperBufPreviewer, ChopperBufReader};
 
 static GZ: &str = ".gz";
 static LZ4: &str = ".lz4";
@@ -51,7 +51,9 @@ pub fn is_compressed_using_format(format: &str) -> Option<(DecompressionFormat, 
     None
 }
 
-pub fn is_compressed_using_previewer(previewer: &dyn Preview) -> Option<DecompressionFormat> {
+pub fn is_compressed_using_previewer(
+    previewer: &ChopperBufPreviewer<Box<dyn Read>>,
+) -> Option<DecompressionFormat> {
     let buf = previewer.get_buf();
     let mut reader = BufReader::new(buf.as_ref());
 
@@ -88,7 +90,7 @@ pub fn is_compressed_using_previewer(previewer: &dyn Preview) -> Option<Decompre
 
 pub fn decompress(
     decompression_format: DecompressionFormat,
-    previewer: Box<dyn Preview>,
+    previewer: ChopperBufPreviewer<Box<dyn Read>>,
 ) -> CliResult<Box<dyn Read>> {
     match decompression_format {
         DecompressionFormat::GZ => decompress_gz(previewer.get_reader()),
@@ -98,12 +100,12 @@ pub fn decompress(
     }
 }
 
-fn decompress_gz(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
+fn decompress_gz(reader: ChopperBufReader<Box<dyn Read>>) -> CliResult<Box<dyn Read>> {
     let decoder = GzDecoder::new(reader);
     Ok(Box::new(decoder))
 }
 
-fn decompress_lz4(previewer: Box<dyn Preview>) -> CliResult<Box<dyn Read>> {
+fn decompress_lz4(previewer: ChopperBufPreviewer<Box<dyn Read>>) -> CliResult<Box<dyn Read>> {
     let buf = previewer.get_buf();
     if buf.len() >= 8 && &buf[..8] == b"LZ4Block" {
         decompress_lz4_jblock(previewer.get_reader())
@@ -112,7 +114,7 @@ fn decompress_lz4(previewer: Box<dyn Preview>) -> CliResult<Box<dyn Read>> {
     }
 }
 
-fn decompress_lz4_frame(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
+fn decompress_lz4_frame(reader: ChopperBufReader<Box<dyn Read>>) -> CliResult<Box<dyn Read>> {
     let frame_reader = match LZ4FrameReader::new(reader) {
         Ok(frame_reader) => frame_reader,
         Err(e) => {
@@ -122,17 +124,17 @@ fn decompress_lz4_frame(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
     Ok(Box::new(frame_reader.into_read()))
 }
 
-fn decompress_lz4_jblock(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
+fn decompress_lz4_jblock(reader: ChopperBufReader<Box<dyn Read>>) -> CliResult<Box<dyn Read>> {
     let decoder = Lz4JBlockReader::new(reader, true, true);
     Ok(Box::new(decoder))
 }
 
-fn decompress_lzf(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
+fn decompress_lzf(reader: ChopperBufReader<Box<dyn Read>>) -> CliResult<Box<dyn Read>> {
     let decoder = LzfReader::new(reader);
     Ok(Box::new(decoder))
 }
 
-fn decompress_zst(reader: Box<dyn Read>) -> CliResult<Box<dyn Read>> {
+fn decompress_zst(reader: ChopperBufReader<Box<dyn Read>>) -> CliResult<Box<dyn Read>> {
     let decoder = ZstReader::new(reader)?;
     Ok(Box::new(decoder))
 }
