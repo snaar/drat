@@ -12,22 +12,22 @@ pub fn new_header_sink(
         Some(c) => c,
         None => CSVOutputConfig::new_default(),
     };
-    let writer: Box<dyn HeaderSink + 'static>;
-    match output {
+
+    let writer: Box<dyn HeaderSink + 'static> = match output {
         Some(p) => {
             let p = p.to_string();
             if p.ends_with("csv") {
-                writer = Box::new(csv_sink::CSVSink::new(&Some(p), csv_output_config)?);
+                Box::new(csv_sink::CSVSink::new(&Some(p), csv_output_config)?)
             } else if p.ends_with("dc") {
-                writer = Box::new(dc_sink::DCSink::new(&Some(p))?);
+                Box::new(dc_sink::DCSink::new(&Some(p))?)
             } else {
                 return Err(Error::from(format!("file type -- {} is not supported", p)));
             }
         }
         None => {
             // if none use csv sink
-            writer = Box::new(csv_sink::CSVSink::new(&None, csv_output_config)?);
+            Box::new(csv_sink::CSVSink::new(&None, csv_output_config)?)
         }
-    }
+    };
     Ok(writer)
 }
