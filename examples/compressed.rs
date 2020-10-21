@@ -1,15 +1,15 @@
-use chopper_lib::chopper::chopper::{ChopperDriver, Source};
-use chopper_lib::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
-use chopper_lib::chopper::types::{self, Header};
-use chopper_lib::cli::util::YesNoAuto;
-use chopper_lib::driver::driver::Driver;
-use chopper_lib::error::{self, CliResult};
-use chopper_lib::input::input_factory::InputFactory;
-use chopper_lib::source::csv_configs::{
+use chopper::chopper::chopper::{ChopperDriver, Source};
+use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
+use chopper::chopper::types::{self, Header};
+use chopper::cli::util::YesNoAuto;
+use chopper::driver::driver::Driver;
+use chopper::error::{self, CliResult};
+use chopper::input::input_factory::InputFactory;
+use chopper::source::csv_configs::{
     CSVInputConfig, CSVOutputConfig, TimestampColConfig, TimestampConfig, TimestampFmtConfig,
 };
-use chopper_lib::util::tz::ChopperTz;
-use chopper_lib::write::factory;
+use chopper::util::tz::ChopperTz;
+use chopper::write::factory;
 
 fn main() {
     error::handle_drive_error(compressed_example());

@@ -1,0 +1,17 @@
+[package]
+name = "chop"
+version = "0.0.1"
+authors = ["Xinyun Wu <xin@snaar.net>", "Serguei Narojnyi <snaar@snaar.net>"]
+edition = "2018"
+repository = "https://github.com/octoske/chopper/chop"
+description = "Chop is the cli frontend for chopper - streaming time series manipulation framework."
+readme = "README.md"
+license = "BSD-2-Clause"
+keywords = ["cli", "io", "data", "streaming", "csv"]
+categories = ["command-line-utilities"]
+exclude = [
+    ".idea/*",
+]
+
+[dependencies]
+chopper = "0.0.5"

@@ -1,20 +1,20 @@
 use chrono_tz::America::New_York;
 use same_file::is_same_file;
 
-use chopper_lib::chopper::chopper::{ChopperDriver, Source};
-use chopper_lib::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
-use chopper_lib::chopper::types::{FieldValue, Header, TimestampRange};
-use chopper_lib::cli::util::YesNoAuto;
-use chopper_lib::driver::driver::Driver;
-use chopper_lib::error::{self, CliResult};
-use chopper_lib::filter::column_filter_delete_col::ColumnFilterDelete;
-use chopper_lib::filter::row_filter_equal_value::RowFilterEqualValue;
-use chopper_lib::filter::row_filter_greater_value::RowFilterGreaterValue;
-use chopper_lib::input::input_factory::InputFactory;
-use chopper_lib::source::csv_configs::{CSVInputConfig, CSVOutputConfig, TimestampFmtConfig};
-use chopper_lib::source::csv_configs::{TimestampColConfig, TimestampConfig};
-use chopper_lib::util::{timestamp_util, tz::ChopperTz};
-use chopper_lib::write::factory;
+use chopper::chopper::chopper::{ChopperDriver, Source};
+use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
+use chopper::chopper::types::{FieldValue, Header, TimestampRange};
+use chopper::cli::util::YesNoAuto;
+use chopper::driver::driver::Driver;
+use chopper::error::{self, CliResult};
+use chopper::filter::column_filter_delete_col::ColumnFilterDelete;
+use chopper::filter::row_filter_equal_value::RowFilterEqualValue;
+use chopper::filter::row_filter_greater_value::RowFilterGreaterValue;
+use chopper::input::input_factory::InputFactory;
+use chopper::source::csv_configs::{CSVInputConfig, CSVOutputConfig, TimestampFmtConfig};
+use chopper::source::csv_configs::{TimestampColConfig, TimestampConfig};
+use chopper::util::{timestamp_util, tz::ChopperTz};
+use chopper::write::factory;
 
 #[test]
 fn test_filters() {

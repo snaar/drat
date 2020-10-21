@@ -1,4 +1,4 @@
-chopper is a simple streaming time series inspection and manipulation tool
+chopper is a streaming time series manipulation framework
 
 ##### Goals
 1. Primary use case - ad-hoc usage by humans.

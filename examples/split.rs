@@ -1,12 +1,10 @@
-extern crate chopper_lib;
-
-use chopper_lib::chopper::chopper::{ChopperDriver, Source};
-use chopper_lib::chopper::header_graph::{ChainId, HeaderChain, HeaderGraph, HeaderNode};
-use chopper_lib::chopper::types::{self, Header};
-use chopper_lib::driver::{driver::Driver, split::Split};
-use chopper_lib::error::{self, CliResult};
-use chopper_lib::input::input_factory::InputFactory;
-use chopper_lib::write::factory;
+use chopper::chopper::chopper::{ChopperDriver, Source};
+use chopper::chopper::header_graph::{ChainId, HeaderChain, HeaderGraph, HeaderNode};
+use chopper::chopper::types::{self, Header};
+use chopper::driver::{driver::Driver, split::Split};
+use chopper::error::{self, CliResult};
+use chopper::input::input_factory::InputFactory;
+use chopper::write::factory;
 
 fn main() {
     error::handle_drive_error(split());

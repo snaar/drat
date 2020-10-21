@@ -1,19 +1,19 @@
 [package]
 name = "chopper"
-version = "0.0.4"
+version = "0.0.5"
 authors = ["Xinyun Wu <xin@snaar.net>", "Serguei Narojnyi <snaar@snaar.net>"]
 edition = "2018"
 repository = "https://github.com/octoske/chopper"
-description = "Chopper is a simple streaming time series inspection and manipulation tool."
+description = "Chopper is a streaming time series manipulation framework. Cli frontend is provided via chop crate."
 readme = "README.md"
 license = "BSD-2-Clause"
-keywords = ["cli", "io", "data", "streaming", "csv"]
-categories = ["command-line-utilities", "encoding"]
+keywords = ["io", "data", "streaming", "csv"]
 exclude = [
 	".idea/*",
+	"chop/*",
 	"examples/*",
 	"tests/*",
-	]
+]
 
 [dependencies]
 backtrace = "0.3"
@@ -29,14 +29,6 @@ lz-fear = "0.1"
 paku = "0.0.1"
 ruzstd = "0.2"
 ureq = { version = "1.5", features = ["charset"] }
-
-[lib]
-name = "chopper_lib"
-path = "src/lib.rs"
-
-[[bin]]
-name = "chop"
-path = "src/main.rs"
 
 [dev-dependencies]
 same-file = "1"
