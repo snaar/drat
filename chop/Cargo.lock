@@ -130,9 +130,9 @@ dependencies = [
 
 [[package]]
 name = "chopper"
-version = "0.0.4"
+version = "0.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "daf98114e27916291a8c61b229fa6ef4d079d061ce3ae066681d77b97b8b2be3"
+checksum = "f851e918abd3e80acb67eb8408122e49f001060c18e0f2a7b760222e9ff658fb"
 dependencies = [
  "backtrace",
  "byteorder",
