@@ -113,6 +113,12 @@ impl DCSink {
     ) -> CliResult<()> {
         let hint: i32 = match display_hint {
             dc_util::DisplayHint::Timestamp => 0,
+            dc_util::DisplayHint::ArrayInt => 1,
+            dc_util::DisplayHint::ArrayDouble => 2,
+            dc_util::DisplayHint::ArrayLong => 3,
+            dc_util::DisplayHint::ArrayString => 4,
+            dc_util::DisplayHint::ArrayByte => 5,
+            dc_util::DisplayHint::MatrixDouble2D => 6,
             dc_util::DisplayHint::None => -1,
         };
         dc_sink.writer.write_i32::<BigEndian>(hint)?;

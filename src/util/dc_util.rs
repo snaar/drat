@@ -12,6 +12,12 @@ pub const VERSION: u16 = 2;
 
 pub enum DisplayHint {
     Timestamp,
+    ArrayInt,
+    ArrayDouble,
+    ArrayLong,
+    ArrayString,
+    ArrayByte,
+    MatrixDouble2D,
     None,
 }
 
@@ -69,6 +75,12 @@ impl FieldDescriptor {
         let display_hint = match reader.read_i32::<BigEndian>()? {
             -1 => DisplayHint::None,
             0 => DisplayHint::Timestamp,
+            1 => DisplayHint::ArrayInt,
+            2 => DisplayHint::ArrayDouble,
+            3 => DisplayHint::ArrayLong,
+            4 => DisplayHint::ArrayString,
+            5 => DisplayHint::ArrayByte,
+            6 => DisplayHint::MatrixDouble2D,
             n => return Err(Error::from(format!("unexpected display hint value: {}", n))),
         };
 
