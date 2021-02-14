@@ -110,12 +110,7 @@ impl PartialOrd for FieldValue {
             (FieldValue::Int(x), FieldValue::Int(y)) => Some(x.cmp(y)),
             (FieldValue::Long(x), FieldValue::Long(y)) => Some(x.cmp(y)),
             (FieldValue::Short(x), FieldValue::Short(y)) => Some(x.cmp(y)),
-            (FieldValue::String(x), FieldValue::String(y)) => {
-                // TODO: better cmp
-                let x: f64 = x.parse().unwrap();
-                let y: f64 = y.parse().unwrap();
-                x.partial_cmp(&y)
-            }
+            (FieldValue::String(x), FieldValue::String(y)) => Some(x.cmp(y)),
             (FieldValue::None, FieldValue::None) => Some(Ordering::Equal),
             _ => Error::from(format!(
                 "FieldValue -- cannot compare different field types - {} {}",
