@@ -1,6 +1,7 @@
 use std::io;
 use std::path::Path;
 
+use crate::transport::dir_read::DirRead;
 use crate::transport::transport_factory::TransportFactory;
 
 #[derive(Clone)]
@@ -27,6 +28,10 @@ impl TransportFactory for Http {
                 ),
             ))
         }
+    }
+
+    fn get_dir_reader(&self) -> Option<&dyn DirRead> {
+        None
     }
 
     fn box_clone(&self) -> Box<dyn TransportFactory> {
