@@ -14,12 +14,14 @@ use crate::util::reader::{ChopperBufPreviewer, ChopperBufReader};
 static GZ: &str = ".gz";
 static LZ4: &str = ".lz4";
 static LZF: &str = ".lzf";
+static ZIP: &str = ".zip";
 static ZST: &str = ".zst";
 
 pub enum DecompressionFormat {
     GZ,
     LZ4,
     LZF,
+    ZIP,
     ZST,
 }
 
@@ -40,6 +42,12 @@ pub fn is_compressed_using_format(format: &str) -> Option<(DecompressionFormat, 
         return Some((
             DecompressionFormat::LZF,
             format[..(format.len() - LZF.len())].to_owned(),
+        ));
+    }
+    if format.ends_with(ZIP) {
+        return Some((
+            DecompressionFormat::ZIP,
+            format[..(format.len() - ZIP.len())].to_owned(),
         ));
     }
     if format.ends_with(ZST) {
@@ -80,6 +88,9 @@ pub fn is_compressed_using_previewer(
         if header24be == 0x5A560100 || header24be == 0x5A560000 {
             return Some(DecompressionFormat::LZF);
         }
+        if header32be == 0x504B0304 {
+            return Some(DecompressionFormat::ZIP);
+        }
         if header32be == 0x28B52FFD {
             return Some(DecompressionFormat::ZST);
         }
@@ -96,6 +107,7 @@ pub fn decompress(
         DecompressionFormat::GZ => decompress_gz(previewer.get_reader()),
         DecompressionFormat::LZ4 => decompress_lz4(previewer),
         DecompressionFormat::LZF => decompress_lzf(previewer.get_reader()),
+        DecompressionFormat::ZIP => decompress_zip(previewer.get_reader()),
         DecompressionFormat::ZST => decompress_zst(previewer.get_reader()),
     }
 }
@@ -132,6 +144,10 @@ fn decompress_lz4_jblock(reader: ChopperBufReader<Box<dyn Read>>) -> CliResult<B
 fn decompress_lzf(reader: ChopperBufReader<Box<dyn Read>>) -> CliResult<Box<dyn Read>> {
     let decoder = LzfReader::new(reader);
     Ok(Box::new(decoder))
+}
+
+fn decompress_zip(reader: ChopperBufReader<Box<dyn Read>>) -> CliResult<Box<dyn Read>> {
+    unimplemented!();
 }
 
 fn decompress_zst(reader: ChopperBufReader<Box<dyn Read>>) -> CliResult<Box<dyn Read>> {
