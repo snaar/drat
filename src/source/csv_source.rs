@@ -56,14 +56,20 @@ impl CSVSource {
             .delimiter(delimiter)
             .has_headers(has_header)
             .trim(Trim::All)
+            .flexible(true)
             .from_reader(reader);
 
         // get field names if available
         let mut field_names: Vec<String> = Vec::new();
-        if reader.has_headers() {
-            let header_record = reader.headers()?;
-            for i in header_record {
-                field_names.push(i.to_string());
+        match csv_config.custom_header() {
+            Some(header_names) => field_names = header_names.to_owned(),
+            None => {
+                if reader.has_headers() {
+                    let header_record = reader.headers()?;
+                    for i in header_record {
+                        field_names.push(i.to_string());
+                    }
+                }
             }
         }
 
@@ -83,12 +89,14 @@ impl CSVSource {
             timestamp,
             field_values,
         };
-        let field_types: Vec<FieldType> = vec![FieldType::String; field_count];
+        let field_types: Vec<FieldType> = match csv_config.custom_field_types() {
+            Some(ft) => ft.clone(),
+            None => vec![FieldType::String; field_count],
+        };
         let header: Header = Header::new(field_names, field_types);
 
         let timestamp_config = csv_config.timestamp_config();
         let timezone = timestamp_config.timezone();
-
         let (timestamp_col, timestamp_fmt) = csv_timestamp::get_timestamp_col_and_fmt(
             &header,
             &first_row,

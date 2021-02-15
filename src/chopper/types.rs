@@ -79,7 +79,7 @@ impl Header {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum FieldValue {
     Boolean(bool),
     Byte(u8),
@@ -185,7 +185,7 @@ pub enum FieldType {
     String,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Row {
     pub timestamp: Nanos,
     pub field_values: Vec<FieldValue>,

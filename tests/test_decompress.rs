@@ -42,7 +42,7 @@ fn setup_graph(
     ts_config: TimestampConfig,
 ) -> CliResult<Box<dyn ChopperDriver>> {
     // source reader and headers
-    let csv_input_config = CSVInputConfig::new(None, YesNoAuto::Auto, ts_config)?;
+    let csv_input_config = CSVInputConfig::new(None, YesNoAuto::Auto, None, None, ts_config)?;
     let mut input_factory = InputFactory::new(csv_input_config, None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();

@@ -204,7 +204,7 @@ fn parse_csv_input_config(matches: &ArgMatches, timezone: ChopperTz) -> CliResul
     };
     let ts_config = TimestampConfig::new(ts_col, ts_fmt, timezone);
 
-    CSVInputConfig::new(input_delimiter, has_header, ts_config)
+    CSVInputConfig::new(input_delimiter, has_header, None, None, ts_config)
 }
 
 fn parse_csv_output_config(matches: &ArgMatches, timezone: ChopperTz) -> CSVOutputConfig {

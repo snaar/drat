@@ -25,7 +25,7 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
         TimestampFmtConfig::Auto,
         ChopperTz::new_always_fails(),
     );
-    let csv_config = CSVInputConfig::new(None, YesNoAuto::Auto, ts_config)?;
+    let csv_config = CSVInputConfig::new(None, YesNoAuto::Auto, None, None, sts_config)?;
     let input = "./examples/files/uspop_time.csv.gz";
     let inputs = vec![input];
     let output = None;
