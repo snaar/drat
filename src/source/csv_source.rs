@@ -59,24 +59,18 @@ impl CSVSource {
             .flexible(true)
             .from_reader(reader);
 
-        // get field names if available
-        let mut field_names: Vec<String> = Vec::new();
-        match csv_config.custom_header() {
-            Some(header_names) => field_names = header_names.to_owned(),
-            None => {
-                if reader.has_headers() {
-                    let header_record = reader.headers()?;
-                    for i in header_record {
-                        field_names.push(i.to_string());
-                    }
-                }
-            }
-        }
-
         // get first row and initialize next_row
         let first_row: csv::StringRecord = reader.records().next().unwrap()?;
         let field_count = first_row.len();
-        if !reader.has_headers() {
+
+        // get field names if available
+        let mut field_names: Vec<String> = Vec::new();
+        if reader.has_headers() {
+            let header_record = reader.headers()?;
+            for i in header_record {
+                field_names.push(i.to_string());
+            }
+        } else {
             // if field name is not given, assign default name - "col_x"
             for i in 0..field_count {
                 field_names.push(format!("col_{}", i));
@@ -89,10 +83,7 @@ impl CSVSource {
             timestamp,
             field_values,
         };
-        let field_types: Vec<FieldType> = match csv_config.custom_field_types() {
-            Some(ft) => ft.clone(),
-            None => vec![FieldType::String; field_count],
-        };
+        let field_types: Vec<FieldType> = vec![FieldType::String; field_count];
         let header: Header = Header::new(field_names, field_types);
 
         let timestamp_config = csv_config.timestamp_config();

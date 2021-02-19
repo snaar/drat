@@ -73,8 +73,6 @@ impl TimestampConfig {
 pub struct CSVInputConfig {
     delimiter: Option<u8>,
     has_header: YesNoAuto,
-    custom_header: Option<Vec<String>>,
-    custom_field_types: Option<Vec<FieldType>>,
     timestamp_config: TimestampConfig,
 }
 
@@ -82,8 +80,6 @@ impl CSVInputConfig {
     pub fn new(
         delimiter: Option<&str>,
         has_header: YesNoAuto,
-        custom_header: Option<Vec<String>>,
-        custom_field_types: Option<Vec<FieldType>>,
         timestamp_config: TimestampConfig,
     ) -> CliResult<Self> {
         let delimiter = match delimiter {
@@ -93,22 +89,12 @@ impl CSVInputConfig {
         Ok(CSVInputConfig {
             delimiter,
             has_header,
-            custom_header,
-            custom_field_types,
             timestamp_config,
         })
     }
 
     pub fn has_header(&self) -> YesNoAuto {
         self.has_header
-    }
-
-    pub fn custom_header(&self) -> &Option<Vec<String>> {
-        &self.custom_header
-    }
-
-    pub fn custom_field_types(&self) -> &Option<Vec<FieldType>> {
-        &self.custom_field_types
     }
 
     pub fn delimiter(&self) -> Option<u8> {
