@@ -8,8 +8,8 @@ use crate::decompress::crc32::Crc32Reader;
 
 const LOCAL_FILE_HEADER_SIGNATURE: u32 = 0x04034b50;
 const CENTRAL_FILE_HEADER_SIGNATURE: u32 = 0x02014b50;
-const END_OF_CENTRAL_DIR_SIGNATURE: u32 = 0x06054b50;
-const ZIP64_END_OF_CENTRAL_DIR_SIGNATURE: u32 = 0x06064b50;
+const END_OF_CENTRAL_DIR_RECORD_SIGNATURE: u32 = 0x06054b50;
+const ZIP64_END_OF_CENTRAL_DIR_RECORD_SIGNATURE: u32 = 0x06064b50;
 const ZIP64_END_OF_CENTRAL_DIR_LOCATOR_SIGNATURE: u32 = 0x07064b50;
 
 const MAX_EOCDR_SEARCH_BACK_OFFSET: i64 = 1 << 20; // minizip lib uses this constant
@@ -122,7 +122,7 @@ fn find_eocdr_and_prepare_to_read<T: Read + io::Seek>(reader: &mut T) -> io::Res
     let mut pos = 4; // '4' to make sure we can read the signature
     while pos < max_back {
         reader.seek(io::SeekFrom::End(-pos))?;
-        if reader.read_u32::<LittleEndian>()? == END_OF_CENTRAL_DIR_SIGNATURE {
+        if reader.read_u32::<LittleEndian>()? == END_OF_CENTRAL_DIR_RECORD_SIGNATURE {
             return Ok(());
         }
         pos += 1;
@@ -159,7 +159,7 @@ fn get_start_of_central_dir_offset<R: Read + Seek>(
 
     let zip64_eocdr_offset = read_zip64_eocdl_and_get_eocdr_offset(reader)?;
     reader.seek(io::SeekFrom::Start(zip64_eocdr_offset))?;
-    if reader.read_u32::<LittleEndian>()? != ZIP64_END_OF_CENTRAL_DIR_SIGNATURE {
+    if reader.read_u32::<LittleEndian>()? != ZIP64_END_OF_CENTRAL_DIR_RECORD_SIGNATURE {
         return Err(Error::new(
             ErrorKind::InvalidData,
             "wrong zip64 end of central directory signature",
