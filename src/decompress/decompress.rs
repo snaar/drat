@@ -4,6 +4,7 @@ use std::io::{BufReader, Read};
 use byteorder::{BigEndian, ReadBytesExt};
 use flate2::read::GzDecoder;
 use lz_fear::LZ4FrameReader;
+
 use paku::lz4_jblock::Lz4JBlockReader;
 use paku::lzf::LzfReader;
 
@@ -107,7 +108,9 @@ pub fn decompress(
         DecompressionFormat::GZ => decompress_gz(previewer.get_reader()),
         DecompressionFormat::LZ4 => decompress_lz4(previewer),
         DecompressionFormat::LZF => decompress_lzf(previewer.get_reader()),
-        DecompressionFormat::ZIP => decompress_zip(previewer.get_reader()),
+        DecompressionFormat::ZIP => {
+            CliResult::Err(Error::Io(io::Error::new(io::ErrorKind::Other, "zip format is not supported at this level, since it needs dedicated transport that supports seeking")))
+        }
         DecompressionFormat::ZST => decompress_zst(previewer.get_reader()),
     }
 }
@@ -144,10 +147,6 @@ fn decompress_lz4_jblock(reader: ChopperBufReader<Box<dyn Read>>) -> CliResult<B
 fn decompress_lzf(reader: ChopperBufReader<Box<dyn Read>>) -> CliResult<Box<dyn Read>> {
     let decoder = LzfReader::new(reader);
     Ok(Box::new(decoder))
-}
-
-fn decompress_zip(reader: ChopperBufReader<Box<dyn Read>>) -> CliResult<Box<dyn Read>> {
-    unimplemented!();
 }
 
 fn decompress_zst(reader: ChopperBufReader<Box<dyn Read>>) -> CliResult<Box<dyn Read>> {

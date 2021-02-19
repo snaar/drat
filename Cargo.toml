@@ -18,9 +18,11 @@ exclude = [
 [dependencies]
 backtrace = "0.3"
 byteorder = "1"
+bzip2 = "0.4"
 chrono = "0.4"
 chrono-tz = "0.5"
 clap = "2"
+crc32fast = "1.2"
 csv = "1"
 dtoa = "0.4"
 flate2 = "1"
