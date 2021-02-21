@@ -59,7 +59,7 @@ impl CSVSource {
             .flexible(true)
             .from_reader(reader);
 
-        // get first row and initialize next_row
+        // get first row
         let first_row: csv::StringRecord = reader.records().next().unwrap()?;
         let field_count = first_row.len();
 
@@ -77,6 +77,7 @@ impl CSVSource {
             }
         }
 
+        // initialize next_row
         let timestamp: Nanos = 0;
         let field_values: Vec<FieldValue> = vec![FieldValue::None; field_count];
         let next_row = Row {
