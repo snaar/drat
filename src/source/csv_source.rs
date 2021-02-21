@@ -56,7 +56,12 @@ impl CSVSource {
             .delimiter(delimiter)
             .has_headers(has_header)
             .trim(Trim::All)
+            .flexible(true)
             .from_reader(reader);
+
+        // get first row and initialize next_row
+        let first_row: csv::StringRecord = reader.records().next().unwrap()?;
+        let field_count = first_row.len();
 
         // get field names if available
         let mut field_names: Vec<String> = Vec::new();
@@ -65,12 +70,7 @@ impl CSVSource {
             for i in header_record {
                 field_names.push(i.to_string());
             }
-        }
-
-        // get first row and initialize next_row
-        let first_row: csv::StringRecord = reader.records().next().unwrap()?;
-        let field_count = first_row.len();
-        if !reader.has_headers() {
+        } else {
             // if field name is not given, assign default name - "col_x"
             for i in 0..field_count {
                 field_names.push(format!("col_{}", i));
@@ -88,7 +88,6 @@ impl CSVSource {
 
         let timestamp_config = csv_config.timestamp_config();
         let timezone = timestamp_config.timezone();
-
         let (timestamp_col, timestamp_fmt) = csv_timestamp::get_timestamp_col_and_fmt(
             &header,
             &first_row,

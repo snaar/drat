@@ -56,8 +56,16 @@ impl Header {
         &self.field_names
     }
 
+    pub fn update_field_names(&mut self, new_names: Vec<String>) {
+        self.field_names = new_names;
+    }
+
     pub fn field_types(&self) -> &Vec<FieldType> {
         &self.field_types
+    }
+
+    pub fn update_field_types(&mut self, new_types: Vec<FieldType>) {
+        self.field_types = new_types;
     }
 
     pub fn field_names_mut(&mut self) -> &mut Vec<String> {
@@ -79,7 +87,7 @@ impl Header {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum FieldValue {
     Boolean(bool),
     Byte(u8),
@@ -180,7 +188,7 @@ pub enum FieldType {
     String,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Row {
     pub timestamp: Nanos,
     pub field_values: Vec<FieldValue>,
