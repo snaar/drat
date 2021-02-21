@@ -19,7 +19,7 @@ pub struct DCSource<R> {
     reader: io::BufReader<R>,
     header: Header,
     field_count: usize,
-    bitset_byte_count: usize,
+    bitset_bytes: Vec<u8>,
     current_row: Row,
 }
 
@@ -52,6 +52,7 @@ impl<R: io::Read> DCSource<R> {
         let map_field_string = &FIELD_STRING_MAP_NAME;
         let field_count = reader.read_u32::<BigEndian>()? as usize;
         let bitset_byte_count = dc_util::get_bitset_bytes(field_count);
+        let bitset_bytes: Vec<u8> = vec![0 as u8; bitset_byte_count];
 
         // field descriptor (header)
         let mut field_names: Vec<String> = Vec::with_capacity(field_count);
@@ -88,7 +89,7 @@ impl<R: io::Read> DCSource<R> {
             reader,
             header,
             field_count,
-            bitset_byte_count,
+            bitset_bytes,
             current_row,
         })
     }
@@ -100,9 +101,9 @@ impl<R: io::Read> DCSource<R> {
         };
 
         // bitset of null values
-        let mut bitset_bytes: Vec<u8> = vec![0 as u8; self.bitset_byte_count];
-        let bitset_bytes = bitset_bytes.as_mut_slice();
+        let bitset_bytes = &mut self.bitset_bytes;
         self.reader.read_exact(bitset_bytes)?;
+        let bitset_bytes = &self.bitset_bytes;
 
         // get non-null fields, if null put string "null"
         let mut field_index = 0 as usize;
@@ -140,7 +141,9 @@ impl<R: io::Read> DCSource<R> {
                             FieldType::Short => {
                                 FieldValue::Short(self.reader.read_i16::<BigEndian>()?)
                             }
-                            FieldType::String => FieldValue::String(self.read_string()?.to_owned()),
+                            FieldType::String => {
+                                FieldValue::String(Self::read_string(&mut self.reader)?.to_owned())
+                            }
                         }
                     } else {
                         FieldValue::None
@@ -156,15 +159,15 @@ impl<R: io::Read> DCSource<R> {
         Ok(Some(self.current_row.clone()))
     }
 
-    fn read_string(&mut self) -> CliResult<String> {
-        let data_size_short = self.reader.read_i16::<BigEndian>()?;
+    fn read_string(reader: &mut io::BufReader<R>) -> CliResult<String> {
+        let data_size_short = reader.read_i16::<BigEndian>()?;
         let data_size = match data_size_short {
-            -1 => self.reader.read_u32::<BigEndian>()?,
+            -1 => reader.read_u32::<BigEndian>()?,
             _ => data_size_short as u32,
         };
         let mut string: Vec<u8> = vec![0; data_size as usize];
         let string = string.as_mut_slice();
-        self.reader.read_exact(string)?;
+        reader.read_exact(string)?;
 
         Ok(str::from_utf8_mut(string).unwrap().to_string())
     }
