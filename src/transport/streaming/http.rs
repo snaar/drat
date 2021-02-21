@@ -1,13 +1,12 @@
 use std::io;
 use std::path::Path;
 
-use crate::transport::dir_read::DirRead;
-use crate::transport::transport_factory::TransportFactory;
+use crate::transport::streaming::streaming_transport::StreamingTransport;
 
 #[derive(Clone)]
-pub struct Http;
+pub struct HttpTransport;
 
-impl TransportFactory for Http {
+impl StreamingTransport for HttpTransport {
     fn can_open(&self, path: &Path) -> bool {
         path.starts_with("http://") || path.starts_with("https://")
     }
@@ -30,15 +29,11 @@ impl TransportFactory for Http {
         }
     }
 
-    fn get_dir_reader(&self) -> Option<&dyn DirRead> {
-        None
-    }
-
-    fn box_clone(&self) -> Box<dyn TransportFactory> {
+    fn box_clone(&self) -> Box<dyn StreamingTransport> {
         Box::new((*self).clone())
     }
 
-    fn factory_name(&self) -> &str {
+    fn name(&self) -> &str {
         "http"
     }
 }

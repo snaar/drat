@@ -1,15 +1,15 @@
 use chrono_tz::America::New_York;
-use same_file::is_same_file;
 
 use chopper::chopper::chopper::{ChopperDriver, Source};
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper::chopper::types::{self, Header};
 use chopper::cli::util::YesNoAuto;
 use chopper::driver::driver::Driver;
-use chopper::error::{self, CliResult};
+use chopper::error::CliResult;
 use chopper::input::input_factory::InputFactory;
 use chopper::source::csv_configs::{CSVInputConfig, CSVOutputConfig, TimestampFmtConfig};
 use chopper::source::csv_configs::{TimestampColConfig, TimestampConfig};
+use chopper::util::file::are_contents_same;
 use chopper::util::tz::ChopperTz;
 use chopper::write::factory;
 
@@ -17,19 +17,15 @@ use chopper::write::factory;
 fn test_decompress() {
     let input = "./tests/input/time_city.csv.gz";
     let inputs = vec![input];
-    let output = "./tests/output/output_time_city.csv";
+    let output = "./tests/output/test_decompress.csv";
     let ts_config = TimestampConfig::new(
         TimestampColConfig::Name("DateTime".to_owned()),
         TimestampFmtConfig::Auto,
         ChopperTz::from(New_York),
     );
-    error::handle_drive_error(test(inputs, output, ts_config));
+    test(inputs, output, ts_config).unwrap();
 
-    assert!(is_same_file(
-        "./tests/output/test_decompress.csv",
-        "./tests/reference/output_time_city.csv"
-    )
-    .unwrap());
+    assert!(are_contents_same(output, "./tests/reference/test_decompress.csv").unwrap());
 }
 
 fn test(inputs: Vec<&str>, output: &str, ts_config: TimestampConfig) -> CliResult<()> {
@@ -41,7 +37,6 @@ fn setup_graph(
     output: &str,
     ts_config: TimestampConfig,
 ) -> CliResult<Box<dyn ChopperDriver>> {
-    // source reader and headers
     let csv_input_config = CSVInputConfig::new(None, YesNoAuto::Auto, ts_config)?;
     let mut input_factory = InputFactory::new(csv_input_config, None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();

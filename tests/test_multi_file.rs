@@ -14,30 +14,18 @@ use chopper::util::tz::ChopperTz;
 use chopper::write::factory;
 
 #[test]
-fn test_timestamp() {
-    // test 1
-    let input = "./tests/input/time_city.csv";
+fn test_multi_file() {
+    let input = "./tests/input/multi_file";
     let inputs = vec![input];
-    let output = "./tests/output/test_timestamp_1.csv";
+    let output = "./tests/output/test_multi_file.csv";
     let ts_config = TimestampConfig::new(
-        TimestampColConfig::Index(1),
-        TimestampFmtConfig::Explicit("%Y/%m/%d-%H:%M:%S".to_string()),
+        TimestampColConfig::Auto,
+        TimestampFmtConfig::Auto,
         ChopperTz::from(New_York),
     );
     test(inputs, output, ts_config).unwrap();
-    assert!(are_contents_same(output, "./tests/reference/test_timestamp_1.csv").unwrap());
 
-    // test 2
-    let input = "./tests/input/time_city.csv";
-    let inputs = vec![input];
-    let output = "./tests/output/test_timestamp_2.csv";
-    let ts_config = TimestampConfig::new(
-        TimestampColConfig::DateTimeIndex(0, 2),
-        TimestampFmtConfig::DateTimeExplicit("%Y%m%d".to_owned(), "%-H:%M".to_owned()),
-        ChopperTz::from(New_York),
-    );
-    test(inputs, output, ts_config).unwrap();
-    assert!(are_contents_same(output, "./tests/reference/test_timestamp_2.csv").unwrap());
+    assert!(are_contents_same(output, "./tests/reference/test_multi_file.csv",).unwrap());
 }
 
 fn test(inputs: Vec<&str>, output: &str, ts_config: TimestampConfig) -> CliResult<()> {

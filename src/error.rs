@@ -101,7 +101,7 @@ impl<'a> From<&'a str> for Error {
     }
 }
 
-pub fn handle_drive_error(cli_result: CliResult<()>) {
+pub fn handle_drive_error(cli_result: CliResult<()>) -> ! {
     match cli_result {
         Ok(()) => process::exit(0),
         Err(e) => {

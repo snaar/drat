@@ -1,27 +1,27 @@
 use chrono_tz::America::New_York;
-use same_file::is_same_file;
 
 use chopper::chopper::chopper::{ChopperDriver, Source};
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper::chopper::types::{FieldValue, Header, TimestampRange};
 use chopper::cli::util::YesNoAuto;
 use chopper::driver::driver::Driver;
-use chopper::error::{self, CliResult};
+use chopper::error::CliResult;
 use chopper::filter::column_filter_delete_col::ColumnFilterDelete;
 use chopper::filter::row_filter_equal_value::RowFilterEqualValue;
 use chopper::filter::row_filter_greater_value::RowFilterGreaterValue;
 use chopper::input::input_factory::InputFactory;
 use chopper::source::csv_configs::{CSVInputConfig, CSVOutputConfig, TimestampFmtConfig};
 use chopper::source::csv_configs::{TimestampColConfig, TimestampConfig};
+use chopper::util::file::are_contents_same;
 use chopper::util::{timestamp_util, tz::ChopperTz};
 use chopper::write::factory;
 
 #[test]
 fn test_filters() {
-    error::handle_drive_error(test());
-    assert!(is_same_file(
+    test().unwrap();
+    assert!(are_contents_same(
         "./tests/output/test_filters.csv",
-        "./tests/reference/filters.csv"
+        "./tests/reference/test_filters.csv"
     )
     .unwrap());
 }
@@ -33,7 +33,7 @@ fn test() -> CliResult<()> {
 fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let input = "./tests/input/time_city.csv";
     let inputs = vec![input];
-    let output = "./tests/reference/filters.csv";
+    let output = "./tests/output/test_filters.csv";
 
     let begin = timestamp_util::parse_datetime_range_element("2018", &ChopperTz::from(New_York))?;
     let timestamp_range = TimestampRange {

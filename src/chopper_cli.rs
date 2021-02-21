@@ -1,6 +1,7 @@
+use std::collections::HashMap;
+
 use chrono_tz::Tz;
 use clap::{value_t, ArgMatches};
-use std::collections::HashMap;
 
 use crate::chopper::chopper::{ChopperDriver, Source};
 use crate::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
@@ -17,21 +18,21 @@ use crate::source::csv_configs::{
 };
 use crate::source::csv_timestamp::TimestampUnits;
 use crate::source::source_factory::SourceFactory;
-use crate::transport::transport_factory::TransportFactory;
+use crate::transport::streaming::streaming_transport::StreamingTransport;
 use crate::util::tz::ChopperTz;
 use crate::write::factory;
 
 pub fn chopper_cli(
-    transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
+    streaming_transports: Option<Vec<Box<dyn StreamingTransport>>>,
     source_factories: Option<Vec<Box<dyn SourceFactory>>>,
     timezone_map: Option<HashMap<&str, Tz>>,
 ) -> CliResult<()> {
-    let mut driver = parse_cli_args(transport_factories, source_factories, timezone_map)?;
+    let mut driver = parse_cli_args(streaming_transports, source_factories, timezone_map)?;
     driver.drive()
 }
 
 pub fn parse_cli_args(
-    transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
+    streaming_transports: Option<Vec<Box<dyn StreamingTransport>>>,
     source_factories: Option<Vec<Box<dyn SourceFactory>>>,
     timezone_map: Option<HashMap<&str, Tz>>,
 ) -> CliResult<Box<dyn ChopperDriver>> {
@@ -98,7 +99,7 @@ pub fn parse_cli_args(
     setup_graph(
         inputs,
         output,
-        transport_factories,
+        streaming_transports,
         source_factories,
         timestamp_range,
         csv_input_config,
@@ -109,7 +110,7 @@ pub fn parse_cli_args(
 fn setup_graph(
     inputs: Vec<Input>,
     output: Option<&str>,
-    transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
+    streaming_transports: Option<Vec<Box<dyn StreamingTransport>>>,
     source_factories: Option<Vec<Box<dyn SourceFactory>>>,
     timestamp_range: TimestampRange,
     csv_input_config: CSVInputConfig,
@@ -119,7 +120,7 @@ fn setup_graph(
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     let mut input_factory =
-        InputFactory::new(csv_input_config, source_factories, transport_factories)?;
+        InputFactory::new(csv_input_config, source_factories, streaming_transports)?;
 
     let mut header_nodes: Vec<HeaderNode> = Vec::new();
     let mut chains: Vec<HeaderChain> = Vec::new();

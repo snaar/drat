@@ -7,7 +7,7 @@ use chrono_tz::Tz;
 use crate::error::CliResult;
 use crate::error::Error::Custom;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ChopperTz {
     timezone: Option<Tz>,
 }

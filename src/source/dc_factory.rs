@@ -8,6 +8,7 @@ use crate::source::{dc_source::DCSource, source_factory::SourceFactory};
 use crate::util::dc_util;
 use crate::util::reader::ChopperBufPreviewer;
 
+#[derive(Clone)]
 pub struct DCFactory;
 
 impl SourceFactory for DCFactory {
@@ -46,5 +47,9 @@ impl SourceFactory for DCFactory {
     ) -> CliResult<Box<dyn Source>> {
         let reader = previewer.get_reader();
         Ok(Box::new(DCSource::new(reader)?))
+    }
+
+    fn box_clone(&self) -> Box<dyn SourceFactory> {
+        Box::new((*self).clone())
     }
 }

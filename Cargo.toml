@@ -31,6 +31,3 @@ lz-fear = "0.1"
 paku = "0.0.1"
 ruzstd = "0.2"
 ureq = { version = "1", features = ["charset"] }
-
-[dev-dependencies]
-same-file = "1"

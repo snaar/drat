@@ -25,7 +25,7 @@ const DATETIME_FORMATS_WITHOUT_TZ: [&'static str; 4] = [
 ];
 const DATE_FORMATS_WITHOUT_TZ: [&'static str; 1] = ["%Y%m%d"];
 
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub enum TimestampUnits {
     Seconds,
     Millis,

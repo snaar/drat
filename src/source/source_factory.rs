@@ -11,4 +11,12 @@ pub trait SourceFactory {
         &mut self,
         previewer: ChopperBufPreviewer<Box<dyn Read>>,
     ) -> CliResult<Box<dyn Source>>;
+
+    fn box_clone(&self) -> Box<dyn SourceFactory>;
+}
+
+impl Clone for Box<dyn SourceFactory> {
+    fn clone(&self) -> Box<dyn SourceFactory> {
+        self.box_clone()
+    }
 }

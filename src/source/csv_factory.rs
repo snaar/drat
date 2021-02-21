@@ -7,6 +7,7 @@ use crate::source::csv_source::CSVSource;
 use crate::source::source_factory::SourceFactory;
 use crate::util::reader::ChopperBufPreviewer;
 
+#[derive(Clone)]
 pub struct CSVFactory {
     pub csv_input_config: CSVInputConfig,
 }
@@ -35,5 +36,9 @@ impl SourceFactory for CSVFactory {
         preview: ChopperBufPreviewer<Box<dyn Read>>,
     ) -> CliResult<Box<dyn Source>> {
         Ok(Box::new(CSVSource::new(preview, &self.csv_input_config)?))
+    }
+
+    fn box_clone(&self) -> Box<dyn SourceFactory> {
+        Box::new((*self).clone())
     }
 }

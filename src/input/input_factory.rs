@@ -1,69 +1,75 @@
-use std::io::{self, Read};
+use std::io;
 use std::path::Path;
 
 use crate::chopper::chopper::Source;
-use crate::decompress::decompress::{self, DecompressionFormat};
 use crate::error::{CliResult, Error};
+use crate::input::files_in_dir_provider::FilesInDirPathProvider;
 use crate::input::input::{Input, InputFormat, InputType};
+use crate::input::single_file::SingleFileInputFactory;
 use crate::source::csv_configs::CSVInputConfig;
+use crate::source::multi_file_source::SerialMultiFileSource;
 use crate::source::{
     csv_factory::CSVFactory, dc_factory::DCFactory, source_factory::SourceFactory,
 };
-use crate::transport::{file::FileInput, http::Http, transport_factory::TransportFactory};
+use crate::transport::dir::dir_transport::DirTransport;
+use crate::transport::dir::file::DirFileTransport;
+use crate::transport::seekable::file::SeekableFileTransport;
+use crate::transport::seekable::seekable_factory::SeekableTransportFactory;
+use crate::transport::seekable::seekable_transport::SeekableTransport;
+use crate::transport::streaming::file::FileTransport;
+use crate::transport::streaming::http::HttpTransport;
+use crate::transport::streaming::previewer_factory::PreviewerTransportFactory;
+use crate::transport::streaming::streaming_transport::StreamingTransport;
 use crate::util::reader::ChopperBufPreviewer;
 
 pub struct InputFactory {
-    transport_factories: Vec<Box<dyn TransportFactory>>,
-    source_factories: Vec<Box<dyn SourceFactory>>,
-}
-
-#[derive(Clone, Debug)]
-enum FormatAutodetectResult {
-    Detected,
-    NotDetected,
-}
-
-#[derive(Clone, Debug)]
-enum Format {
-    UserSpecified(String),
-    DetectUsingFileNameThenContents(String),
-    DetectUsingFileContents,
+    dir_transports: Vec<Box<dyn DirTransport>>,
+    single_file_input_factory: SingleFileInputFactory,
 }
 
 impl InputFactory {
     pub fn new_without_csv(
         user_source_factories: Option<Vec<Box<dyn SourceFactory>>>,
-        user_transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
+        user_streaming_transports: Option<Vec<Box<dyn StreamingTransport>>>,
     ) -> CliResult<Self> {
-        Self::new_with_optional_csv(None, user_source_factories, user_transport_factories)
+        Self::new_with_optional_csv(None, user_source_factories, user_streaming_transports)
     }
 
     pub fn new(
         csv_input_config: CSVInputConfig,
         user_source_factories: Option<Vec<Box<dyn SourceFactory>>>,
-        user_transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
+        user_streaming_transports: Option<Vec<Box<dyn StreamingTransport>>>,
     ) -> CliResult<Self> {
         Self::new_with_optional_csv(
             Some(csv_input_config),
             user_source_factories,
-            user_transport_factories,
+            user_streaming_transports,
         )
     }
 
     fn new_with_optional_csv(
         csv_input_config: Option<CSVInputConfig>,
         user_source_factories: Option<Vec<Box<dyn SourceFactory>>>,
-        user_transport_factories: Option<Vec<Box<dyn TransportFactory>>>,
+        user_streaming_transports: Option<Vec<Box<dyn StreamingTransport>>>,
     ) -> CliResult<Self> {
-        // transport factories
-        let mut default_transport_factories = create_default_transport_factories();
-        let transport_factories: Vec<Box<dyn TransportFactory>> = match user_transport_factories {
+        // streaming transports and the previewer factory for them
+        let mut default_streaming_transports = create_default_streaming_transports();
+        let streaming_transports: Vec<Box<dyn StreamingTransport>> = match user_streaming_transports
+        {
             Some(mut t) => {
-                t.append(&mut default_transport_factories);
+                t.append(&mut default_streaming_transports);
                 t
             }
-            None => default_transport_factories,
+            None => default_streaming_transports,
         };
+        let previewer_transport_factory = PreviewerTransportFactory::new(streaming_transports);
+
+        // seekable transports
+        let seekable_transports = create_default_seekable_transports();
+        let seekable_transport_factory = SeekableTransportFactory::new(seekable_transports);
+
+        // dir transports
+        let dir_transports = create_default_dir_transports();
 
         // source factories
         let mut default_source_factories = create_default_source_factories(csv_input_config);
@@ -75,9 +81,15 @@ impl InputFactory {
             None => default_source_factories,
         };
 
-        Ok(InputFactory {
-            transport_factories,
+        let single_file_input_factory = SingleFileInputFactory::new(
+            seekable_transport_factory,
+            previewer_transport_factory,
             source_factories,
+        );
+
+        Ok(InputFactory {
+            dir_transports,
+            single_file_input_factory,
         })
     }
 }
@@ -91,175 +103,49 @@ impl InputFactory {
     }
 
     pub fn create_source_from_input(&mut self, input: &Input) -> CliResult<Box<dyn Source>> {
-        let previewer = match &input.input {
-            InputType::Path(path) => self.create_previewer(Path::new(path))?,
-            InputType::StdIn => ChopperBufPreviewer::new(Box::new(io::stdin()) as Box<dyn Read>)?,
-        };
-
-        let file_name = match &input.input {
-            InputType::Path(path) => {
-                let path = Path::new(path);
-                if let Some(file_name) = path.file_name() {
-                    // that's right, unwrap to_str first to panic on os->str conversion if needed
-                    Some(file_name.to_str().unwrap().to_owned())
-                } else {
-                    // weird but ok
-                    None
-                }
-            }
-            InputType::StdIn => None,
-        };
-
-        let format = match &input.format {
-            InputFormat::Extension(extension) => {
-                let extension = if extension.starts_with(".") {
-                    extension.to_owned()
-                } else {
-                    ".".to_owned() + extension
-                };
-                Format::UserSpecified(extension)
-            }
-            InputFormat::Auto => match file_name {
-                None => Format::DetectUsingFileContents,
-                Some(file_name) => Format::DetectUsingFileNameThenContents(file_name),
-            },
-        };
-
-        match format {
-            Format::UserSpecified(format) => {
-                // user told us exactly what they want, don't do any autodetection
-                let (_, previewer, format) = Self::decompress_using_format(previewer, format)?;
-                self.create_source_from_format(previewer, format)
-            }
-            Format::DetectUsingFileNameThenContents(format) => {
-                // first try using the file name alone
-
-                let (decompression_result, previewer, format) =
-                    Self::decompress_using_format(previewer, format)?;
-
-                // can theoretically somehow share this code with create_source_from_reader_and_format,
-                // but seems hard due to ownership of reader needed later in this match block;
-                // maybe revisit one day as learning experience
-                for sf in &mut self.source_factories {
-                    if sf.can_create_from_format(&format) {
-                        return sf.create_source(previewer);
-                    }
-                }
-
-                // if we got here, we failed to find source factory that can handle the file name
-                // try to find one using contents of the file
-
-                // first, check if we were able to decompress above, if so, don't need to
-                // decompress again
-                let previewer = match decompression_result {
-                    FormatAutodetectResult::Detected => previewer,
-                    FormatAutodetectResult::NotDetected => {
-                        let (_, previewer) = Self::decompress_by_autodetecting_format(previewer)?;
-                        previewer
-                    }
-                };
-
-                self.create_source_by_autodetecting_format(previewer)
-            }
-            Format::DetectUsingFileContents => {
-                // we didn't even get a file name as hint, try to figure out using the
-                // contents of the file right away
-                let (_, previewer) = Self::decompress_by_autodetecting_format(previewer)?;
-                self.create_source_by_autodetecting_format(previewer)
-            }
-        }
-    }
-
-    fn decompress_using_format(
-        previewer: ChopperBufPreviewer<Box<dyn Read>>,
-        format: String,
-    ) -> CliResult<(
-        FormatAutodetectResult,
-        ChopperBufPreviewer<Box<dyn Read>>,
-        String,
-    )> {
-        match decompress::is_compressed_using_format(&format) {
-            Some((decompression_format, new_format)) => {
-                let new_previewer = Self::decompress(decompression_format, previewer)?;
-                Ok((FormatAutodetectResult::Detected, new_previewer, new_format))
-            }
-            None => Ok((FormatAutodetectResult::NotDetected, previewer, format)),
-        }
-    }
-
-    fn decompress_by_autodetecting_format(
-        previewer: ChopperBufPreviewer<Box<dyn Read>>,
-    ) -> CliResult<(FormatAutodetectResult, ChopperBufPreviewer<Box<dyn Read>>)> {
-        match decompress::is_compressed_using_previewer(&previewer) {
-            Some(decompression_format) => {
-                let new_previewer = Self::decompress(decompression_format, previewer)?;
-                Ok((FormatAutodetectResult::Detected, new_previewer))
-            }
-            None => Ok((FormatAutodetectResult::NotDetected, previewer)),
-        }
-    }
-
-    fn decompress(
-        decompression_format: DecompressionFormat,
-        previewer: ChopperBufPreviewer<Box<dyn Read>>,
-    ) -> CliResult<ChopperBufPreviewer<Box<dyn Read>>> {
-        let new_reader = decompress::decompress(decompression_format, previewer)?;
-        Ok(ChopperBufPreviewer::new(new_reader)?)
-    }
-
-    fn create_source_from_format(
-        &mut self,
-        previewer: ChopperBufPreviewer<Box<dyn Read>>,
-        format: String,
-    ) -> CliResult<Box<dyn Source>> {
-        for sf in &mut self.source_factories {
-            if sf.can_create_from_format(&format) {
-                return sf.create_source(previewer);
-            }
-        }
-
-        Err(Error::from(format!(
-            "Cannot find source factory for file format {:?}. \
-            Note that this might not be the full file name, due to being able to be decompressed.",
-            format
-        )))
-    }
-
-    fn create_source_by_autodetecting_format(
-        &mut self,
-        previewer: ChopperBufPreviewer<Box<dyn Read>>,
-    ) -> CliResult<Box<dyn Source>> {
-        for sf in &mut self.source_factories {
-            if sf.can_create_from_previewer(&previewer) {
-                return sf.create_source(previewer);
-            }
-        }
-
-        Err(Error::from(
-            "Failed to autodetect file format by peeking at file contents.",
-        ))
-    }
-
-    fn create_previewer(&mut self, path: &Path) -> CliResult<ChopperBufPreviewer<Box<dyn Read>>> {
-        let mut reader: Option<Box<dyn Read>> = None;
-        for factory in &mut self.transport_factories.iter() {
-            match factory.can_open(path) {
-                false => continue,
-                true => reader = Some(factory.open(path)?),
-            }
-        }
-        match reader {
-            None => {
-                let msg = format!(
-                    "Cannot open file {:?}. \
-                    Check if the path is valid and/or if a right transport factory is provided.",
-                    &path
+        // first get stdin out of the way, since it doesn't need a transport
+        let path = match &input.input {
+            InputType::Path(path) => path,
+            InputType::StdIn => {
+                let previewer =
+                    ChopperBufPreviewer::new(Box::new(io::stdin()) as Box<dyn io::Read>)?;
+                return self.single_file_input_factory.create_source_from_previewer(
+                    previewer,
+                    None,
+                    &input.format,
                 );
-                let err = io::Error::new(io::ErrorKind::Other, msg);
-                Err(Error::Io(err))
             }
-            Some(reader) => Ok(ChopperBufPreviewer::new(reader)?),
+        };
+
+        // next we want to see if this is handled by any of the dir transports
+        let path = Path::new(path);
+        for transport in &self.dir_transports {
+            if !transport.can_handle(path) {
+                continue;
+            }
+
+            let provider = Box::new(FilesInDirPathProvider::new(transport, path)?);
+            let source = SerialMultiFileSource::new(
+                self.single_file_input_factory.clone(),
+                provider,
+                input.format.clone(),
+                None,
+            )?;
+            return Ok(Box::new(source));
         }
+
+        // finally let the single file input factory handle it
+        let single_source = self
+            .single_file_input_factory
+            .create_source_from_path(path, &input.format)?;
+        if let Some(source) = single_source {
+            return Ok(source);
+        }
+
+        Err(Error::Io(io::Error::new(
+            io::ErrorKind::Other,
+            format!("failed to handle path {:?}", path),
+        )))
     }
 }
 
@@ -274,8 +160,14 @@ pub fn create_default_source_factories(
     source_factories
 }
 
-pub fn create_default_transport_factories() -> Vec<Box<dyn TransportFactory>> {
-    let transport_factories: Vec<Box<dyn TransportFactory>> =
-        vec![Box::new(FileInput), Box::new(Http)];
-    transport_factories
+pub fn create_default_dir_transports() -> Vec<Box<dyn DirTransport>> {
+    vec![Box::new(DirFileTransport)]
+}
+
+pub fn create_default_seekable_transports() -> Vec<Box<dyn SeekableTransport>> {
+    vec![Box::new(SeekableFileTransport)]
+}
+
+pub fn create_default_streaming_transports() -> Vec<Box<dyn StreamingTransport>> {
+    vec![Box::new(FileTransport), Box::new(HttpTransport)]
 }

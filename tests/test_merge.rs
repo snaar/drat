@@ -1,5 +1,4 @@
 use chrono_tz::America::New_York;
-use same_file::is_same_file;
 
 use chopper::chopper::chopper::{ChopperDriver, Source};
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
@@ -7,19 +6,20 @@ use chopper::chopper::types::{self, Header};
 use chopper::cli::util::YesNoAuto;
 use chopper::driver::driver::Driver;
 use chopper::driver::merge_join::MergeJoin;
-use chopper::error::{self, CliResult};
+use chopper::error::CliResult;
 use chopper::input::input_factory::InputFactory;
 use chopper::source::csv_configs::{CSVInputConfig, CSVOutputConfig, TimestampFmtConfig};
 use chopper::source::csv_configs::{TimestampColConfig, TimestampConfig};
+use chopper::util::file::are_contents_same;
 use chopper::util::tz::ChopperTz;
 use chopper::write::factory;
 
 #[test]
 fn test_merge() {
-    error::handle_drive_error(test());
-    assert!(is_same_file(
+    test().unwrap();
+    assert!(are_contents_same(
         "./tests/output/test_merge.csv",
-        "./tests/reference/merge.csv",
+        "./tests/reference/test_merge.csv",
     )
     .unwrap());
 }

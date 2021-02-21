@@ -1,5 +1,3 @@
-use std::fmt;
-
 use crate::cli::util::YesNoAuto;
 use crate::error::CliResult;
 use crate::source::csv_timestamp::TimestampUnits;
@@ -12,7 +10,7 @@ pub static TIMESTAMP_COL_DATE_DEFAULT: usize = 0;
 pub type DateColIdx = usize;
 pub type TimeColIdx = usize;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum TimestampFmtConfig {
     Auto,
     Epoch(TimestampUnits),
@@ -20,7 +18,7 @@ pub enum TimestampFmtConfig {
     DateTimeExplicit(String, String),
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum TimestampColConfig {
     Auto,
     Index(usize),
@@ -35,7 +33,7 @@ pub enum TimestampStyle {
     HumanReadable,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct TimestampConfig {
     timestamp_col: TimestampColConfig,
     timestamp_fmt: TimestampFmtConfig,
@@ -68,7 +66,7 @@ impl TimestampConfig {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct CSVInputConfig {
     delimiter: Option<u8>,
     has_header: YesNoAuto,
@@ -102,16 +100,6 @@ impl CSVInputConfig {
 
     pub fn timestamp_config(&self) -> &TimestampConfig {
         &self.timestamp_config
-    }
-}
-
-impl fmt::Debug for CSVInputConfig {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "delimiter: {:?}, has headers: {:?}",
-            self.delimiter, self.has_header
-        )
     }
 }
 
