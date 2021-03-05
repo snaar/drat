@@ -34,11 +34,6 @@ pub trait DataSink {
     }
 
     fn flush(&mut self) -> CliResult<()>;
-
-    fn finish(self: Box<Self>) -> CliResult<()> {
-        Ok(())
-    }
-
     fn boxed(self) -> Box<dyn DataSink>;
 }
 
