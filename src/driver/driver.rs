@@ -117,7 +117,7 @@ impl Driver {
         Ok(())
     }
 
-    pub fn flush(&mut self, mut chain_id: ChainId, mut pin_id: PinId) -> CliResult<()> {
+    fn flush(&mut self, mut chain_id: ChainId, mut pin_id: PinId) -> CliResult<()> {
         let mut node_id = 0;
         let chain = self.data_graph.get_mut_chain(chain_id);
         while chain.nodes().len() > node_id {

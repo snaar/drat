@@ -48,10 +48,6 @@ impl DataSink for ColumnFilterDelete {
         Ok(Some(row))
     }
 
-    fn flush(&mut self) -> CliResult<()> {
-        Ok(())
-    }
-
     fn boxed(self) -> Box<dyn DataSink> {
         Box::new(self)
     }

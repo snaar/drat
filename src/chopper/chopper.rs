@@ -33,7 +33,10 @@ pub trait DataSink {
         self.write_row(row)
     }
 
-    fn flush(&mut self) -> CliResult<()>;
+    fn flush(&mut self) -> CliResult<()> {
+        Ok(())
+    }
+
     fn boxed(self) -> Box<dyn DataSink>;
 }
 

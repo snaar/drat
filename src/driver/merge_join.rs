@@ -65,10 +65,6 @@ impl MergeHeaderSink for MergeJoin {
 }
 
 impl DataSink for MergeJoin {
-    fn flush(&mut self) -> CliResult<()> {
-        Ok(())
-    }
-
     fn boxed(self) -> Box<dyn DataSink> {
         Box::new(self)
     }
