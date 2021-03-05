@@ -1,5 +1,4 @@
 use crate::chopper::chopper::{DataSink, HeaderSink};
-use crate::chopper::header_graph::PinId;
 use crate::chopper::types::{Header, Row};
 use crate::error::{CliResult, Error};
 
@@ -47,10 +46,6 @@ impl DataSink for ColumnFilterDelete {
     fn write_row(&mut self, mut row: Row) -> CliResult<Option<Row>> {
         row.field_values.remove(self.column_index);
         Ok(Some(row))
-    }
-
-    fn write_row_to_pin(&mut self, _pin_id: PinId, row: Row) -> CliResult<Option<Row>> {
-        self.write_row(row)
     }
 
     fn flush(&mut self) -> CliResult<()> {

@@ -1,5 +1,4 @@
 use crate::chopper::chopper::{DataSink, HeaderSink};
-use crate::chopper::header_graph::PinId;
 use crate::chopper::types::{FieldValue, Header, Row};
 use crate::error::{CliResult, Error};
 
@@ -57,10 +56,6 @@ impl DataSink for RowFilterEqualValue {
             None => return Err(Error::from("RowFilterEqualValue -- missing column index")),
         }
         Ok(Some(row))
-    }
-
-    fn write_row_to_pin(&mut self, _pin_id: PinId, row: Row) -> CliResult<Option<Row>> {
-        self.write_row(row)
     }
 
     fn flush(&mut self) -> CliResult<()> {

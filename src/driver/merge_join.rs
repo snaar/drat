@@ -1,6 +1,6 @@
 use crate::chopper::chopper::{DataSink, MergeHeaderSink};
 use crate::chopper::header_graph::{NumOfHeaderToProcess, PinId};
-use crate::chopper::types::{Header, Row};
+use crate::chopper::types::Header;
 use crate::error::{CliResult, Error};
 
 pub struct MergeJoin {
@@ -65,10 +65,6 @@ impl MergeHeaderSink for MergeJoin {
 }
 
 impl DataSink for MergeJoin {
-    fn write_row_to_pin(&mut self, _pin_id: PinId, row: Row) -> CliResult<Option<Row>> {
-        self.write_row(row)
-    }
-
     fn flush(&mut self) -> CliResult<()> {
         Ok(())
     }
