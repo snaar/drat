@@ -30,24 +30,24 @@ fn setup_test_graph() -> CliResult<Box<dyn ChopperDriver>> {
         sources.push(source);
     }
 
-    // filter and split chain 1
+    // filter and split chain 0
     let chain_ids: Vec<ChainId> = vec![1, 2];
     let split = Split::new(chain_ids);
     let header_to_process = split.num_of_header_to_process();
     let node_split_sink = HeaderNode::SplitHeaderSink(split, header_to_process);
-    let chain_1 = HeaderChain::new(vec![node_split_sink]);
+    let chain_0 = HeaderChain::new(vec![node_split_sink]);
 
-    // sink chain 2
+    // sink chain 1
     let header_sink_1 = factory::new_header_sink(output_1, None)?;
     let node_output_1 = HeaderNode::HeaderSink(header_sink_1);
-    let chain_2 = HeaderChain::new(vec![node_output_1]);
+    let chain_1 = HeaderChain::new(vec![node_output_1]);
 
-    // sink chain 3
+    // sink chain 2
     let header_sink_2 = factory::new_header_sink(output_2, None)?;
     let node_output_2 = HeaderNode::HeaderSink(header_sink_2);
-    let chain_3 = HeaderChain::new(vec![node_output_2]);
+    let chain_2 = HeaderChain::new(vec![node_output_2]);
 
-    let graph = HeaderGraph::new(vec![chain_1, chain_2, chain_3]);
+    let graph = HeaderGraph::new(vec![chain_0, chain_1, chain_2]);
     Ok(Box::new(Driver::new(
         sources,
         graph,
