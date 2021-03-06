@@ -50,24 +50,24 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
         sources.push(source);
     }
 
-    // source chain 1
+    // source chain 0
     let node_merge = HeaderNode::Merge(2, 0);
+    let chain_0 = HeaderChain::new(vec![node_merge]);
+
+    // source chain 1
+    let node_merge = HeaderNode::Merge(2, 1);
     let chain_1 = HeaderChain::new(vec![node_merge]);
 
-    // source chain 2
-    let node_merge_2 = HeaderNode::Merge(2, 1);
-    let chain_2 = HeaderChain::new(vec![node_merge_2]);
-
-    // merge/sink chain 3
+    // merge/sink chain 2
     let merge = MergeJoin::new(2)?;
     let num_of_header_to_process = merge.num_of_header_to_process();
     let node_merge_sink = HeaderNode::MergeHeaderSink(merge, num_of_header_to_process);
     let csv_output_config = CSVOutputConfig::new_default();
     let header_sink = factory::new_header_sink(Some(output), Some(csv_output_config))?;
     let node_output = HeaderNode::HeaderSink(header_sink);
-    let chain_3 = HeaderChain::new(vec![node_merge_sink, node_output]);
+    let chain_2 = HeaderChain::new(vec![node_merge_sink, node_output]);
 
-    let graph = HeaderGraph::new(vec![chain_1, chain_2, chain_3]);
+    let graph = HeaderGraph::new(vec![chain_0, chain_1, chain_2]);
 
     Ok(Box::new(Driver::new(
         sources,
