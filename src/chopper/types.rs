@@ -5,6 +5,10 @@ use crate::error::{CliResult, Error};
 use crate::util::timestamp_util;
 use crate::util::tz::ChopperTz;
 
+pub type ChainId = usize;
+pub type NodeId = usize;
+pub type PinId = usize;
+
 pub type Nanos = u64;
 
 #[derive(Copy, Clone)]

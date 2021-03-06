@@ -1,6 +1,6 @@
 use crate::chopper::chopper::{DataSink, MergeHeaderSink};
-use crate::chopper::header_graph::{NumOfHeaderToProcess, PinId};
-use crate::chopper::types::Header;
+use crate::chopper::header_graph::NumOfHeaderToProcess;
+use crate::chopper::types::{Header, PinId};
 use crate::error::{CliResult, Error};
 
 pub struct MergeJoin {

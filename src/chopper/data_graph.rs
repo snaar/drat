@@ -1,8 +1,6 @@
 use crate::chopper::chopper::DataSink;
+use crate::chopper::types::{ChainId, PinId};
 use crate::error::{CliResult, Error};
-
-pub type ChainId = usize;
-pub type PinId = usize;
 
 pub enum DataNode {
     DataSink(Box<dyn DataSink>),

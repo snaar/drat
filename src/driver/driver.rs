@@ -1,7 +1,7 @@
 use crate::chopper::chopper::{ChopperDriver, Source};
 use crate::chopper::data_graph::{DataGraph, DataNode};
-use crate::chopper::header_graph::{ChainId, HeaderGraph, NodeId, PinId};
-use crate::chopper::types::{Header, Row, TimestampRange};
+use crate::chopper::header_graph::HeaderGraph;
+use crate::chopper::types::{ChainId, Header, NodeId, PinId, Row, TimestampRange};
 use crate::driver::source_row_buffer::SourceRowBuffer;
 use crate::error::{CliResult, Error};
 

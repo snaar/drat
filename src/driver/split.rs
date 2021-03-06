@@ -1,5 +1,6 @@
 use crate::chopper::chopper::SplitHeaderSink;
-use crate::chopper::header_graph::{ChainId, NumOfHeaderToProcess};
+use crate::chopper::header_graph::NumOfHeaderToProcess;
+use crate::chopper::types::ChainId;
 
 pub struct Split {
     chain_ids: Vec<ChainId>,

@@ -1,6 +1,5 @@
 use crate::chopper::chopper::Source;
-use crate::chopper::header_graph::ChainId;
-use crate::chopper::types::{Nanos, Row, TimestampRange};
+use crate::chopper::types::{ChainId, Nanos, Row, TimestampRange};
 use crate::error::CliResult;
 
 pub struct SourceRowBuffer {

@@ -1,11 +1,7 @@
 use crate::chopper::chopper::{HeaderSink, MergeHeaderSink, SplitHeaderSink};
 use crate::chopper::data_graph::{DataGraph, DataNode};
-use crate::chopper::types::Header;
+use crate::chopper::types::{ChainId, Header, PinId};
 use crate::error::{CliResult, Error};
-
-pub type ChainId = usize;
-pub type NodeId = usize;
-pub type PinId = usize;
 
 pub struct NumOfHeaderToProcess {
     pub counter: usize,

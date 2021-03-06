@@ -1,7 +1,7 @@
 use std::fmt;
 
-use crate::chopper::header_graph::{ChainId, NumOfHeaderToProcess, PinId};
-use crate::chopper::types::{Header, Row};
+use crate::chopper::header_graph::NumOfHeaderToProcess;
+use crate::chopper::types::{ChainId, Header, PinId, Row};
 use crate::error::CliResult;
 
 pub trait ChopperDriver {
