@@ -89,7 +89,7 @@ impl Driver {
         let chain = data_graph.get_mut_chain(chain_id);
         while node_id < chain.nodes().len() {
             match chain.node(node_id) {
-                DataNode::DataSink(sink) => match sink.write_row_to_pin(pin_id, row)? {
+                DataNode::DataSink(sink) => match sink.write_row(row)? {
                     Some(r) => {
                         row = r;
                         node_id += 1;

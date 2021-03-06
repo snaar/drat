@@ -29,10 +29,6 @@ pub trait DataSink {
         Ok(Some(row))
     }
 
-    fn write_row_to_pin(&mut self, _pin_id: PinId, row: Row) -> CliResult<Option<Row>> {
-        self.write_row(row)
-    }
-
     fn flush(&mut self) -> CliResult<()> {
         Ok(())
     }
