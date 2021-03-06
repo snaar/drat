@@ -130,7 +130,11 @@ fn setup_graph(
         headers.push(source.header().clone());
         sources.push(source);
 
-        // add Merge to chains if multiple input files
+        // add Merge to chains if multiple input files;
+        // there is one chain per input file with chain ids from 0 to (inputs.len()-1);
+        // there is going to be last chain with id (inputs.len()) added later,
+        // where the sink goes, so all the inputs will be merged into this last sink chain,
+        // hence inputs.len() as target chain id for the merge
         if inputs.len() > 1 {
             let merge = HeaderNode::Merge(inputs.len(), i);
             let chain = HeaderChain::new(vec![merge]);
