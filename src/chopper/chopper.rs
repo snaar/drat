@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::chopper::header_graph::NumOfHeaderToProcess;
+use crate::chopper::header_graph::HeaderCountTracker;
 use crate::chopper::types::{ChainId, Header, PinId, Row};
 use crate::error::CliResult;
 
@@ -40,11 +40,10 @@ pub trait MergeHeaderSink {
     fn check_header(&mut self, pin_id: PinId, header: &Header) -> CliResult<()>;
     fn process_header(&mut self) -> Header;
     fn get_data_sink(self: Box<Self>) -> CliResult<Box<dyn DataSink>>;
-    fn pin_num(&self) -> usize;
-    fn num_of_header_to_process(&self) -> NumOfHeaderToProcess;
+    fn get_new_header_count_tracker(&self) -> HeaderCountTracker;
 }
 
 pub trait SplitHeaderSink {
     fn chain_ids(&mut self) -> &mut Vec<ChainId>;
-    fn num_of_header_to_process(&self) -> NumOfHeaderToProcess;
+    fn get_new_header_count_tracker(&self) -> HeaderCountTracker;
 }

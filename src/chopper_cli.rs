@@ -145,8 +145,8 @@ fn setup_graph(
     // add MergeHeaderSink as first header node if multiple input files
     if inputs.len() > 1 {
         let merge = MergeJoin::new(inputs.len())?;
-        let num_of_header_to_process = merge.num_of_header_to_process();
-        let node_merge_sink = HeaderNode::MergeHeaderSink(merge, num_of_header_to_process);
+        let header_count_tracker = merge.get_new_header_count_tracker();
+        let node_merge_sink = HeaderNode::MergeHeaderSink(merge, header_count_tracker);
         header_nodes.push(node_merge_sink);
     }
 

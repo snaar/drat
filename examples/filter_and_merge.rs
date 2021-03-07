@@ -52,8 +52,8 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
 
     // merge/sink chain 2
     let merge = MergeJoin::new(2)?;
-    let num_of_header_to_process = merge.num_of_header_to_process();
-    let node_merge_sink = HeaderNode::MergeHeaderSink(merge, num_of_header_to_process);
+    let header_count_tracker = merge.get_new_header_count_tracker();
+    let node_merge_sink = HeaderNode::MergeHeaderSink(merge, header_count_tracker);
     let csv_output_config = CSVOutputConfig::new_default();
     let header_sink = factory::new_header_sink(output, Some(csv_output_config))?;
     let node_output = HeaderNode::HeaderSink(header_sink);

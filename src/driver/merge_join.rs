@@ -1,22 +1,22 @@
 use crate::chopper::chopper::{DataSink, MergeHeaderSink};
-use crate::chopper::header_graph::NumOfHeaderToProcess;
+use crate::chopper::header_graph::HeaderCountTracker;
 use crate::chopper::types::{Header, PinId};
 use crate::error::{CliResult, Error};
 
 pub struct MergeJoin {
-    input_pin_num: usize,
+    input_pin_count: usize,
     header: Option<Header>,
 }
 
 impl MergeJoin {
-    pub fn new(input_pin_num: usize) -> CliResult<Box<dyn MergeHeaderSink>> {
-        if input_pin_num <= 0 {
+    pub fn new(input_pin_count: usize) -> CliResult<Box<dyn MergeHeaderSink>> {
+        if input_pin_count <= 0 {
             return Err(Error::from(
                 "MergeJoin -- number of inputs must be at least 1",
             ));
         }
         let merge = MergeJoin {
-            input_pin_num,
+            input_pin_count,
             header: None,
         };
         Ok(Box::new(merge) as Box<dyn MergeHeaderSink>)
@@ -53,13 +53,9 @@ impl MergeHeaderSink for MergeJoin {
         Ok(self.boxed())
     }
 
-    fn pin_num(&self) -> usize {
-        self.input_pin_num
-    }
-
-    fn num_of_header_to_process(&self) -> NumOfHeaderToProcess {
-        NumOfHeaderToProcess {
-            counter: self.pin_num(),
+    fn get_new_header_count_tracker(&self) -> HeaderCountTracker {
+        HeaderCountTracker {
+            unprocessed_count: self.input_pin_count,
         }
     }
 }

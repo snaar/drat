@@ -1,5 +1,5 @@
 use crate::chopper::chopper::SplitHeaderSink;
-use crate::chopper::header_graph::NumOfHeaderToProcess;
+use crate::chopper::header_graph::HeaderCountTracker;
 use crate::chopper::types::ChainId;
 
 pub struct Split {
@@ -18,9 +18,9 @@ impl SplitHeaderSink for Split {
         &mut self.chain_ids
     }
 
-    fn num_of_header_to_process(&self) -> NumOfHeaderToProcess {
-        NumOfHeaderToProcess {
-            counter: self.chain_ids.len(),
+    fn get_new_header_count_tracker(&self) -> HeaderCountTracker {
+        HeaderCountTracker {
+            unprocessed_count: self.chain_ids.len(),
         }
     }
 }

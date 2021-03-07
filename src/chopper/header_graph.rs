@@ -3,14 +3,14 @@ use crate::chopper::data_graph::{DataGraph, DataNode};
 use crate::chopper::types::{ChainId, Header, PinId};
 use crate::error::{CliResult, Error};
 
-pub struct NumOfHeaderToProcess {
-    pub counter: usize,
+pub struct HeaderCountTracker {
+    pub unprocessed_count: usize,
 }
 
 pub enum HeaderNode {
     HeaderSink(Box<dyn HeaderSink>),
-    MergeHeaderSink(Box<dyn MergeHeaderSink>, NumOfHeaderToProcess),
-    SplitHeaderSink(Box<dyn SplitHeaderSink>, NumOfHeaderToProcess),
+    MergeHeaderSink(Box<dyn MergeHeaderSink>, HeaderCountTracker),
+    SplitHeaderSink(Box<dyn SplitHeaderSink>, HeaderCountTracker),
     Merge(ChainId, PinId),
 }
 
@@ -104,15 +104,15 @@ impl HeaderGraph {
                     data_node = DataNode::DataSink(mhs.get_data_sink()?);
                     data_graph.add_node(data_node, chain_id)?;
                 }
-                HeaderNode::SplitHeaderSink(mut shs, mut header_to_process) => {
-                    if header_to_process.counter <= 0 {
+                HeaderNode::SplitHeaderSink(mut shs, mut header_count_tracker) => {
+                    if header_count_tracker.unprocessed_count <= 0 {
                         return Err(Error::from(
-                            "HeaderGraph -- NumOfHeaderToProcess must be at least 1",
+                            "HeaderGraph -- unprocessed header count must be at least 1",
                         ));
                     }
                     for i in shs.chain_ids() {
                         self = self.match_remove_chain(data_graph, *i, 0, &mut header.clone())?;
-                        header_to_process.counter -= 1;
+                        header_count_tracker.unprocessed_count -= 1;
                     }
                     data_node = DataNode::Split(shs.chain_ids().clone());
                     data_graph.add_node(data_node, chain_id)?;
@@ -144,28 +144,24 @@ impl HeaderGraph {
             }
         };
         match node {
-            HeaderNode::MergeHeaderSink(mhs, header_to_process) => {
-                if header_to_process.counter <= 0 {
+            HeaderNode::MergeHeaderSink(mhs, header_count_tracker) => {
+                if header_count_tracker.unprocessed_count <= 0 {
                     return Err(Error::from(
-                        "HeaderGraph -- NumOfHeaderToProcess must be at least 1",
+                        "HeaderGraph -- unprocessed header count must be at least 1",
                     ));
                 }
 
                 mhs.check_header(pin_id, header)?;
-                header_to_process.counter -= 1;
+                header_count_tracker.unprocessed_count -= 1;
 
                 // finished processing all the pin headers
                 // next get DataSink for MergeHeaderSink and remove Merge node
-                if header_to_process.counter == 0 {
+                if header_count_tracker.unprocessed_count == 0 {
                     let mut header = mhs.process_header();
                     self = self.match_remove_chain(data_graph, chain_id, pin_id, &mut header)?
                 }
             }
-            _ => {
-                return Err(Error::from(
-                    "HeaderGraph -- NumOfHeaderToProcess must be at least 1",
-                ))
-            }
+            _ => return Err(Error::from("HeaderGraph -- expected MergeHeaderSink")),
         };
         Ok(self)
     }

@@ -33,8 +33,8 @@ fn setup_test_graph() -> CliResult<Box<dyn ChopperDriver>> {
     // filter and split chain 0
     let chain_ids: Vec<ChainId> = vec![1, 2];
     let split = Split::new(chain_ids);
-    let header_to_process = split.num_of_header_to_process();
-    let node_split_sink = HeaderNode::SplitHeaderSink(split, header_to_process);
+    let header_count_tracker = split.get_new_header_count_tracker();
+    let node_split_sink = HeaderNode::SplitHeaderSink(split, header_count_tracker);
     let chain_0 = HeaderChain::new(vec![node_split_sink]);
 
     // sink chain 1
