@@ -17,7 +17,7 @@ pub struct TimestampRange {
     pub end: Option<Nanos>,
 }
 
-pub static TIMESTAMP_RANGE_DEFAULT: TimestampRange = TimestampRange {
+pub static TIMESTAMP_RANGE_ALL: TimestampRange = TimestampRange {
     begin: None,
     end: None,
 };

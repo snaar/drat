@@ -69,7 +69,7 @@ fn setup_graph(
     Ok(Box::new(Driver::new(
         sources,
         graph,
-        types::TIMESTAMP_RANGE_DEFAULT,
+        types::TIMESTAMP_RANGE_ALL,
         headers,
     )?))
 }

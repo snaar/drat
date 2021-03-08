@@ -63,7 +63,7 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     Ok(Box::new(Driver::new(
         sources,
         graph,
-        types::TIMESTAMP_RANGE_DEFAULT,
+        types::TIMESTAMP_RANGE_ALL,
         headers,
     )?))
 }
