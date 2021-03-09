@@ -16,11 +16,21 @@ use chopper::util::tz::ChopperTz;
 use chopper::write::factory;
 
 #[test]
-fn test_split_merge() {
+fn test_split_merge_complex() {
     test().unwrap();
+    assert!(are_contents_same(
+        "./tests/output/test_split_merge_complex_chain2.csv",
+        "./tests/reference/test_split_merge_complex_chain2.csv",
+    )
+    .unwrap());
     assert!(are_contents_same(
         "./tests/output/test_split_merge_complex_chain3.csv",
         "./tests/reference/test_split_merge_complex_chain3.csv",
+    )
+    .unwrap());
+    assert!(are_contents_same(
+        "./tests/output/test_split_merge_complex_chain4.csv",
+        "./tests/reference/test_split_merge_complex_chain4.csv",
     )
     .unwrap());
     assert!(are_contents_same(
@@ -42,7 +52,9 @@ fn test() -> CliResult<()> {
 fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let input = "./tests/input/time_city.csv";
     let inputs = vec![input];
+    let output2 = "./tests/output/test_split_merge_complex_chain2.csv";
     let output3 = "./tests/output/test_split_merge_complex_chain3.csv";
+    let output4 = "./tests/output/test_split_merge_complex_chain4.csv";
     let output5 = "./tests/output/test_split_merge_complex_chain5.csv";
     let output7 = "./tests/output/test_split_merge_complex_chain7.csv";
 
@@ -63,13 +75,13 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     }
 
     /*
-                         ┌─► chain3 (file)
-                         │
-             ┌─► chain1 ─┴─► chain4 ───────┐
-     chain0 ─┤                             ├─► chain7 (file)
-             └─► chain2 ─┬─► chain5 (file) │
-                         │                 │
-                         └─► chain6 ───────┘
+                                         ┌─► chain3 (file)
+                                         │
+             ┌─► chain1 ─────────────────┴─► chain4 (tee to a file) ─┐
+     chain0 ─┤                                                       ├─► chain7 (file)
+             └─► chain2 (tee to a file) ─┬─► chain5 (file)           │
+                                         │                           │
+                                         └─► chain6 ─────────────────┘
     */
 
     // chain 0
@@ -91,7 +103,10 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let split = Split::new(split_targets);
     let header_count_tracker = split.get_new_header_count_tracker();
     let node_split_sink = HeaderNode::SplitHeaderSink(split, header_count_tracker);
-    let chain_2 = HeaderChain::new(vec![node_split_sink]);
+    let csv_output_config = CSVOutputConfig::new_default();
+    let header_sink = factory::new_header_sink(Some(output2), Some(csv_output_config))?;
+    let node_output = HeaderNode::HeaderSink(header_sink);
+    let chain_2 = HeaderChain::new(vec![node_split_sink, node_output]);
 
     // chain 3
     let csv_output_config = CSVOutputConfig::new_default();
@@ -101,7 +116,10 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
 
     // chain 4
     let node_merge = HeaderNode::Merge(7);
-    let chain_4 = HeaderChain::new(vec![node_merge]);
+    let csv_output_config = CSVOutputConfig::new_default();
+    let header_sink = factory::new_header_sink(Some(output4), Some(csv_output_config))?;
+    let node_output = HeaderNode::HeaderSink(header_sink);
+    let chain_4 = HeaderChain::new(vec![node_merge, node_output]);
 
     // chain 5
     let csv_output_config = CSVOutputConfig::new_default();

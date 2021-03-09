@@ -16,7 +16,7 @@ use chopper::util::tz::ChopperTz;
 use chopper::write::factory;
 
 #[test]
-fn test_split_merge() {
+fn test_split_merge_simple() {
     test().unwrap();
     assert!(are_contents_same(
         "./tests/output/test_split_merge_simple.csv",

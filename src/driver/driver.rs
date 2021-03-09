@@ -91,13 +91,14 @@ impl Driver {
                 },
                 DataNode::Merge(next_chain_id) => {
                     let next_chain_id = *next_chain_id;
-                    return self.process_row(next_chain_id, 0, row);
+                    self.process_row(next_chain_id, 0, row.clone())?;
+                    // that's right, continue processing current chain to support "tees"
                 }
                 DataNode::Split(chain_ids) => {
                     for next_chain_id in chain_ids.clone() {
                         self.process_row(next_chain_id, 0, row.clone())?;
                     }
-                    // that's right, continue processing current chain
+                    // that's right, continue processing current chain to support "tees"
                 }
             }
         }
@@ -113,13 +114,14 @@ impl Driver {
                 }
                 DataNode::Merge(next_chain_id) => {
                     let next_chain_id = *next_chain_id;
-                    return self.flush(next_chain_id, 0);
+                    self.flush(next_chain_id, 0)?;
+                    // that's right, continue processing current chain to support "tees"
                 }
                 DataNode::Split(chain_ids) => {
                     for next_chain_id in chain_ids.clone() {
                         self.flush(next_chain_id, 0)?;
                     }
-                    // that's right, continue processing current chain
+                    // that's right, continue processing current chain to support "tees"
                 }
             }
         }
