@@ -1,10 +1,10 @@
 use crate::chopper::chopper::DataSink;
-use crate::chopper::types::{ChainId, PinId};
+use crate::chopper::types::{ChainId, NodeId};
 use crate::error::{CliResult, Error};
 
 pub enum DataNode {
     DataSink(Box<dyn DataSink>),
-    Merge(ChainId, PinId),
+    Merge(ChainId),
     Split(Vec<ChainId>),
 }
 
@@ -47,6 +47,14 @@ impl DataGraph {
 
     pub fn get_mut_chain(&mut self, chain_id: ChainId) -> &mut DataChain {
         self.data_chains.get_mut(chain_id).unwrap()
+    }
+
+    pub fn get_chain_node_count(&self, chain_id: ChainId) -> usize {
+        self.data_chains.get(chain_id).unwrap().nodes.len()
+    }
+
+    pub fn get_chain_node_mut(&mut self, chain_id: ChainId, node_id: NodeId) -> &mut DataNode {
+        self.data_chains.get_mut(chain_id).unwrap().node(node_id)
     }
 
     pub fn add_node(&mut self, node: DataNode, chain_id: ChainId) -> CliResult<()> {

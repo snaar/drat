@@ -125,7 +125,7 @@ fn setup_graph(
     let mut header_nodes: Vec<HeaderNode> = Vec::new();
     let mut chains: Vec<HeaderChain> = Vec::new();
 
-    for (i, input) in inputs.iter().enumerate() {
+    for input in &inputs {
         let source = input_factory.create_source_from_input(&input)?;
         headers.push(source.header().clone());
         sources.push(source);
@@ -136,7 +136,7 @@ fn setup_graph(
         // where the sink goes, so all the inputs will be merged into this last sink chain,
         // hence inputs.len() as target chain id for the merge
         if inputs.len() > 1 {
-            let merge = HeaderNode::Merge(inputs.len(), i);
+            let merge = HeaderNode::Merge(inputs.len());
             let chain = HeaderChain::new(vec![merge]);
             chains.push(chain);
         }

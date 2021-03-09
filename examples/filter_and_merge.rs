@@ -41,13 +41,13 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
     // source chain 0
     let filter_greater = RowFilterGreaterValue::new(column_int, value_1);
     let node_filter = HeaderNode::HeaderSink(filter_greater);
-    let node_merge = HeaderNode::Merge(2, 0);
+    let node_merge = HeaderNode::Merge(2);
     let chain_0 = HeaderChain::new(vec![node_filter, node_merge]);
 
     // source chain 1
     let filter_equal = RowFilterEqualValue::new(column_double, value_2);
     let node_filter = HeaderNode::HeaderSink(filter_equal);
-    let node_merge = HeaderNode::Merge(2, 1);
+    let node_merge = HeaderNode::Merge(2);
     let chain_1 = HeaderChain::new(vec![node_filter, node_merge]);
 
     // merge/sink chain 2

@@ -1,22 +1,22 @@
 use crate::chopper::chopper::{DataSink, MergeHeaderSink};
 use crate::chopper::header_graph::HeaderCountTracker;
-use crate::chopper::types::{Header, PinId};
+use crate::chopper::types::Header;
 use crate::error::{CliResult, Error};
 
 pub struct MergeJoin {
-    input_pin_count: usize,
+    merge_source_count: usize,
     header: Option<Header>,
 }
 
 impl MergeJoin {
-    pub fn new(input_pin_count: usize) -> CliResult<Box<dyn MergeHeaderSink>> {
-        if input_pin_count <= 0 {
+    pub fn new(merge_source_count: usize) -> CliResult<Box<dyn MergeHeaderSink>> {
+        if merge_source_count <= 0 {
             return Err(Error::from(
                 "MergeJoin -- number of inputs must be at least 1",
             ));
         }
         let merge = MergeJoin {
-            input_pin_count,
+            merge_source_count,
             header: None,
         };
         Ok(Box::new(merge) as Box<dyn MergeHeaderSink>)
@@ -28,7 +28,7 @@ impl MergeJoin {
 }
 
 impl MergeHeaderSink for MergeJoin {
-    fn check_header(&mut self, _pin_id: PinId, header: &Header) -> CliResult<()> {
+    fn check_header(&mut self, header: &Header) -> CliResult<()> {
         match &self.header {
             Some(h) => {
                 if !header.eq(h) {
@@ -55,7 +55,7 @@ impl MergeHeaderSink for MergeJoin {
 
     fn get_new_header_count_tracker(&self) -> HeaderCountTracker {
         HeaderCountTracker {
-            unprocessed_count: self.input_pin_count,
+            unprocessed_count: self.merge_source_count,
         }
     }
 }

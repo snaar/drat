@@ -7,7 +7,6 @@ use crate::util::tz::ChopperTz;
 
 pub type ChainId = usize;
 pub type NodeId = usize;
-pub type PinId = usize;
 
 pub type Nanos = u64;
 

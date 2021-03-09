@@ -2,10 +2,11 @@ use chrono_tz::America::New_York;
 
 use chopper::chopper::chopper::{ChopperDriver, Source};
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
-use chopper::chopper::types::{self, Header};
+use chopper::chopper::types::{self, ChainId, Header};
 use chopper::cli::util::YesNoAuto;
 use chopper::driver::driver::Driver;
 use chopper::driver::merge_join::MergeJoin;
+use chopper::driver::split::Split;
 use chopper::error::CliResult;
 use chopper::input::input_factory::InputFactory;
 use chopper::source::csv_configs::{CSVInputConfig, CSVOutputConfig, TimestampFmtConfig};
@@ -15,11 +16,11 @@ use chopper::util::tz::ChopperTz;
 use chopper::write::factory;
 
 #[test]
-fn test_merge() {
+fn test_split_merge() {
     test().unwrap();
     assert!(are_contents_same(
-        "./tests/output/test_merge.csv",
-        "./tests/reference/test_merge.csv",
+        "./tests/output/test_split_merge_simple.csv",
+        "./tests/reference/test_split_merge_simple.csv",
     )
     .unwrap());
 }
@@ -29,10 +30,9 @@ fn test() -> CliResult<()> {
 }
 
 fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
-    let input_1 = "./tests/input/time_city.csv";
-    let input_2 = "./tests/input/time_city.csv";
-    let inputs = vec![input_1, input_2];
-    let output = "./tests/output/test_merge.csv";
+    let input = "./tests/input/time_city.csv";
+    let inputs = vec![input];
+    let output = "./tests/output/test_split_merge_simple.csv";
 
     // source reader and headers
     let ts_config = TimestampConfig::new(
@@ -50,24 +50,37 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
         sources.push(source);
     }
 
-    // source chain 0
-    let node_merge = HeaderNode::Merge(2);
-    let chain_0 = HeaderChain::new(vec![node_merge]);
+    /*
+            ┌─► chain1 ─┐
+    chain0 ─┤           ├─► chain3
+            └─► chain2 ─┘
+    */
 
-    // source chain 1
-    let node_merge = HeaderNode::Merge(2);
+    // chain 0 - split single input into two
+    let split_targets: Vec<ChainId> = vec![1, 2];
+    let split = Split::new(split_targets);
+    let header_count_tracker = split.get_new_header_count_tracker();
+    let node_split_sink = HeaderNode::SplitHeaderSink(split, header_count_tracker);
+    let chain_0 = HeaderChain::new(vec![node_split_sink]);
+
+    // chain 1 - merge back into chain 3
+    let node_merge = HeaderNode::Merge(3);
     let chain_1 = HeaderChain::new(vec![node_merge]);
 
-    // merge/sink chain 2
+    // chain 2 - merge back into chain 3
+    let node_merge = HeaderNode::Merge(3);
+    let chain_2 = HeaderChain::new(vec![node_merge]);
+
+    // chain 3 - accept merge from chain 1 and 2 and write result out
     let merge = MergeJoin::new(2)?;
     let header_count_tracker = merge.get_new_header_count_tracker();
     let node_merge_sink = HeaderNode::MergeHeaderSink(merge, header_count_tracker);
     let csv_output_config = CSVOutputConfig::new_default();
     let header_sink = factory::new_header_sink(Some(output), Some(csv_output_config))?;
     let node_output = HeaderNode::HeaderSink(header_sink);
-    let chain_2 = HeaderChain::new(vec![node_merge_sink, node_output]);
+    let chain_3 = HeaderChain::new(vec![node_merge_sink, node_output]);
 
-    let graph = HeaderGraph::new(vec![chain_0, chain_1, chain_2]);
+    let graph = HeaderGraph::new(vec![chain_0, chain_1, chain_2, chain_3]);
 
     Ok(Box::new(Driver::new(
         sources,

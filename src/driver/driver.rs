@@ -1,7 +1,7 @@
 use crate::chopper::chopper::{ChopperDriver, Source};
 use crate::chopper::data_graph::{DataGraph, DataNode};
 use crate::chopper::header_graph::HeaderGraph;
-use crate::chopper::types::{ChainId, Header, NodeId, PinId, Row, TimestampRange};
+use crate::chopper::types::{ChainId, Header, NodeId, Row, TimestampRange};
 use crate::driver::source_row_buffer::SourceRowBuffer;
 use crate::error::{CliResult, Error};
 
@@ -44,7 +44,7 @@ impl Driver {
             let next_row_buffer = &mut row_buffers[buffer_index];
             let row = next_row_buffer.row().clone().unwrap();
             let chain_id = next_row_buffer.chain_id();
-            Self::process_row(&mut self.data_graph, chain_id, 0, 0, row)?;
+            self.process_row(chain_id, 0, row)?;
 
             // remove the row buffer if it reaches the end of the file
             loop {
@@ -79,66 +79,47 @@ impl Driver {
         min.0
     }
 
-    fn process_row(
-        data_graph: &mut DataGraph,
-        mut chain_id: ChainId,
-        mut node_id: NodeId,
-        mut pin_id: PinId,
-        mut row: Row,
-    ) -> CliResult<()> {
-        let chain = data_graph.get_mut_chain(chain_id);
-        while node_id < chain.nodes().len() {
-            match chain.node(node_id) {
+    fn process_row(&mut self, chain_id: ChainId, node_id: NodeId, mut row: Row) -> CliResult<()> {
+        let chain_node_count = self.data_graph.get_chain_node_count(chain_id);
+        for node_id in node_id..chain_node_count {
+            match self.data_graph.get_chain_node_mut(chain_id, node_id) {
                 DataNode::DataSink(sink) => match sink.write_row(row)? {
                     Some(r) => {
                         row = r;
-                        node_id += 1;
                     }
-                    None => break,
+                    None => return Ok(()),
                 },
-                DataNode::Merge(new_chain_id, new_pin_id) => {
-                    chain_id = *new_chain_id;
-                    node_id = 0;
-                    pin_id = *new_pin_id;
-                    Self::process_row(data_graph, chain_id, node_id, pin_id, row)?;
-                    break;
+                DataNode::Merge(next_chain_id) => {
+                    let next_chain_id = *next_chain_id;
+                    return self.process_row(next_chain_id, 0, row);
                 }
                 DataNode::Split(chain_ids) => {
-                    if pin_id < chain_ids.len() {
-                        let new_chain_id = chain_ids[pin_id];
-                        pin_id += 1;
-                        Self::process_row(data_graph, new_chain_id, 0, pin_id, row.clone())?;
-                        Self::process_row(data_graph, chain_id, 0, pin_id, row.clone())?;
+                    for next_chain_id in chain_ids.clone() {
+                        self.process_row(next_chain_id, 0, row.clone())?;
                     }
-                    break;
+                    // that's right, continue processing current chain
                 }
             }
         }
         Ok(())
     }
 
-    fn flush(&mut self, mut chain_id: ChainId, mut pin_id: PinId) -> CliResult<()> {
-        let mut node_id = 0;
-        let chain = self.data_graph.get_mut_chain(chain_id);
-        while chain.nodes().len() > node_id {
-            match chain.node(node_id) {
+    fn flush(&mut self, chain_id: ChainId, node_id: NodeId) -> CliResult<()> {
+        let chain_node_count = self.data_graph.get_chain_node_count(chain_id);
+        for node_id in node_id..chain_node_count {
+            match self.data_graph.get_chain_node_mut(chain_id, node_id) {
                 DataNode::DataSink(sink) => {
                     sink.flush()?;
-                    node_id += 1
                 }
-                DataNode::Merge(new_chain_id, _pin_id) => {
-                    chain_id = *new_chain_id;
-                    self.flush(chain_id, 0)?;
-                    break;
+                DataNode::Merge(next_chain_id) => {
+                    let next_chain_id = *next_chain_id;
+                    return self.flush(next_chain_id, 0);
                 }
                 DataNode::Split(chain_ids) => {
-                    if pin_id < chain_ids.len() {
-                        let new_chain_id = chain_ids[pin_id];
-                        pin_id += 1;
-                        self.flush(new_chain_id, 0)?;
-                        self.flush(chain_id, pin_id)?;
+                    for next_chain_id in chain_ids.clone() {
+                        self.flush(next_chain_id, 0)?;
                     }
-                    break;
+                    // that's right, continue processing current chain
                 }
             }
         }
