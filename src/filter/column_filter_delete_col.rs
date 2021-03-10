@@ -43,9 +43,10 @@ impl HeaderSink for ColumnFilterDeleteConfig {
 }
 
 impl DataSink for ColumnFilterDelete {
-    fn write_row(&mut self, mut row: Row) -> CliResult<Option<Row>> {
+    fn write_row(&mut self, io_rows: &mut Vec<Row>) -> CliResult<()> {
+        let row = io_rows.get_mut(0).unwrap();
         row.field_values.remove(self.column_index);
-        Ok(Some(row))
+        Ok(())
     }
 
     fn boxed(self) -> Box<dyn DataSink> {

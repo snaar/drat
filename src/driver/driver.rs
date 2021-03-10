@@ -79,24 +79,35 @@ impl Driver {
         min.0
     }
 
-    fn process_row(&mut self, chain_id: ChainId, node_id: NodeId, mut row: Row) -> CliResult<()> {
+    fn process_row(&mut self, chain_id: ChainId, node_id: NodeId, row: Row) -> CliResult<()> {
+        // support data sinks returning more than one row
+        let mut rows: Vec<Row> = vec![row];
+
         let chain_node_count = self.data_graph.get_chain_node_count(chain_id);
         for node_id in node_id..chain_node_count {
             match self.data_graph.get_chain_node_mut(chain_id, node_id) {
-                DataNode::DataSink(sink) => match sink.write_row(row)? {
-                    Some(r) => {
-                        row = r;
+                DataNode::DataSink(sink) => {
+                    sink.write_row(&mut rows)?;
+                    match rows.len() {
+                        0 => return Ok(()),
+                        1 => {} // just continue
+                        _ => {
+                            while rows.len() > 1 {
+                                // do all but last row recursively and the last row do iteratively
+                                let row = rows.remove(0);
+                                self.process_row(chain_id, node_id + 1, row)?;
+                            }
+                        }
                     }
-                    None => return Ok(()),
-                },
+                }
                 DataNode::Merge(next_chain_id) => {
                     let next_chain_id = *next_chain_id;
-                    self.process_row(next_chain_id, 0, row.clone())?;
+                    self.process_row(next_chain_id, 0, rows.get(0).unwrap().clone())?;
                     // that's right, continue processing current chain to support "tees"
                 }
                 DataNode::Split(chain_ids) => {
                     for next_chain_id in chain_ids.clone() {
-                        self.process_row(next_chain_id, 0, row.clone())?;
+                        self.process_row(next_chain_id, 0, rows.get(0).unwrap().clone())?;
                     }
                     // that's right, continue processing current chain to support "tees"
                 }

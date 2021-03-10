@@ -135,7 +135,9 @@ impl HeaderSink for DCSink {
 }
 
 impl DataSink for DCSink {
-    fn write_row(&mut self, row: Row) -> CliResult<Option<Row>> {
+    fn write_row(&mut self, io_rows: &mut Vec<Row>) -> CliResult<()> {
+        let row = io_rows.get(0).unwrap();
+
         // write timestamp
         self.writer.write_u64::<BigEndian>(row.timestamp)?;
 
@@ -184,7 +186,7 @@ impl DataSink for DCSink {
                 FieldValue::None => continue,
             };
         }
-        Ok(None)
+        Ok(())
     }
 
     fn flush(&mut self) -> CliResult<()> {

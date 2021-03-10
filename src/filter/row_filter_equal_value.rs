@@ -45,17 +45,19 @@ impl HeaderSink for RowFilterEqualValueConfig {
 }
 
 impl DataSink for RowFilterEqualValue {
-    fn write_row(&mut self, row: Row) -> CliResult<Option<Row>> {
+    fn write_row(&mut self, io_rows: &mut Vec<Row>) -> CliResult<()> {
         match self.column_index {
             Some(i) => {
+                let row = io_rows.get(0).unwrap();
                 let field_value: &FieldValue = row.field_values.get(i).unwrap();
                 if !field_value.eq(&self.value) {
-                    return Ok(None);
+                    io_rows.clear();
+                    return Ok(());
                 }
             }
             None => return Err(Error::from("RowFilterEqualValue -- missing column index")),
         }
-        Ok(Some(row))
+        Ok(())
     }
 
     fn boxed(self) -> Box<dyn DataSink> {

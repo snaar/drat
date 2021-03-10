@@ -62,7 +62,9 @@ impl HeaderSink for CSVSink {
 }
 
 impl DataSink for CSVSink {
-    fn write_row(&mut self, row: Row) -> CliResult<Option<Row>> {
+    fn write_row(&mut self, io_rows: &mut Vec<Row>) -> CliResult<()> {
+        let row = io_rows.get(0).unwrap();
+
         let mut first_col = true;
         if self.csv_output_config.print_time_col() {
             let time = match self.csv_output_config.time_col_style() {
@@ -126,7 +128,7 @@ impl DataSink for CSVSink {
             };
         }
         write!(self.writer, "\n")?;
-        Ok(None)
+        Ok(())
     }
 
     fn flush(&mut self) -> CliResult<()> {
