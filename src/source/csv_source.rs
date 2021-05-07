@@ -27,14 +27,14 @@ pub struct CSVSource {
 impl CSVSource {
     pub fn new(
         previewer: ChopperBufPreviewer<Box<dyn Read>>,
-        csv_config: &CSVInputConfig,
+        csv_input_config: &CSVInputConfig,
     ) -> CliResult<Self> {
         let (line1, line2) = match previewer.get_lines() {
             None => (None, None),
             Some(lines) => (lines.get(0), lines.get(1)),
         };
 
-        let delimiter = match csv_config.delimiter() {
+        let delimiter = match csv_input_config.delimiter() {
             None => {
                 match line1 {
                     Some(line) => csv_util::guess_delimiter(line.as_str(), DELIMITERS),
@@ -44,7 +44,7 @@ impl CSVSource {
             Some(d) => d,
         };
 
-        let has_header = match csv_config.has_header() {
+        let has_header = match csv_input_config.has_header() {
             YesNoAuto::Yes => true,
             YesNoAuto::No => false,
             YesNoAuto::Auto => csv_util::guess_has_header(line1, line2, delimiter),
@@ -87,7 +87,7 @@ impl CSVSource {
         let field_types: Vec<FieldType> = vec![FieldType::String; field_count];
         let header: Header = Header::new(field_names, field_types);
 
-        let timestamp_config = csv_config.timestamp_config();
+        let timestamp_config = csv_input_config.timestamp_config();
         let timezone = timestamp_config.timezone();
         let (timestamp_col, timestamp_fmt) = csv_timestamp::get_timestamp_col_and_fmt(
             &header,
