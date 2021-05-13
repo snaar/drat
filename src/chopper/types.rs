@@ -1,4 +1,3 @@
-use std::cmp::Ordering;
 use std::fmt;
 
 use crate::error::{CliResult, Error};
@@ -39,6 +38,17 @@ impl TimestampRange {
 pub struct Header {
     field_names: Vec<String>,
     field_types: Vec<FieldType>,
+}
+
+impl Header {
+    pub fn generate_default_field_names(field_count: usize) -> Vec<String> {
+        // if field name is not given, assign default name - "col_x"
+        let mut field_names: Vec<String> = Vec::new();
+        for i in 0..field_count {
+            field_names.push(format!("col_{}", i));
+        }
+        field_names
+    }
 }
 
 impl PartialEq for Header {
@@ -90,7 +100,7 @@ impl Header {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, PartialOrd)]
 pub enum FieldValue {
     Boolean(bool),
     Byte(u8),
@@ -105,66 +115,12 @@ pub enum FieldValue {
     None,
 }
 
-impl PartialOrd for FieldValue {
-    fn partial_cmp(&self, other: &FieldValue) -> Option<Ordering> {
-        match (self, other) {
-            (FieldValue::Boolean(_x), FieldValue::Boolean(_y)) => {
-                Error::from("FieldValue -- boolean field type is not supported").exit()
-            }
-            (FieldValue::Byte(x), FieldValue::Byte(y)) => Some(x.cmp(y)),
-            (FieldValue::ByteBuf(_x), FieldValue::ByteBuf(_y)) => {
-                Error::from("FieldValue -- ByteBuffer field type is not supported").exit()
-            }
-            (FieldValue::Char(x), FieldValue::Char(y)) => Some(x.cmp(y)),
-            (FieldValue::Double(x), FieldValue::Double(y)) => x.partial_cmp(y),
-            (FieldValue::Float(x), FieldValue::Float(y)) => x.partial_cmp(y),
-            (FieldValue::Int(x), FieldValue::Int(y)) => Some(x.cmp(y)),
-            (FieldValue::Long(x), FieldValue::Long(y)) => Some(x.cmp(y)),
-            (FieldValue::Short(x), FieldValue::Short(y)) => Some(x.cmp(y)),
-            (FieldValue::String(x), FieldValue::String(y)) => Some(x.cmp(y)),
-            (FieldValue::None, FieldValue::None) => Some(Ordering::Equal),
-            _ => Error::from(format!(
-                "FieldValue -- cannot compare different field types - {} {}",
-                self, other
-            ))
-            .exit(),
-        }
-    }
-}
-
-impl PartialEq for FieldValue {
-    fn eq(&self, other: &FieldValue) -> bool {
-        match (self, other) {
-            (FieldValue::Boolean(_x), FieldValue::Boolean(_y)) => {
-                Error::from("FieldValue -- boolean field type is not supported").exit()
-            }
-            (FieldValue::Byte(x), FieldValue::Byte(y)) => x == y,
-            (FieldValue::ByteBuf(_x), FieldValue::ByteBuf(_y)) => {
-                Error::from("FieldValue -- ByteBuffer field type is not supported").exit()
-            }
-            (FieldValue::Char(x), FieldValue::Char(y)) => x == y,
-            (FieldValue::Double(x), FieldValue::Double(y)) => x == y,
-            (FieldValue::Float(x), FieldValue::Float(y)) => x == y,
-            (FieldValue::Int(x), FieldValue::Int(y)) => x == y,
-            (FieldValue::Long(x), FieldValue::Long(y)) => x == y,
-            (FieldValue::Short(x), FieldValue::Short(y)) => x == y,
-            (FieldValue::String(x), FieldValue::String(y)) => x.eq(y),
-            (FieldValue::None, FieldValue::None) => true,
-            _ => false,
-        }
-    }
-}
-
 impl fmt::Display for FieldValue {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self {
-            FieldValue::Boolean(_x) => {
-                Error::from("FieldValue -- boolean field type is not supported").exit()
-            }
+            FieldValue::Boolean(x) => f.write_str(format!("bool[{}]", x).as_str()),
             FieldValue::Byte(x) => f.write_str(format!("byte[{}]", x).as_str()),
-            FieldValue::ByteBuf(_x) => {
-                Error::from("FieldValue -- ByteBuffer field type is not supported").exit()
-            }
+            FieldValue::ByteBuf(x) => f.write_str(format!("buf[len={}]", x.len()).as_str()),
             FieldValue::Char(x) => f.write_str(format!("char[{}]", x).as_str()),
             FieldValue::Double(x) => f.write_str(format!("double[{}]", x).as_str()),
             FieldValue::Float(x) => f.write_str(format!("float[{}]", x).as_str()),
@@ -172,7 +128,7 @@ impl fmt::Display for FieldValue {
             FieldValue::Long(x) => f.write_str(format!("long[{}]", x).as_str()),
             FieldValue::Short(x) => f.write_str(format!("short[{}]", x).as_str()),
             FieldValue::String(x) => f.write_str(format!("string[{}]", x.as_str()).as_str()),
-            FieldValue::None => f.write_str(""),
+            FieldValue::None => f.write_str("none[]"),
         }
     }
 }

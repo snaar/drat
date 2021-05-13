@@ -63,19 +63,18 @@ impl CSVSource {
         let first_row: csv::StringRecord = reader.records().next().unwrap()?;
         let field_count = first_row.len();
 
-        // get field names if available
-        let mut field_names: Vec<String> = Vec::new();
-        if reader.has_headers() {
+        let field_names = if reader.has_headers() {
+            // get field names if available
+            let mut field_names: Vec<String> = Vec::new();
             let header_record = reader.headers()?;
             for i in header_record {
                 field_names.push(i.to_string());
             }
+            field_names
         } else {
-            // if field name is not given, assign default name - "col_x"
-            for i in 0..field_count {
-                field_names.push(format!("col_{}", i));
-            }
-        }
+            // otherwise generate default field names
+            Header::generate_default_field_names(field_count)
+        };
 
         // initialize next_row
         let timestamp: Nanos = 0;
