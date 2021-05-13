@@ -7,13 +7,13 @@ use crate::write::dc_sink;
 pub fn new_header_sink(
     output: Option<&str>,
     csv_output_config: Option<CSVOutputConfig>,
-) -> CliResult<Box<dyn HeaderSink + 'static>> {
+) -> CliResult<Box<dyn HeaderSink>> {
     let csv_output_config = match csv_output_config {
         Some(c) => c,
         None => CSVOutputConfig::new_default(),
     };
 
-    let writer: Box<dyn HeaderSink + 'static> = match output {
+    let writer: Box<dyn HeaderSink> = match output {
         Some(p) => {
             let p = p.to_string();
             if p.ends_with("csv") {
