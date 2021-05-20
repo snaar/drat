@@ -21,6 +21,7 @@ impl fmt::Debug for dyn Source {
 }
 
 pub trait HeaderSink {
+    //TODO figure out how to do this via generics instead of opaque box
     fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DataSink>>;
 }
 
