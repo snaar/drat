@@ -34,7 +34,7 @@ impl TimestampRange {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Header {
     field_names: Vec<String>,
     field_types: Vec<FieldType>,
@@ -147,7 +147,7 @@ pub enum FieldType {
     String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Row {
     pub timestamp: Nanos,
     pub field_values: Vec<FieldValue>,
