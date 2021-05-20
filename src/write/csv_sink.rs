@@ -1,6 +1,4 @@
-use std::fs::File;
-use std::io::{self, BufWriter, Write};
-use std::path::PathBuf;
+use std::io::Write;
 
 use crate::chopper::chopper::{DataSink, HeaderSink};
 use crate::chopper::types::{FieldValue, Header, Row};
@@ -8,29 +6,17 @@ use crate::error::{CliResult, Error};
 use crate::source::csv_configs::{CSVOutputConfig, TimestampStyle};
 use crate::source::csv_timestamp::TimestampUnits;
 
-pub struct CSVSink {
-    writer: BufWriter<Box<dyn io::Write + 'static>>,
+pub struct CSVSink<W: 'static + Write> {
+    writer: W,
     csv_output_config: CSVOutputConfig,
 }
 
-impl CSVSink {
-    pub fn new(path: &Option<String>, csv_output_config: CSVOutputConfig) -> CliResult<Self> {
-        let writer = BufWriter::new(CSVSink::into_writer(path)?);
+impl<W: 'static + Write> CSVSink<W> {
+    pub fn new(writer: W, csv_output_config: CSVOutputConfig) -> CliResult<Self> {
         Ok(CSVSink {
             writer,
             csv_output_config,
         })
-    }
-
-    fn into_writer(path: &Option<String>) -> io::Result<Box<dyn io::Write>> {
-        match path {
-            None => Ok(Box::new(io::stdout())),
-            Some(p) => {
-                let path = PathBuf::from(p);
-                let file = File::create(path)?;
-                Ok(Box::new(file))
-            }
-        }
     }
 
     fn write_csv_header(&mut self, header: &mut Header) -> CliResult<()> {
@@ -54,14 +40,14 @@ impl CSVSink {
     }
 }
 
-impl HeaderSink for CSVSink {
+impl<W: 'static + Write> HeaderSink for CSVSink<W> {
     fn process_header(mut self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DataSink>> {
         self.write_csv_header(header)?;
         Ok(self.boxed())
     }
 }
 
-impl DataSink for CSVSink {
+impl<W: 'static + Write> DataSink for CSVSink<W> {
     fn write_row(&mut self, io_rows: &mut Vec<Row>) -> CliResult<()> {
         let row = io_rows.get(0).unwrap();
 

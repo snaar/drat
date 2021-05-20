@@ -1,6 +1,4 @@
-use std::fs::File;
-use std::io::{self, BufWriter, Write};
-use std::path::PathBuf;
+use std::io::Write;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
@@ -9,32 +7,20 @@ use crate::chopper::types::{FieldType, FieldValue, Header, Row};
 use crate::error::{CliResult, Error};
 use crate::util::dc_util;
 
-pub struct DCSink {
-    writer: BufWriter<Box<dyn io::Write + 'static>>,
+pub struct DCSink<W: 'static + Write> {
+    writer: W,
     bitset_bytes: usize,
 }
 
-impl DCSink {
-    pub fn new(path: &Option<String>) -> CliResult<Self> {
-        let writer = BufWriter::new(DCSink::into_writer(path)?);
+impl<W: 'static + Write> DCSink<W> {
+    pub fn new(writer: W) -> CliResult<Self> {
         Ok(DCSink {
             writer,
             bitset_bytes: 0,
         })
     }
 
-    fn into_writer(path: &Option<String>) -> io::Result<Box<dyn io::Write>> {
-        match path {
-            None => Ok(Box::new(io::stdout())),
-            Some(p) => {
-                let path = PathBuf::from(p);
-                let file = File::create(path)?;
-                Ok(Box::new(file))
-            }
-        }
-    }
-
-    fn write_header(mut dc_sink: &mut DCSink, header: &mut Header) -> CliResult<()> {
+    fn write_header(mut dc_sink: &mut DCSink<W>, header: &mut Header) -> CliResult<()> {
         DCSink::write_magic(&mut dc_sink)?;
         DCSink::write_version(&mut dc_sink)?;
         DCSink::write_empty_user_data(&mut dc_sink)?;
@@ -42,22 +28,22 @@ impl DCSink {
         Ok(())
     }
 
-    fn write_magic(dc_sink: &mut DCSink) -> CliResult<()> {
+    fn write_magic(dc_sink: &mut DCSink<W>) -> CliResult<()> {
         dc_sink.writer.write_u64::<BigEndian>(dc_util::MAGIC_NUM)?;
         Ok(())
     }
 
-    fn write_version(dc_sink: &mut DCSink) -> CliResult<()> {
+    fn write_version(dc_sink: &mut DCSink<W>) -> CliResult<()> {
         dc_sink.writer.write_u16::<BigEndian>(dc_util::VERSION)?;
         Ok(())
     }
 
-    fn write_empty_user_data(dc_sink: &mut DCSink) -> CliResult<()> {
+    fn write_empty_user_data(dc_sink: &mut DCSink<W>) -> CliResult<()> {
         dc_sink.writer.write_u32::<BigEndian>(0)?;
         Ok(())
     }
 
-    fn write_field_descriptors(dc_sink: &mut DCSink, header: &mut Header) -> CliResult<()> {
+    fn write_field_descriptors(dc_sink: &mut DCSink<W>, header: &mut Header) -> CliResult<()> {
         let field_types = header.field_types();
         let field_names = header.field_names();
         let field_count = field_types.len();
@@ -79,7 +65,7 @@ impl DCSink {
         Ok(())
     }
 
-    fn write_field_type(dc_sink: &mut DCSink, field_type: &FieldType) -> CliResult<()> {
+    fn write_field_type(dc_sink: &mut DCSink<W>, field_type: &FieldType) -> CliResult<()> {
         let field_string_map = &dc_util::FIELD_STRING_MAP_TYPE;
         let type_string = match field_type {
             FieldType::Boolean => {
@@ -107,7 +93,7 @@ impl DCSink {
     }
 
     fn write_display_hint(
-        dc_sink: &mut DCSink,
+        dc_sink: &mut DCSink<W>,
         display_hint: dc_util::DisplayHint,
     ) -> CliResult<()> {
         let hint: i32 = match display_hint {
@@ -125,7 +111,7 @@ impl DCSink {
     }
 }
 
-impl HeaderSink for DCSink {
+impl<W: 'static + Write> HeaderSink for DCSink<W> {
     fn process_header(mut self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DataSink>> {
         Self::write_header(&mut self, header)?;
         let bitset_bytes = dc_util::get_bitset_bytes(header.field_types().len() - 1);
@@ -134,7 +120,7 @@ impl HeaderSink for DCSink {
     }
 }
 
-impl DataSink for DCSink {
+impl<W: 'static + Write> DataSink for DCSink<W> {
     fn write_row(&mut self, io_rows: &mut Vec<Row>) -> CliResult<()> {
         let row = io_rows.get(0).unwrap();
 
