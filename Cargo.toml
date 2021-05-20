@@ -17,23 +17,23 @@ exclude = [
 
 [dependencies]
 backtrace = "0.3"
-byteorder = "1"
+byteorder = "1.4"
 bzip2 = "0.4"
 chrono = "0.4"
 chrono-tz = "0.5"
-clap = "2"
+clap = "2.33"
 crc32fast = "1.2"
-csv = "1"
+csv = "1.1"
 dtoa = "0.4"
 encode_unicode = "0.3"
-flate2 = "1"
-lazy_static = "1"
+flate2 = "1.0"
+lazy_static = "1.4"
 lz-fear = "0.1"
 paku = "0.0.1"
 ruzstd = "0.2"
 serde = "1.0"
 thiserror = "1.0"
-ureq = { version = "1", features = ["charset"] }
+ureq = { version = "1.5", features = ["charset"] }
 
 [dev-dependencies]
-serde_with = "1.8"
+serde_with = "1.9"
