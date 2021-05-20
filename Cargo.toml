@@ -25,9 +25,15 @@ clap = "2"
 crc32fast = "1.2"
 csv = "1"
 dtoa = "0.4"
+encode_unicode = "0.3"
 flate2 = "1"
 lazy_static = "1"
 lz-fear = "0.1"
 paku = "0.0.1"
 ruzstd = "0.2"
+serde = "1.0"
+thiserror = "1.0"
 ureq = { version = "1", features = ["charset"] }
+
+[dev-dependencies]
+serde_with = "1.8"
