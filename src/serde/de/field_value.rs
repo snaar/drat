@@ -5,7 +5,6 @@ use serde::{Deserialize, Deserializer};
 
 use crate::chopper::types::FieldValue;
 use crate::serde::de::error::DeError;
-use crate::visit_unit;
 
 pub fn from_field_value<'de: 'a, 'a, T>(field_value: &'a FieldValue) -> Result<T, DeError>
 where

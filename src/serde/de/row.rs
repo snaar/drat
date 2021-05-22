@@ -5,7 +5,6 @@ use serde::{Deserialize, Deserializer};
 use crate::chopper::types::{Header, Row};
 use crate::serde::de::error::DeError;
 use crate::serde::de::field_value::FieldValueDeserializer;
-use crate::visit_unit;
 
 pub fn from_row_with_header<'de: 'a + 'b + 'c, 'a, 'b, 'c, T>(
     row: &'a Row,

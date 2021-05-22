@@ -1,6 +1,5 @@
 // based on serde::forward_to_deserialize_any
 
-#[macro_export(local_inner_macros)]
 macro_rules! visit_unit {
     (<$visitor:ident: Visitor<$lifetime:tt>> $($func:ident)*) => {
         $(visit_unit_helper!{$func<$lifetime, $visitor>})*
@@ -12,7 +11,6 @@ macro_rules! visit_unit {
 }
 
 #[doc(hidden)]
-#[macro_export]
 macro_rules! visit_unit_method {
     ($func:ident<$l:tt, $v:ident>($($arg:ident : $ty:ty),*)) => {
         #[inline]
@@ -29,7 +27,6 @@ macro_rules! visit_unit_method {
 }
 
 #[doc(hidden)]
-#[macro_export(local_inner_macros)]
 macro_rules! visit_unit_helper {
     (bool<$l:tt, $v:ident>) => {
         visit_unit_method!{deserialize_bool<$l, $v>()}
