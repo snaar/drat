@@ -96,44 +96,18 @@ impl<'de: 'a + 'b + 'c, 'a, 'b, 'c> Deserializer<'de> for RowDeserializer<'a, 'b
         }
     }
 
-    forward_to_deserialize_any! {
-        bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
-        bytes byte_buf option unit newtype_struct
-        map struct enum identifier
+    visit_seq! {
+        seq tuple tuple_struct
     }
 
     visit_unit! {
         unit_struct ignored_any
     }
 
-    fn deserialize_seq<V>(self, visitor: V) -> Result<<V as Visitor<'de>>::Value, Self::Error>
-    where
-        V: Visitor<'de>,
-    {
-        visitor.visit_seq(self)
-    }
-
-    fn deserialize_tuple<V>(
-        self,
-        _len: usize,
-        visitor: V,
-    ) -> Result<<V as Visitor<'de>>::Value, Self::Error>
-    where
-        V: Visitor<'de>,
-    {
-        visitor.visit_seq(self)
-    }
-
-    fn deserialize_tuple_struct<V>(
-        self,
-        _name: &'static str,
-        _len: usize,
-        visitor: V,
-    ) -> Result<<V as Visitor<'de>>::Value, Self::Error>
-    where
-        V: Visitor<'de>,
-    {
-        visitor.visit_seq(self)
+    forward_to_deserialize_any! {
+        bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 char str string
+        bytes byte_buf option unit newtype_struct
+        map struct enum identifier
     }
 }
 

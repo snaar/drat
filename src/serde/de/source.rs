@@ -1,4 +1,4 @@
-use serde::de::{DeserializeSeed, SeqAccess, Visitor};
+use serde::de::{DeserializeSeed, SeqAccess};
 use serde::forward_to_deserialize_any;
 use serde::{Deserialize, Deserializer};
 
@@ -39,11 +39,8 @@ impl SourceDeserializer {
 impl<'de> Deserializer<'de> for SourceDeserializer {
     type Error = DeError;
 
-    fn deserialize_any<V>(self, visitor: V) -> Result<<V as Visitor<'de>>::Value, Self::Error>
-    where
-        V: Visitor<'de>,
-    {
-        visitor.visit_seq(self)
+    visit_seq! {
+        any
     }
 
     forward_to_deserialize_any! {

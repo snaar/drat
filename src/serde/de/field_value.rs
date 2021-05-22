@@ -50,16 +50,6 @@ impl<'de: 'a, 'a> Deserializer<'de> for FieldValueDeserializer<'a> {
         }
     }
 
-    forward_to_deserialize_any! {
-        bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 str string
-        bytes byte_buf newtype_struct seq tuple
-        tuple_struct map struct identifier
-    }
-
-    visit_unit! {
-        unit unit_struct ignored_any
-    }
-
     fn deserialize_char<V>(self, visitor: V) -> Result<<V as Visitor<'de>>::Value, Self::Error>
     where
         V: Visitor<'de>,
@@ -99,6 +89,16 @@ impl<'de: 'a, 'a> Deserializer<'de> for FieldValueDeserializer<'a> {
             }
             _ => self.deserialize_any(visitor),
         }
+    }
+
+    visit_unit! {
+        unit unit_struct ignored_any
+    }
+
+    forward_to_deserialize_any! {
+        bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 f32 f64 str string
+        bytes byte_buf newtype_struct seq tuple
+        tuple_struct map struct identifier
     }
 }
 
