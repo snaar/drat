@@ -1,79 +1,39 @@
 use serde::ser::{Impossible, SerializeSeq, SerializeStruct, SerializeTuple, SerializeTupleStruct};
 use serde::{Serialize, Serializer};
 
-use crate::chopper::types::{FieldType, Header};
+use crate::chopper::types::Row;
 use crate::serde::ser_error::SerError;
-use crate::serde::ser_field_type::to_field_type;
-use crate::serde::ser_util::TimestampFieldLocator;
+use crate::serde::ser_field_value::to_field_value;
+use crate::serde::ser_u64_timestamp::U64TimestampSerializer;
 
-pub fn to_header<T>(
-    value: &T,
-    timestamp_field_locator: TimestampFieldLocator,
-) -> Result<Header, SerError>
+pub fn to_row<T>(value: &T, timestamp_field_index: usize) -> Result<Row, SerError>
 where
     T: Serialize + ?Sized,
 {
-    value.serialize(HeaderSerializer::new(timestamp_field_locator))
+    value.serialize(RowSerializer::new(timestamp_field_index))
 }
 
-pub struct HeaderSerializer {
-    timestamp_field_locator: TimestampFieldLocator,
-    field_names: Vec<String>,
-    field_types: Vec<FieldType>,
+pub struct RowSerializer {
+    timestamp_field_index: usize,
+    fields_processed_count: usize,
+    row: Row,
 }
 
-impl HeaderSerializer {
-    pub fn new(timestamp_field_locator: TimestampFieldLocator) -> HeaderSerializer {
-        HeaderSerializer {
-            timestamp_field_locator,
-            field_names: Vec::new(),
-            field_types: Vec::new(),
+impl RowSerializer {
+    pub fn new(timestamp_field_index: usize) -> RowSerializer {
+        RowSerializer {
+            timestamp_field_index,
+            fields_processed_count: 0,
+            row: Row {
+                timestamp: 0,
+                field_values: vec![],
+            },
         }
     }
-
-    fn into_header(self) -> Result<Header, SerError> {
-        if self.field_types.is_empty() {
-            return Err(SerError::NoTimestampField);
-        }
-
-        let mut field_names = self.field_names;
-        let mut field_types = self.field_types;
-
-        let idx = match self.timestamp_field_locator {
-            TimestampFieldLocator::ByName(name) => {
-                if field_names.is_empty() {
-                    return Err(SerError::InvalidTimestampFieldLocator);
-                }
-
-                let idx = match field_names.iter().position(|e| e == &name) {
-                    None => {
-                        return Err(SerError::timestamp_field_not_found(name));
-                    }
-                    Some(i) => i,
-                };
-                field_names.remove(idx);
-                idx
-            }
-            TimestampFieldLocator::ByIndex(idx) => {
-                if !field_names.is_empty() {
-                    return Err(SerError::InvalidTimestampFieldLocator);
-                }
-                field_names = Header::generate_default_field_names(field_types.len() - 1);
-                idx
-            }
-        };
-
-        if field_types[idx] != FieldType::Long {
-            return Err(SerError::InvalidTimestampFieldType);
-        }
-        field_types.remove(idx);
-
-        Ok(Header::new(field_names, field_types))
-    }
 }
 
-impl Serializer for HeaderSerializer {
-    type Ok = Header;
+impl Serializer for RowSerializer {
+    type Ok = Row;
     type Error = SerError;
     type SerializeSeq = Self;
     type SerializeTuple = Self;
@@ -240,155 +200,105 @@ impl Serializer for HeaderSerializer {
     }
 }
 
-impl SerializeSeq for HeaderSerializer {
-    type Ok = Header;
+impl SerializeSeq for RowSerializer {
+    type Ok = Row;
     type Error = SerError;
 
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: Serialize,
     {
-        self.field_types.push(to_field_type(value)?);
+        if self.timestamp_field_index == self.fields_processed_count {
+            self.row.timestamp = value.serialize(U64TimestampSerializer {})?;
+        } else {
+            self.row.field_values.push(to_field_value(value)?);
+        }
+        self.fields_processed_count += 1;
         Ok(())
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        self.into_header()
+        Ok(self.row)
     }
 }
 
-impl SerializeTuple for HeaderSerializer {
-    type Ok = Header;
+impl SerializeTuple for RowSerializer {
+    type Ok = Row;
     type Error = SerError;
 
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: Serialize,
     {
-        self.field_types.push(to_field_type(value)?);
+        if self.timestamp_field_index == self.fields_processed_count {
+            self.row.timestamp = value.serialize(U64TimestampSerializer {})?;
+        } else {
+            self.row.field_values.push(to_field_value(value)?);
+        }
+        self.fields_processed_count += 1;
         Ok(())
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        self.into_header()
+        Ok(self.row)
     }
 }
 
-impl SerializeTupleStruct for HeaderSerializer {
-    type Ok = Header;
+impl SerializeTupleStruct for RowSerializer {
+    type Ok = Row;
     type Error = SerError;
 
     fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: Serialize,
     {
-        self.field_types.push(to_field_type(value)?);
+        if self.timestamp_field_index == self.fields_processed_count {
+            self.row.timestamp = value.serialize(U64TimestampSerializer {})?;
+        } else {
+            self.row.field_values.push(to_field_value(value)?);
+        }
+        self.fields_processed_count += 1;
         Ok(())
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        self.into_header()
+        Ok(self.row)
     }
 }
 
-impl SerializeStruct for HeaderSerializer {
-    type Ok = Header;
+impl SerializeStruct for RowSerializer {
+    type Ok = Row;
     type Error = SerError;
 
     fn serialize_field<T: ?Sized>(
         &mut self,
-        key: &'static str,
+        _key: &'static str,
         value: &T,
     ) -> Result<(), Self::Error>
     where
         T: Serialize,
     {
-        self.field_names.push(key.to_string());
-        self.field_types.push(to_field_type(value)?);
+        if self.timestamp_field_index == self.fields_processed_count {
+            self.row.timestamp = value.serialize(U64TimestampSerializer {})?;
+        } else {
+            self.row.field_values.push(to_field_value(value)?);
+        }
+        self.fields_processed_count += 1;
         Ok(())
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        self.into_header()
+        Ok(self.row)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use serde::Serialize;
-
-    use crate::chopper::types::{FieldType, Header};
-    use crate::serde::ser_header::{to_header, TimestampFieldLocator};
+    use crate::chopper::types::FieldValue;
+    use crate::serde::ser::from_seq::row::to_row;
 
     #[test]
-    fn test_timestamp_by_name() {
-        #[derive(Serialize)]
-        struct Row {
-            a_bool: bool,
-            a_byte: u8,
-            a_byte_buf: Vec<u8>,
-            a_char: char,
-            a_double: f64,
-            f_float: f32,
-            an_int: i32,
-            timestamp: u64,
-            a_long: i64,
-            a_short: i16,
-            a_string: String,
-        }
-
-        let row = Row {
-            a_bool: false,
-            a_byte: 5u8,
-            a_byte_buf: vec![b'a'],
-            a_char: 'a',
-            a_double: 6.6f64,
-            f_float: 7.7f32,
-            an_int: 8i32,
-            timestamp: 123u64,
-            a_long: 9i64,
-            a_short: 10i16,
-            a_string: "a".to_string(),
-        };
-
-        let header =
-            to_header(&row, TimestampFieldLocator::ByName("timestamp".to_string())).unwrap();
-        assert_eq!(header.field_names().len(), 10);
-        assert_eq!(header.field_types().len(), 10);
-        assert_eq!(
-            header.field_names(),
-            &vec![
-                "a_bool".to_string(),
-                "a_byte".to_string(),
-                "a_byte_buf".to_string(),
-                "a_char".to_string(),
-                "a_double".to_string(),
-                "f_float".to_string(),
-                "an_int".to_string(),
-                "a_long".to_string(),
-                "a_short".to_string(),
-                "a_string".to_string()
-            ]
-        );
-        assert_eq!(
-            header.field_types(),
-            &vec![
-                FieldType::Boolean,
-                FieldType::Byte,
-                FieldType::ByteBuf,
-                FieldType::Char,
-                FieldType::Double,
-                FieldType::Float,
-                FieldType::Int,
-                FieldType::Long,
-                FieldType::Short,
-                FieldType::String,
-            ]
-        );
-    }
-
-    #[test]
-    fn test_timestamp_by_index() {
+    fn test() {
         let row = (
             false,
             5u8,
@@ -403,26 +313,22 @@ mod tests {
             "a".to_string(),
         );
 
-        let header = to_header(&row, TimestampFieldLocator::ByIndex(7)).unwrap();
-        assert_eq!(header.field_names().len(), 10);
-        assert_eq!(header.field_types().len(), 10);
+        let row = to_row(&row, 7).unwrap();
+        assert_eq!(row.timestamp, 123u64);
+        assert_eq!(row.field_values.len(), 10);
         assert_eq!(
-            header.field_names(),
-            &Header::generate_default_field_names(10)
-        );
-        assert_eq!(
-            header.field_types(),
-            &vec![
-                FieldType::Boolean,
-                FieldType::Byte,
-                FieldType::ByteBuf,
-                FieldType::Char,
-                FieldType::Double,
-                FieldType::Float,
-                FieldType::Int,
-                FieldType::Long,
-                FieldType::Short,
-                FieldType::String,
+            row.field_values,
+            vec![
+                FieldValue::Boolean(false),
+                FieldValue::Byte(5u8),
+                FieldValue::ByteBuf(vec![b'a']),
+                FieldValue::Char('a' as u16),
+                FieldValue::Double(6.6f64),
+                FieldValue::Float(7.7f32),
+                FieldValue::Int(8i32),
+                FieldValue::Long(9i64),
+                FieldValue::Short(10i16),
+                FieldValue::String("a".to_string()),
             ]
         );
     }

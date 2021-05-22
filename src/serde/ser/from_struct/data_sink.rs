@@ -3,42 +3,39 @@ use serde::{Serialize, Serializer};
 
 use crate::chopper::chopper::DataSink;
 use crate::chopper::types::Row;
+use crate::serde::ser::from_struct::row::RowSerializer;
 use crate::serde::ser_error::SerError;
-use crate::serde::ser_row::RowSerializer;
-use crate::serde::ser_util::TimestampFieldLocator;
 
-pub fn to_data_sink<T, D>(
+pub fn to_data_sink<T, D, N>(
     value: &T,
-    timestamp_field_locator: TimestampFieldLocator,
+    timestamp_field_name: N,
     data_sink: Box<D>,
 ) -> Result<Box<D>, SerError>
 where
     T: Serialize + ?Sized,
     D: DataSink + ?Sized,
+    N: AsRef<str>,
 {
-    value.serialize(DataSinkSerializer::new(timestamp_field_locator, data_sink))
+    value.serialize(DataSinkSerializer::new(timestamp_field_name, data_sink))
 }
 
-pub struct DataSinkSerializer<D: DataSink + ?Sized> {
-    timestamp_field_locator: TimestampFieldLocator,
+pub struct DataSinkSerializer<D: DataSink + ?Sized, N: AsRef<str>> {
+    timestamp_field_name: N,
     data_sink: Box<D>,
     row_vec: Vec<Row>,
 }
 
-impl<D: DataSink + ?Sized> DataSinkSerializer<D> {
-    pub fn new(
-        timestamp_field_locator: TimestampFieldLocator,
-        data_sink: Box<D>,
-    ) -> DataSinkSerializer<D> {
+impl<D: DataSink + ?Sized, N: AsRef<str>> DataSinkSerializer<D, N> {
+    pub fn new(timestamp_field_name: N, data_sink: Box<D>) -> DataSinkSerializer<D, N> {
         DataSinkSerializer {
-            timestamp_field_locator,
+            timestamp_field_name,
             data_sink,
             row_vec: Vec::new(),
         }
     }
 }
 
-impl<D: DataSink + ?Sized> Serializer for DataSinkSerializer<D> {
+impl<D: DataSink + ?Sized, N: AsRef<str>> Serializer for DataSinkSerializer<D, N> {
     type Ok = Box<D>;
     type Error = SerError;
     type SerializeSeq = Self;
@@ -206,7 +203,7 @@ impl<D: DataSink + ?Sized> Serializer for DataSinkSerializer<D> {
     }
 }
 
-impl<D: DataSink + ?Sized> SerializeSeq for DataSinkSerializer<D> {
+impl<D: DataSink + ?Sized, N: AsRef<str>> SerializeSeq for DataSinkSerializer<D, N> {
     type Ok = Box<D>;
     type Error = SerError;
 
@@ -214,8 +211,7 @@ impl<D: DataSink + ?Sized> SerializeSeq for DataSinkSerializer<D> {
     where
         T: Serialize,
     {
-        //TODO don't clone
-        let serializer = RowSerializer::new(self.timestamp_field_locator.clone());
+        let serializer = RowSerializer::new(self.timestamp_field_name.as_ref());
         let row = value.serialize(serializer)?;
         self.row_vec.push(row);
         self.data_sink.write_row(&mut self.row_vec)?;
@@ -232,9 +228,8 @@ impl<D: DataSink + ?Sized> SerializeSeq for DataSinkSerializer<D> {
 mod tests {
     use serde::Serialize;
 
-    use crate::serde::ser_data_sink::to_data_sink;
-    use crate::serde::ser_row::to_row;
-    use crate::serde::ser_util::TimestampFieldLocator;
+    use crate::serde::ser::from_struct::data_sink::to_data_sink;
+    use crate::serde::ser::from_struct::row::to_row;
     use crate::write::vec_sink::VecSink;
 
     #[test]
@@ -296,13 +291,11 @@ mod tests {
             },
         ];
 
-        let tfl = TimestampFieldLocator::ByName("timestamp".to_string());
-
-        let sink = to_data_sink(&rows, tfl.clone(), Box::new(VecSink::new())).unwrap();
-
+        let tfn = "timestamp";
+        let sink = to_data_sink(&rows, tfn, Box::new(VecSink::new())).unwrap();
         assert_eq!(sink.rows.len(), 3);
-        assert_eq!(sink.rows[0], to_row(&rows[0], tfl.clone()).unwrap());
-        assert_eq!(sink.rows[1], to_row(&rows[1], tfl.clone()).unwrap());
-        assert_eq!(sink.rows[2], to_row(&rows[2], tfl.clone()).unwrap());
+        assert_eq!(sink.rows[0], to_row(&rows[0], tfn).unwrap());
+        assert_eq!(sink.rows[1], to_row(&rows[1], tfn).unwrap());
+        assert_eq!(sink.rows[2], to_row(&rows[2], tfn).unwrap());
     }
 }

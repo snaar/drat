@@ -1,40 +1,45 @@
-use serde::ser::{Impossible, SerializeSeq, SerializeStruct, SerializeTuple, SerializeTupleStruct};
+use serde::ser::{Impossible, SerializeStruct};
 use serde::{Serialize, Serializer};
 
 use crate::chopper::types::Row;
 use crate::serde::ser_error::SerError;
 use crate::serde::ser_field_value::to_field_value;
 use crate::serde::ser_u64_timestamp::U64TimestampSerializer;
-use crate::serde::ser_util::TimestampFieldLocator;
 
-pub fn to_row<T>(value: &T, timestamp_field_locator: TimestampFieldLocator) -> Result<Row, SerError>
+pub fn to_row<T, N>(value: &T, timestamp_field_name: N) -> Result<Row, SerError>
 where
     T: Serialize + ?Sized,
+    N: AsRef<str>,
 {
-    value.serialize(RowSerializer::new(timestamp_field_locator))
+    value.serialize(RowSerializer::new(timestamp_field_name))
 }
 
-pub struct RowSerializer {
-    timestamp_field_locator: TimestampFieldLocator,
+pub struct RowSerializer<N: AsRef<str>> {
+    timestamp_field_name: N,
+    row: Row,
 }
 
-impl RowSerializer {
-    pub fn new(timestamp_field_locator: TimestampFieldLocator) -> RowSerializer {
+impl<N: AsRef<str>> RowSerializer<N> {
+    pub fn new(timestamp_field_name: N) -> RowSerializer<N> {
         RowSerializer {
-            timestamp_field_locator,
+            timestamp_field_name,
+            row: Row {
+                timestamp: 0,
+                field_values: vec![],
+            },
         }
     }
 }
 
-impl Serializer for RowSerializer {
+impl<N: AsRef<str>> Serializer for RowSerializer<N> {
     type Ok = Row;
     type Error = SerError;
-    type SerializeSeq = RowSerializerWithTimestampFieldIndex;
-    type SerializeTuple = RowSerializerWithTimestampFieldIndex;
-    type SerializeTupleStruct = RowSerializerWithTimestampFieldIndex;
+    type SerializeSeq = Impossible<Self::Ok, Self::Error>;
+    type SerializeTuple = Impossible<Self::Ok, Self::Error>;
+    type SerializeTupleStruct = Impossible<Self::Ok, Self::Error>;
     type SerializeTupleVariant = Impossible<Self::Ok, Self::Error>;
     type SerializeMap = Impossible<Self::Ok, Self::Error>;
-    type SerializeStruct = RowSerializerFromStruct;
+    type SerializeStruct = Self;
     type SerializeStructVariant = Impossible<Self::Ok, Self::Error>;
 
     fn serialize_bool(self, _v: bool) -> Result<Self::Ok, Self::Error> {
@@ -146,11 +151,11 @@ impl Serializer for RowSerializer {
     }
 
     fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
-        RowSerializerWithTimestampFieldIndex::new(self.timestamp_field_locator)
+        Err(SerError::type_not_supported("seq"))
     }
 
     fn serialize_tuple(self, _len: usize) -> Result<Self::SerializeTuple, Self::Error> {
-        RowSerializerWithTimestampFieldIndex::new(self.timestamp_field_locator)
+        Err(SerError::type_not_supported("tuple"))
     }
 
     fn serialize_tuple_struct(
@@ -158,7 +163,7 @@ impl Serializer for RowSerializer {
         _name: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeTupleStruct, Self::Error> {
-        RowSerializerWithTimestampFieldIndex::new(self.timestamp_field_locator)
+        Err(SerError::type_not_supported("tuple struct"))
     }
 
     fn serialize_tuple_variant(
@@ -180,7 +185,7 @@ impl Serializer for RowSerializer {
         _name: &'static str,
         _len: usize,
     ) -> Result<Self::SerializeStruct, Self::Error> {
-        RowSerializerFromStruct::new(self.timestamp_field_locator)
+        Ok(self)
     }
 
     fn serialize_struct_variant(
@@ -194,127 +199,7 @@ impl Serializer for RowSerializer {
     }
 }
 
-pub struct RowSerializerWithTimestampFieldIndex {
-    row: Row,
-    timestamp_index: usize,
-    fields_processed_count: usize,
-}
-
-impl RowSerializerWithTimestampFieldIndex {
-    fn new(
-        timestamp_field_locator: TimestampFieldLocator,
-    ) -> Result<RowSerializerWithTimestampFieldIndex, SerError> {
-        let timestamp_index = match timestamp_field_locator {
-            TimestampFieldLocator::ByName(_) => {
-                return Err(SerError::InvalidTimestampFieldLocator);
-            }
-            TimestampFieldLocator::ByIndex(index) => index,
-        };
-
-        Ok(RowSerializerWithTimestampFieldIndex {
-            row: Row {
-                timestamp: 0,
-                field_values: vec![],
-            },
-            timestamp_index,
-            fields_processed_count: 0,
-        })
-    }
-}
-
-impl SerializeSeq for RowSerializerWithTimestampFieldIndex {
-    type Ok = Row;
-    type Error = SerError;
-
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
-    where
-        T: Serialize,
-    {
-        if self.timestamp_index == self.fields_processed_count {
-            self.row.timestamp = value.serialize(U64TimestampSerializer {})?;
-        } else {
-            self.row.field_values.push(to_field_value(value)?);
-        }
-        self.fields_processed_count += 1;
-        Ok(())
-    }
-
-    fn end(self) -> Result<Self::Ok, Self::Error> {
-        Ok(self.row)
-    }
-}
-
-impl SerializeTuple for RowSerializerWithTimestampFieldIndex {
-    type Ok = Row;
-    type Error = SerError;
-
-    fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
-    where
-        T: Serialize,
-    {
-        if self.timestamp_index == self.fields_processed_count {
-            self.row.timestamp = value.serialize(U64TimestampSerializer {})?;
-        } else {
-            self.row.field_values.push(to_field_value(value)?);
-        }
-        self.fields_processed_count += 1;
-        Ok(())
-    }
-
-    fn end(self) -> Result<Self::Ok, Self::Error> {
-        Ok(self.row)
-    }
-}
-
-impl SerializeTupleStruct for RowSerializerWithTimestampFieldIndex {
-    type Ok = Row;
-    type Error = SerError;
-
-    fn serialize_field<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
-    where
-        T: Serialize,
-    {
-        if self.timestamp_index == self.fields_processed_count {
-            self.row.timestamp = value.serialize(U64TimestampSerializer {})?;
-        } else {
-            self.row.field_values.push(to_field_value(value)?);
-        }
-        self.fields_processed_count += 1;
-        Ok(())
-    }
-
-    fn end(self) -> Result<Self::Ok, Self::Error> {
-        Ok(self.row)
-    }
-}
-
-pub struct RowSerializerFromStruct {
-    row: Row,
-    timestamp_name: String,
-}
-
-impl RowSerializerFromStruct {
-    fn new(
-        timestamp_field_locator: TimestampFieldLocator,
-    ) -> Result<RowSerializerFromStruct, SerError> {
-        let timestamp_name = match timestamp_field_locator {
-            TimestampFieldLocator::ByName(name) => name,
-            TimestampFieldLocator::ByIndex(_) => {
-                return Err(SerError::InvalidTimestampFieldLocator);
-            }
-        };
-
-        Ok(RowSerializerFromStruct {
-            row: Row {
-                timestamp: 0,
-                field_values: vec![],
-            },
-            timestamp_name,
-        })
-    }
-}
-
-impl SerializeStruct for RowSerializerFromStruct {
+impl<N: AsRef<str>> SerializeStruct for RowSerializer<N> {
     type Ok = Row;
     type Error = SerError;
 
@@ -326,7 +211,7 @@ impl SerializeStruct for RowSerializerFromStruct {
     where
         T: Serialize,
     {
-        if key == self.timestamp_name {
+        if key == self.timestamp_field_name.as_ref() {
             self.row.timestamp = value.serialize(U64TimestampSerializer {})?;
         } else {
             self.row.field_values.push(to_field_value(value)?);
@@ -344,11 +229,10 @@ mod tests {
     use serde::Serialize;
 
     use crate::chopper::types::FieldValue;
-    use crate::serde::ser_row::to_row;
-    use crate::serde::ser_util::TimestampFieldLocator;
+    use crate::serde::ser::from_struct::row::to_row;
 
     #[test]
-    fn test_timestamp_by_name() {
+    fn test() {
         #[derive(Serialize)]
         struct Row {
             a_bool: bool,
@@ -378,43 +262,7 @@ mod tests {
             a_string: "a".to_string(),
         };
 
-        let row = to_row(&row, TimestampFieldLocator::ByName("timestamp".to_string())).unwrap();
-        assert_eq!(row.timestamp, 123u64);
-        assert_eq!(row.field_values.len(), 10);
-        assert_eq!(
-            row.field_values,
-            vec![
-                FieldValue::Boolean(false),
-                FieldValue::Byte(5u8),
-                FieldValue::ByteBuf(vec![b'a']),
-                FieldValue::Char('a' as u16),
-                FieldValue::Double(6.6f64),
-                FieldValue::Float(7.7f32),
-                FieldValue::Int(8i32),
-                FieldValue::Long(9i64),
-                FieldValue::Short(10i16),
-                FieldValue::String("a".to_string()),
-            ]
-        );
-    }
-
-    #[test]
-    fn test_timestamp_by_index() {
-        let row = (
-            false,
-            5u8,
-            vec![b'a'],
-            'a',
-            6.6f64,
-            7.7f32,
-            8i32,
-            123u64,
-            9i64,
-            10i16,
-            "a".to_string(),
-        );
-
-        let row = to_row(&row, TimestampFieldLocator::ByIndex(7)).unwrap();
+        let row = to_row(&row, "timestamp").unwrap();
         assert_eq!(row.timestamp, 123u64);
         assert_eq!(row.field_values.len(), 10);
         assert_eq!(
