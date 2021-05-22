@@ -1,11 +1,2 @@
-pub mod de_error;
-pub mod de_field_value;
-pub mod de_row;
-pub mod de_source;
-mod de_util;
+pub mod de;
 pub mod ser;
-mod ser_byte_buf_element;
-pub mod ser_error;
-mod ser_field_type;
-pub mod ser_field_value;
-mod ser_u64_timestamp;

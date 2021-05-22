@@ -3,8 +3,8 @@ use serde::{Serialize, Serializer};
 
 use crate::chopper::chopper::DataSink;
 use crate::chopper::types::Row;
+use crate::serde::ser::error::SerError;
 use crate::serde::ser::from_seq::row::RowSerializer;
-use crate::serde::ser_error::SerError;
 
 pub fn to_data_sink<T, D>(
     value: &T,

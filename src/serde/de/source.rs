@@ -3,8 +3,8 @@ use serde::forward_to_deserialize_any;
 use serde::{Deserialize, Deserializer};
 
 use crate::chopper::chopper::Source;
-use crate::serde::de_error::DeError;
-use crate::serde::de_row::RowDeserializer;
+use crate::serde::de::error::DeError;
+use crate::serde::de::row::RowDeserializer;
 
 pub fn from_source<'de, T>(
     source: Box<dyn Source>,
@@ -87,7 +87,7 @@ mod tests {
     use serde_with::{serde_as, DisplayFromStr};
 
     use crate::cli::util::YesNoAuto;
-    use crate::serde::de_source::from_source;
+    use crate::serde::de::source::from_source;
     use crate::source::csv_configs::{
         CSVInputConfig, TimestampColConfig, TimestampConfig, TimestampFmtConfig,
     };

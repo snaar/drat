@@ -4,7 +4,7 @@ use serde::forward_to_deserialize_any;
 use serde::{Deserialize, Deserializer};
 
 use crate::chopper::types::FieldValue;
-use crate::serde::de_error::DeError;
+use crate::serde::de::error::DeError;
 use crate::visit_unit;
 
 pub fn from_field_value<'de: 'a, 'a, T>(field_value: &'a FieldValue) -> Result<T, DeError>
@@ -108,7 +108,7 @@ mod tests {
     use serde::Deserialize;
 
     use crate::chopper::types::FieldValue;
-    use crate::serde::de_field_value::from_field_value;
+    use crate::serde::de::field_value::from_field_value;
 
     #[derive(Debug, Deserialize, PartialEq)]
     enum TestEnum {

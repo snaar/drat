@@ -1,7 +1,7 @@
 use serde::ser::Impossible;
 use serde::{Serialize, Serializer};
 
-use crate::serde::ser_error::SerError;
+use crate::serde::ser::error::SerError;
 
 pub struct U64TimestampSerializer {}
 

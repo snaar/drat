@@ -2,8 +2,8 @@ use serde::ser::{Impossible, SerializeStruct};
 use serde::{Serialize, Serializer};
 
 use crate::chopper::types::{FieldType, Header};
-use crate::serde::ser_error::SerError;
-use crate::serde::ser_field_type::to_field_type;
+use crate::serde::ser::error::SerError;
+use crate::serde::ser::field_type::to_field_type;
 
 pub fn to_header<T, N>(value: &T, timestamp_field_name: N) -> Result<Header, SerError>
 where

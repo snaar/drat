@@ -3,8 +3,8 @@ use serde::ser::{Impossible, SerializeSeq, SerializeTuple};
 use serde::{Serialize, Serializer};
 
 use crate::chopper::types::FieldValue;
-use crate::serde::ser_byte_buf_element::ByteBufElementSerializer;
-use crate::serde::ser_error::SerError;
+use crate::serde::ser::byte_buf_element::ByteBufElementSerializer;
+use crate::serde::ser::error::SerError;
 
 pub fn to_field_value<T>(value: &T) -> Result<FieldValue, SerError>
 where
@@ -239,7 +239,7 @@ mod tests {
     use serde::Serializer;
 
     use crate::chopper::types::FieldValue;
-    use crate::serde::ser_field_value::{to_field_value, FieldValueSerializer};
+    use crate::serde::ser::field_value::{to_field_value, FieldValueSerializer};
 
     #[test]
     fn test() {

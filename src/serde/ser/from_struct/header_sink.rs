@@ -3,9 +3,9 @@ use serde::{Serialize, Serializer};
 
 use crate::chopper::chopper::{DataSink, HeaderSink};
 use crate::chopper::types::{Header, Row};
+use crate::serde::ser::error::SerError;
 use crate::serde::ser::from_struct::header::to_header;
 use crate::serde::ser::from_struct::row::to_row;
-use crate::serde::ser_error::SerError;
 
 pub fn to_header_sink<T, N>(
     value: &T,

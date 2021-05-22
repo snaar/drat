@@ -3,8 +3,8 @@ use serde::forward_to_deserialize_any;
 use serde::{Deserialize, Deserializer};
 
 use crate::chopper::types::{Header, Row};
-use crate::serde::de_error::DeError;
-use crate::serde::de_field_value::FieldValueDeserializer;
+use crate::serde::de::error::DeError;
+use crate::serde::de::field_value::FieldValueDeserializer;
 use crate::visit_unit;
 
 pub fn from_row_with_header<'de: 'a + 'b + 'c, 'a, 'b, 'c, T>(
@@ -231,7 +231,7 @@ mod tests {
     use serde::Deserialize;
 
     use crate::chopper::types::{FieldType, FieldValue, Header, Row};
-    use crate::serde::de_row::{from_row_with_header, from_row_without_header};
+    use crate::serde::de::row::{from_row_with_header, from_row_without_header};
 
     #[test]
     fn test_with_header_tuple() {

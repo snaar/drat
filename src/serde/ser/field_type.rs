@@ -2,8 +2,8 @@ use serde::ser::{Impossible, SerializeSeq, SerializeTuple};
 use serde::{Serialize, Serializer};
 
 use crate::chopper::types::FieldType;
-use crate::serde::ser_byte_buf_element::ByteBufElementSerializer;
-use crate::serde::ser_error::SerError;
+use crate::serde::ser::byte_buf_element::ByteBufElementSerializer;
+use crate::serde::ser::error::SerError;
 
 pub fn to_field_type<T>(value: &T) -> Result<FieldType, SerError>
 where
@@ -226,7 +226,7 @@ mod tests {
     use serde::Serializer;
 
     use crate::chopper::types::FieldType;
-    use crate::serde::ser_field_type::{to_field_type, FieldTypeSerializer};
+    use crate::serde::ser::field_type::{to_field_type, FieldTypeSerializer};
 
     #[test]
     fn test() {

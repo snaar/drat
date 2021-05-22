@@ -2,9 +2,9 @@ use serde::ser::{Impossible, SerializeSeq, SerializeStruct, SerializeTuple, Seri
 use serde::{Serialize, Serializer};
 
 use crate::chopper::types::Row;
-use crate::serde::ser_error::SerError;
-use crate::serde::ser_field_value::to_field_value;
-use crate::serde::ser_u64_timestamp::U64TimestampSerializer;
+use crate::serde::ser::error::SerError;
+use crate::serde::ser::field_value::to_field_value;
+use crate::serde::ser::u64_timestamp::U64TimestampSerializer;
 
 pub fn to_row<T>(value: &T, timestamp_field_index: usize) -> Result<Row, SerError>
 where
