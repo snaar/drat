@@ -85,7 +85,7 @@ impl Serializer for RowSerializer {
         Ok(self)
     }
 
-    err_type_not_supported! {
+    return_error! { <type_not_supported>
         bool i8 i16 i32 i64 u8 u16 u32 u64 f32 f64 char str bytes
         none unit unit_struct unit_variant newtype_variant
         tuple_variant map struct_variant

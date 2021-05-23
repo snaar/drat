@@ -128,7 +128,7 @@ impl Serializer for FieldValueSerializer {
         Ok(FieldValueByteBufSerializer::new())
     }
 
-    err_type_not_supported! {
+    return_error! { <type_not_supported>
         unit unit_struct newtype_variant tuple_struct tuple_variant
         map struct struct_variant
     }

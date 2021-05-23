@@ -31,7 +31,7 @@ impl Serializer for U64TimestampSerializer {
         value.serialize(self)
     }
 
-    err_not_a_u64_timestamp! {
+    return_error! { <not_a_u64_timestamp>
         bool i8 i16 i32 i64 u8 u16 u32 f32 f64 char str bytes
         none some unit unit_struct unit_variant newtype_variant
         seq tuple tuple_struct tuple_variant map struct struct_variant
