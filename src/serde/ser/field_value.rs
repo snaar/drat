@@ -100,14 +100,6 @@ impl Serializer for FieldValueSerializer {
         value.serialize(self)
     }
 
-    fn serialize_unit(self) -> Result<Self::Ok, Self::Error> {
-        Err(SerError::type_not_supported("unit"))
-    }
-
-    fn serialize_unit_struct(self, _name: &'static str) -> Result<Self::Ok, Self::Error> {
-        Err(SerError::type_not_supported("unit struct"))
-    }
-
     fn serialize_unit_variant(
         self,
         _name: &'static str,
@@ -128,19 +120,6 @@ impl Serializer for FieldValueSerializer {
         value.serialize(self)
     }
 
-    fn serialize_newtype_variant<T: ?Sized>(
-        self,
-        _name: &'static str,
-        _variant_index: u32,
-        _variant: &'static str,
-        _value: &T,
-    ) -> Result<Self::Ok, Self::Error>
-    where
-        T: Serialize,
-    {
-        Err(SerError::type_not_supported("newtype variant"))
-    }
-
     fn serialize_seq(self, _len: Option<usize>) -> Result<Self::SerializeSeq, Self::Error> {
         Ok(FieldValueByteBufSerializer::new())
     }
@@ -149,44 +128,9 @@ impl Serializer for FieldValueSerializer {
         Ok(FieldValueByteBufSerializer::new())
     }
 
-    fn serialize_tuple_struct(
-        self,
-        _name: &'static str,
-        _len: usize,
-    ) -> Result<Self::SerializeTupleStruct, Self::Error> {
-        Err(SerError::type_not_supported("tuple struct"))
-    }
-
-    fn serialize_tuple_variant(
-        self,
-        _name: &'static str,
-        _variant_index: u32,
-        _variant: &'static str,
-        _len: usize,
-    ) -> Result<Self::SerializeTupleVariant, Self::Error> {
-        Err(SerError::type_not_supported("tuple variant"))
-    }
-
-    fn serialize_map(self, _len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
-        Err(SerError::type_not_supported("map"))
-    }
-
-    fn serialize_struct(
-        self,
-        _name: &'static str,
-        _len: usize,
-    ) -> Result<Self::SerializeStruct, Self::Error> {
-        Err(SerError::type_not_supported("struct"))
-    }
-
-    fn serialize_struct_variant(
-        self,
-        _name: &'static str,
-        _variant_index: u32,
-        _variant: &'static str,
-        _len: usize,
-    ) -> Result<Self::SerializeStructVariant, Self::Error> {
-        Err(SerError::type_not_supported("struct variant"))
+    err_type_not_supported! {
+        unit unit_struct newtype_variant tuple_struct tuple_variant
+        map struct struct_variant
     }
 }
 

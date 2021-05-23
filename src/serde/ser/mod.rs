@@ -1,3 +1,6 @@
+#[macro_use]
+mod macro_util;
+
 mod byte_buf_element;
 pub mod error;
 mod field_type;
