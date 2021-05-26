@@ -24,10 +24,7 @@ impl RowSerializer {
         RowSerializer {
             timestamp_field_index,
             fields_processed_count: 0,
-            row: Row {
-                timestamp: 0,
-                field_values: vec![],
-            },
+            row: Row::empty(),
         }
     }
 }

@@ -23,10 +23,7 @@ impl<N: AsRef<str>> RowSerializer<N> {
     pub fn new(timestamp_field_name: N) -> RowSerializer<N> {
         RowSerializer {
             timestamp_field_name,
-            row: Row {
-                timestamp: 0,
-                field_values: vec![],
-            },
+            row: Row::empty(),
         }
     }
 }

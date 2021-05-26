@@ -152,3 +152,12 @@ pub struct Row {
     pub timestamp: Nanos,
     pub field_values: Vec<FieldValue>,
 }
+
+impl Row {
+    pub fn empty() -> Row {
+        Row {
+            timestamp: 0,
+            field_values: vec![],
+        }
+    }
+}
