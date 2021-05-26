@@ -1,8 +1,9 @@
 use std::io::Read;
+use std::mem;
 
 use csv::{self, Trim};
 
-use crate::chopper::types::{FieldType, FieldValue, Header, Nanos, Row};
+use crate::chopper::types::{FieldType, FieldValue, Header, Row};
 use crate::cli::util::YesNoAuto;
 use crate::error::CliResult;
 use crate::source::csv_input_config::CSVInputConfig;
@@ -17,6 +18,7 @@ const DELIMITERS: &[u8] = b",\t ";
 pub struct CSVSource<R: Read> {
     reader: csv::Reader<ChopperBufReader<R>>,
     header: Header,
+    hide_timestamp_column: bool,
     timestamp_col: TimestampCol,
     timestamp_fmt: TimestampFmt,
     timezone: ChopperTz,
@@ -76,13 +78,6 @@ impl<R: Read> CSVSource<R> {
             Header::generate_default_field_names(field_count)
         };
 
-        // initialize next_row
-        let timestamp: Nanos = 0;
-        let field_values: Vec<FieldValue> = vec![FieldValue::None; field_count];
-        let next_row = Row {
-            timestamp,
-            field_values,
-        };
         let field_types: Vec<FieldType> = vec![FieldType::String; field_count];
         let header: Header = Header::new(field_names, field_types);
 
@@ -96,13 +91,31 @@ impl<R: Read> CSVSource<R> {
             timezone,
         )?;
 
+        let mut header = header;
+        if csv_input_config.hide_timestamp_column {
+            match timestamp_col {
+                TimestampCol::Index(i) => {
+                    header.field_types_mut().remove(i);
+                    header.field_names_mut().remove(i);
+                }
+                TimestampCol::DateTimeIndex(d, t) => {
+                    header.field_types_mut().remove(d);
+                    header.field_names_mut().remove(d);
+                    header.field_types_mut().remove(t);
+                    header.field_names_mut().remove(t);
+                }
+            };
+        };
+        let header = header;
+
         let mut csv_reader = CSVSource {
             reader,
             header,
+            hide_timestamp_column: csv_input_config.hide_timestamp_column,
             timestamp_col,
             timestamp_fmt,
             timezone: timezone.clone(),
-            next_row,
+            next_row: Row::empty(),
             has_next_row: true,
         };
 
@@ -113,10 +126,38 @@ impl<R: Read> CSVSource<R> {
     }
 
     fn update_row(&mut self, next_record: csv::StringRecord) -> CliResult<()> {
-        for i in 0..next_record.len() {
-            self.next_row.field_values[i] =
-                FieldValue::String(next_record.get(i).unwrap().to_string());
-        }
+        if self.hide_timestamp_column {
+            match self.timestamp_col {
+                TimestampCol::Index(ts) => {
+                    for i in 0..next_record.len() {
+                        if i == ts {
+                            continue;
+                        }
+
+                        self.next_row
+                            .field_values
+                            .push(FieldValue::String(next_record.get(i).unwrap().to_string()));
+                    }
+                }
+                TimestampCol::DateTimeIndex(d, t) => {
+                    for i in 0..next_record.len() {
+                        if i == d || i == t {
+                            continue;
+                        }
+
+                        self.next_row
+                            .field_values
+                            .push(FieldValue::String(next_record.get(i).unwrap().to_string()));
+                    }
+                }
+            };
+        } else {
+            for i in 0..next_record.len() {
+                self.next_row
+                    .field_values
+                    .push(FieldValue::String(next_record.get(i).unwrap().to_string()));
+            }
+        };
 
         self.next_row.timestamp = csv_timestamp::get_timestamp(
             &next_record,
@@ -132,7 +173,7 @@ impl<R: Read> CSVSource<R> {
             return Ok(None);
         }
 
-        let current_row = self.next_row.clone();
+        let current_row = mem::replace(&mut self.next_row, Row::empty());
         match self.reader.records().next() {
             Some(r) => self.update_row(r?)?,
             None => self.has_next_row = false,

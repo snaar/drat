@@ -7,6 +7,7 @@ use crate::util::csv_util;
 pub struct CSVInputConfig {
     pub delimiter: Option<u8>,
     pub has_header: YesNoAuto,
+    pub hide_timestamp_column: bool,
     pub timestamp_config: TimestampConfig,
 }
 
@@ -15,6 +16,7 @@ impl CSVInputConfig {
         CSVInputConfig {
             delimiter: None,
             has_header: YesNoAuto::Auto,
+            hide_timestamp_column: false,
             timestamp_config,
         }
     }
@@ -29,6 +31,11 @@ impl CSVInputConfig {
 
     pub fn with_header(mut self, has_header: YesNoAuto) -> Self {
         self.has_header = has_header;
+        self
+    }
+
+    pub fn hide_timestamp_column(mut self, hide_timestamp_column: bool) -> Self {
+        self.hide_timestamp_column = hide_timestamp_column;
         self
     }
 }
