@@ -2,8 +2,8 @@ use std::io::{BufReader, Read};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-use crate::chopper::chopper::Source;
 use crate::error::CliResult;
+use crate::source::source::Source;
 use crate::source::{dc_source::DCSource, source_factory::SourceFactory};
 use crate::util::dc_util;
 use crate::util::reader::ChopperBufPreviewer;

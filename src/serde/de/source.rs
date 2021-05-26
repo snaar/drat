@@ -2,16 +2,14 @@ use serde::de::{DeserializeSeed, SeqAccess};
 use serde::forward_to_deserialize_any;
 use serde::{Deserialize, Deserializer};
 
-use crate::chopper::chopper::Source;
 use crate::serde::de::error::DeError;
 use crate::serde::de::row::RowDeserializer;
+use crate::source::source::Source;
 
-pub fn from_source<'de, T>(
-    source: Box<dyn Source>,
-    field_name_for_row_timestamp: String,
-) -> Result<T, DeError>
+pub fn from_source<'de, T, S>(source: S, field_name_for_row_timestamp: String) -> Result<T, DeError>
 where
     T: Deserialize<'de>,
+    S: Source,
 {
     Ok(T::deserialize(SourceDeserializer::new(
         source,
@@ -19,16 +17,13 @@ where
     ))?)
 }
 
-pub struct SourceDeserializer {
-    source: Box<dyn Source>,
+pub struct SourceDeserializer<S: Source> {
+    source: S,
     field_name_for_row_timestamp: String,
 }
 
-impl SourceDeserializer {
-    pub fn new(
-        source: Box<dyn Source>,
-        field_name_for_row_timestamp: String,
-    ) -> SourceDeserializer {
+impl<S: Source> SourceDeserializer<S> {
+    pub fn new(source: S, field_name_for_row_timestamp: String) -> SourceDeserializer<S> {
         SourceDeserializer {
             source,
             field_name_for_row_timestamp,
@@ -36,7 +31,7 @@ impl SourceDeserializer {
     }
 }
 
-impl<'de> Deserializer<'de> for SourceDeserializer {
+impl<'de, S: Source> Deserializer<'de> for SourceDeserializer<S> {
     type Error = DeError;
 
     visit_seq! {
@@ -50,7 +45,7 @@ impl<'de> Deserializer<'de> for SourceDeserializer {
     }
 }
 
-impl<'de> SeqAccess<'de> for SourceDeserializer {
+impl<'de, S: Source> SeqAccess<'de> for SourceDeserializer<S> {
     type Error = DeError;
 
     fn next_element_seed<T>(

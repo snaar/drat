@@ -1,9 +1,10 @@
-use chopper::chopper::chopper::{ChopperDriver, Source};
+use chopper::chopper::chopper::ChopperDriver;
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper::chopper::types::{self, ChainId, Header};
 use chopper::driver::{driver::Driver, split::Split};
 use chopper::error::{self, CliResult};
 use chopper::input::input_factory::InputFactory;
+use chopper::source::source::Source;
 use chopper::write::factory;
 
 fn main() {

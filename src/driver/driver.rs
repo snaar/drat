@@ -1,9 +1,10 @@
-use crate::chopper::chopper::{ChopperDriver, Source};
+use crate::chopper::chopper::ChopperDriver;
 use crate::chopper::data_graph::{DataGraph, DataNode};
 use crate::chopper::header_graph::HeaderGraph;
 use crate::chopper::types::{ChainId, Header, NodeId, Row, TimestampRange};
 use crate::driver::source_row_buffer::SourceRowBuffer;
 use crate::error::{CliResult, Error};
+use crate::source::source::Source;
 
 pub struct Driver {
     sources: Vec<Box<dyn Source>>,

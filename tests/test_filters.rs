@@ -1,6 +1,6 @@
 use chrono_tz::America::New_York;
 
-use chopper::chopper::chopper::{ChopperDriver, Source};
+use chopper::chopper::chopper::ChopperDriver;
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper::chopper::types::{FieldValue, Header, TimestampRange};
 use chopper::cli::util::YesNoAuto;
@@ -12,6 +12,7 @@ use chopper::filter::row_filter_greater_value::RowFilterGreaterValue;
 use chopper::input::input_factory::InputFactory;
 use chopper::source::csv_configs::{CSVInputConfig, CSVOutputConfig, TimestampFmtConfig};
 use chopper::source::csv_configs::{TimestampColConfig, TimestampConfig};
+use chopper::source::source::Source;
 use chopper::util::file::are_contents_same;
 use chopper::util::{timestamp_util, tz::ChopperTz};
 use chopper::write::factory;

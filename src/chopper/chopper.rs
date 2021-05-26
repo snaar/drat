@@ -1,23 +1,9 @@
-use std::fmt;
-
 use crate::chopper::header_graph::HeaderCountTracker;
 use crate::chopper::types::{ChainId, Header, Row};
 use crate::error::CliResult;
 
 pub trait ChopperDriver {
     fn drive(&mut self) -> CliResult<()>;
-}
-
-pub trait Source {
-    fn header(&self) -> &Header;
-    fn next_row(&mut self) -> CliResult<Option<Row>>;
-}
-
-//TODO better debug format?
-impl fmt::Debug for dyn Source {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "source field names: {:?}", self.header().field_names())
-    }
 }
 
 pub trait HeaderSink {

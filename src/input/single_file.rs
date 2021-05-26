@@ -1,12 +1,12 @@
 use std::io::Read;
 use std::path::Path;
 
-use crate::chopper::chopper::Source;
 use crate::decompress::decompress;
 use crate::decompress::decompress::DecompressionFormat;
 use crate::decompress::zip::{is_zip, new_reader_for_single_file_zip_archive};
 use crate::error::{CliResult, Error};
 use crate::input::input::InputFormat;
+use crate::source::source::Source;
 use crate::source::source_factory::SourceFactory;
 use crate::transport::seekable::seekable_factory::SeekableTransportFactory;
 use crate::transport::streaming::previewer_factory::PreviewerTransportFactory;

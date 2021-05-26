@@ -1,12 +1,12 @@
 use std::io;
 use std::path::Path;
 
-use crate::chopper::chopper::Source;
 use crate::chopper::types::{Header, Row};
 use crate::error::{CliResult, Error};
 use crate::input::input::InputFormat;
 use crate::input::serial_multi_file_provider::SerialMultiFilePathProvider;
 use crate::input::single_file::SingleFileInputFactory;
+use crate::source::source::Source;
 
 pub struct SerialMultiFileSource {
     input_factory: SingleFileInputFactory,

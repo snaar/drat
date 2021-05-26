@@ -1,9 +1,9 @@
 use std::io::Read;
 
-use crate::chopper::chopper::Source;
 use crate::error::CliResult;
 use crate::source::csv_configs::CSVInputConfig;
 use crate::source::csv_source::CSVSource;
+use crate::source::source::Source;
 use crate::source::source_factory::SourceFactory;
 use crate::util::reader::ChopperBufPreviewer;
 

@@ -1,12 +1,12 @@
 use std::collections::HashMap;
-use std::io::{self, Read};
+use std::io::{self, BufReader, Read};
 use std::str;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-use crate::chopper::chopper::Source;
 use crate::chopper::types::{FieldType, FieldValue, Header, Row};
 use crate::error::{CliResult, Error};
+use crate::source::source::Source;
 use crate::util::dc_util;
 
 // map for field types
@@ -15,17 +15,17 @@ lazy_static! {
         dc_util::create_field_string_map_name();
 }
 
-pub struct DCSource<R> {
-    reader: io::BufReader<R>,
+pub struct DCSource<R: Read> {
+    reader: BufReader<R>,
     header: Header,
     field_count: usize,
     bitset_bytes: Vec<u8>,
     current_row: Row,
 }
 
-impl<R: io::Read> DCSource<R> {
+impl<R: Read> DCSource<R> {
     pub fn new(reader: R) -> CliResult<Self> {
-        let mut reader = io::BufReader::new(reader);
+        let mut reader = BufReader::new(reader);
 
         let magic_num = reader.read_u64::<BigEndian>()?;
         if &magic_num != &dc_util::MAGIC_NUM {
@@ -159,7 +159,7 @@ impl<R: io::Read> DCSource<R> {
         Ok(Some(self.current_row.clone()))
     }
 
-    fn read_string(reader: &mut io::BufReader<R>) -> CliResult<String> {
+    fn read_string(reader: &mut BufReader<R>) -> CliResult<String> {
         let data_size_short = reader.read_i16::<BigEndian>()?;
         let data_size = match data_size_short {
             -1 => reader.read_u32::<BigEndian>()?,
@@ -173,13 +173,13 @@ impl<R: io::Read> DCSource<R> {
     }
 }
 
-impl<R: io::Read> io::Read for DCSource<R> {
+impl<R: Read> Read for DCSource<R> {
     fn read(&mut self, into: &mut [u8]) -> io::Result<usize> {
         self.reader.read(into)
     }
 }
 
-impl<R: io::Read> Source for DCSource<R> {
+impl<R: Read> Source for DCSource<R> {
     fn header(&self) -> &Header {
         &self.header
     }

@@ -1,4 +1,4 @@
-use chopper::chopper::chopper::{ChopperDriver, Source};
+use chopper::chopper::chopper::ChopperDriver;
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper::chopper::types::{self, FieldValue, Header};
 use chopper::driver::driver::Driver;
@@ -8,6 +8,7 @@ use chopper::filter::row_filter_equal_value::RowFilterEqualValue;
 use chopper::filter::row_filter_greater_value::RowFilterGreaterValue;
 use chopper::input::input_factory::InputFactory;
 use chopper::source::csv_configs::CSVOutputConfig;
+use chopper::source::source::Source;
 use chopper::write::factory;
 
 fn main() {

@@ -1,6 +1,6 @@
-use crate::chopper::chopper::Source;
 use crate::chopper::types::{ChainId, Nanos, Row, TimestampRange};
 use crate::error::CliResult;
+use crate::source::source::Source;
 
 pub struct SourceRowBuffer {
     source: Box<dyn Source + 'static>,

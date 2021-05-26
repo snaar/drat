@@ -1,4 +1,4 @@
-use chopper::chopper::chopper::{ChopperDriver, Source};
+use chopper::chopper::chopper::ChopperDriver;
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper::chopper::types::{self, Header};
 use chopper::cli::util::YesNoAuto;
@@ -8,6 +8,7 @@ use chopper::input::input_factory::InputFactory;
 use chopper::source::csv_configs::{
     CSVInputConfig, CSVOutputConfig, TimestampColConfig, TimestampConfig, TimestampFmtConfig,
 };
+use chopper::source::source::Source;
 use chopper::util::tz::ChopperTz;
 use chopper::write::factory;
 

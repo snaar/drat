@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use chrono_tz::Tz;
 use clap::{value_t, ArgMatches};
 
-use crate::chopper::chopper::{ChopperDriver, Source};
+use crate::chopper::chopper::ChopperDriver;
 use crate::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use crate::chopper::types::{Header, TimestampRange};
 use crate::cli::util::YesNoAuto;
@@ -17,6 +17,7 @@ use crate::source::csv_configs::{
     TimestampStyle,
 };
 use crate::source::csv_timestamp::TimestampUnits;
+use crate::source::source::Source;
 use crate::source::source_factory::SourceFactory;
 use crate::transport::streaming::streaming_transport::StreamingTransport;
 use crate::util::tz::ChopperTz;

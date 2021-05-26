@@ -2,20 +2,20 @@ use std::io::Read;
 
 use csv::{self, Trim};
 
-use crate::chopper::chopper::Source;
 use crate::chopper::types::{FieldType, FieldValue, Header, Nanos, Row};
 use crate::cli::util::YesNoAuto;
 use crate::error::CliResult;
 use crate::source::csv_configs::CSVInputConfig;
 use crate::source::csv_timestamp::{self, TimestampCol, TimestampFmt};
+use crate::source::source::Source;
 use crate::util::csv_util;
 use crate::util::reader::{ChopperBufPreviewer, ChopperBufReader};
 use crate::util::tz::ChopperTz;
 
 const DELIMITERS: &[u8] = b",\t ";
 
-pub struct CSVSource {
-    reader: csv::Reader<ChopperBufReader<Box<dyn Read>>>,
+pub struct CSVSource<R: Read> {
+    reader: csv::Reader<ChopperBufReader<R>>,
     header: Header,
     timestamp_col: TimestampCol,
     timestamp_fmt: TimestampFmt,
@@ -24,9 +24,9 @@ pub struct CSVSource {
     has_next_row: bool,
 }
 
-impl CSVSource {
+impl<R: Read> CSVSource<R> {
     pub fn new(
-        previewer: ChopperBufPreviewer<Box<dyn Read>>,
+        previewer: ChopperBufPreviewer<R>,
         csv_input_config: &CSVInputConfig,
     ) -> CliResult<Self> {
         let (line1, line2) = match previewer.get_lines() {
@@ -141,7 +141,7 @@ impl CSVSource {
     }
 }
 
-impl Source for CSVSource {
+impl<R: Read> Source for CSVSource<R> {
     fn header(&self) -> &Header {
         &self.header
     }

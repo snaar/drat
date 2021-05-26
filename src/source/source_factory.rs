@@ -1,7 +1,7 @@
 use std::io::Read;
 
-use crate::chopper::chopper::Source;
 use crate::error::CliResult;
+use crate::source::source::Source;
 use crate::util::reader::ChopperBufPreviewer;
 
 pub trait SourceFactory {
