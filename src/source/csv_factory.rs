@@ -1,7 +1,7 @@
 use std::io::Read;
 
 use crate::error::CliResult;
-use crate::source::csv_configs::CSVInputConfig;
+use crate::source::csv_input_config::CSVInputConfig;
 use crate::source::csv_source::CSVSource;
 use crate::source::source::Source;
 use crate::source::source_factory::SourceFactory;

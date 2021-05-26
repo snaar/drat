@@ -1,7 +1,4 @@
-use crate::cli::util::YesNoAuto;
-use crate::error::CliResult;
 use crate::source::csv_timestamp::TimestampUnits;
-use crate::util::csv_util;
 use crate::util::tz::ChopperTz;
 
 pub static OUTPUT_DELIMITER_DEFAULT: &str = ",";
@@ -63,31 +60,6 @@ impl TimestampConfig {
 
     pub fn timezone(&self) -> &ChopperTz {
         &self.timezone
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct CSVInputConfig {
-    pub delimiter: Option<u8>,
-    pub has_header: YesNoAuto,
-    pub timestamp_config: TimestampConfig,
-}
-
-impl CSVInputConfig {
-    pub fn new(
-        delimiter: Option<&str>,
-        has_header: YesNoAuto,
-        timestamp_config: TimestampConfig,
-    ) -> CliResult<Self> {
-        let delimiter = match delimiter {
-            None => None,
-            Some(x) => Some(csv_util::parse_into_delimiter(x)?),
-        };
-        Ok(CSVInputConfig {
-            delimiter,
-            has_header,
-            timestamp_config,
-        })
     }
 }
 

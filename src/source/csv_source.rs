@@ -5,7 +5,7 @@ use csv::{self, Trim};
 use crate::chopper::types::{FieldType, FieldValue, Header, Nanos, Row};
 use crate::cli::util::YesNoAuto;
 use crate::error::CliResult;
-use crate::source::csv_configs::CSVInputConfig;
+use crate::source::csv_input_config::CSVInputConfig;
 use crate::source::csv_timestamp::{self, TimestampCol, TimestampFmt};
 use crate::source::source::Source;
 use crate::util::csv_util;

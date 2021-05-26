@@ -13,9 +13,9 @@ use crate::error::{self, CliResult};
 use crate::input::input::{Input, InputFormat, InputType};
 use crate::input::input_factory::InputFactory;
 use crate::source::csv_configs::{
-    CSVInputConfig, CSVOutputConfig, TimestampColConfig, TimestampConfig, TimestampFmtConfig,
-    TimestampStyle,
+    CSVOutputConfig, TimestampColConfig, TimestampConfig, TimestampFmtConfig, TimestampStyle,
 };
+use crate::source::csv_input_config::CSVInputConfig;
 use crate::source::csv_timestamp::TimestampUnits;
 use crate::source::source::Source;
 use crate::source::source_factory::SourceFactory;
@@ -210,7 +210,9 @@ fn parse_csv_input_config(matches: &ArgMatches, timezone: ChopperTz) -> CliResul
     };
     let ts_config = TimestampConfig::new(ts_col, ts_fmt, timezone);
 
-    CSVInputConfig::new(input_delimiter, has_header, ts_config)
+    Ok(CSVInputConfig::new(ts_config)
+        .with_delimiter(input_delimiter)?
+        .with_header(has_header))
 }
 
 fn parse_csv_output_config(matches: &ArgMatches, timezone: ChopperTz) -> CSVOutputConfig {

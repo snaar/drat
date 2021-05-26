@@ -5,7 +5,7 @@ use crate::error::{CliResult, Error};
 use crate::input::files_in_dir_provider::FilesInDirPathProvider;
 use crate::input::input::{Input, InputFormat, InputType};
 use crate::input::single_file::SingleFileInputFactory;
-use crate::source::csv_configs::CSVInputConfig;
+use crate::source::csv_input_config::CSVInputConfig;
 use crate::source::multi_file_source::SerialMultiFileSource;
 use crate::source::source::Source;
 use crate::source::{

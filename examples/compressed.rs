@@ -1,13 +1,13 @@
 use chopper::chopper::chopper::ChopperDriver;
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper::chopper::types::{self, Header};
-use chopper::cli::util::YesNoAuto;
 use chopper::driver::driver::Driver;
 use chopper::error::{self, CliResult};
 use chopper::input::input_factory::InputFactory;
 use chopper::source::csv_configs::{
-    CSVInputConfig, CSVOutputConfig, TimestampColConfig, TimestampConfig, TimestampFmtConfig,
+    CSVOutputConfig, TimestampColConfig, TimestampConfig, TimestampFmtConfig,
 };
+use chopper::source::csv_input_config::CSVInputConfig;
 use chopper::source::source::Source;
 use chopper::util::tz::ChopperTz;
 use chopper::write::factory;
@@ -26,7 +26,7 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
         TimestampFmtConfig::Auto,
         ChopperTz::new_always_fails(),
     );
-    let csv_config = CSVInputConfig::new(None, YesNoAuto::Auto, ts_config)?;
+    let csv_config = CSVInputConfig::new(ts_config);
     let input = "./examples/files/uspop_time.csv.gz";
     let inputs = vec![input];
     let output = None;

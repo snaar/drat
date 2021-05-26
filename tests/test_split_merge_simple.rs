@@ -3,14 +3,14 @@ use chrono_tz::America::New_York;
 use chopper::chopper::chopper::ChopperDriver;
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper::chopper::types::{self, ChainId, Header};
-use chopper::cli::util::YesNoAuto;
 use chopper::driver::driver::Driver;
 use chopper::driver::merge_join::MergeJoin;
 use chopper::driver::split::Split;
 use chopper::error::CliResult;
 use chopper::input::input_factory::InputFactory;
-use chopper::source::csv_configs::{CSVInputConfig, CSVOutputConfig, TimestampFmtConfig};
+use chopper::source::csv_configs::{CSVOutputConfig, TimestampFmtConfig};
 use chopper::source::csv_configs::{TimestampColConfig, TimestampConfig};
+use chopper::source::csv_input_config::CSVInputConfig;
 use chopper::source::source::Source;
 use chopper::util::file::are_contents_same;
 use chopper::util::tz::ChopperTz;
@@ -41,7 +41,7 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
         TimestampFmtConfig::Auto,
         ChopperTz::from(New_York),
     );
-    let csv_input_config = CSVInputConfig::new(None, YesNoAuto::Auto, ts_config)?;
+    let csv_input_config = CSVInputConfig::new(ts_config);
     let mut input_factory = InputFactory::new(csv_input_config, None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();

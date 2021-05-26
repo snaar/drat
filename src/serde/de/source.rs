@@ -80,9 +80,8 @@ mod tests {
 
     use crate::cli::util::YesNoAuto;
     use crate::serde::de::source::from_source;
-    use crate::source::csv_configs::{
-        CSVInputConfig, TimestampColConfig, TimestampConfig, TimestampFmtConfig,
-    };
+    use crate::source::csv_configs::{TimestampColConfig, TimestampConfig, TimestampFmtConfig};
+    use crate::source::csv_input_config::CSVInputConfig;
     use crate::source::csv_source::CSVSource;
     use crate::source::csv_timestamp::TimestampUnits;
     use crate::util::reader::ChopperBufPreviewer;
@@ -98,8 +97,10 @@ mod tests {
             TimestampFmtConfig::Epoch(TimestampUnits::Nanos),
             ChopperTz::new_always_fails(),
         );
-        let csv_input_config =
-            CSVInputConfig::new(Some(","), YesNoAuto::Yes, timestamp_config).unwrap();
+        let csv_input_config = CSVInputConfig::new(timestamp_config)
+            .with_delimiter(Some(","))
+            .unwrap()
+            .with_header(YesNoAuto::Yes);
         let source = CSVSource::new(previewer, &csv_input_config).unwrap();
 
         #[serde_as]
