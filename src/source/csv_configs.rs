@@ -68,9 +68,9 @@ impl TimestampConfig {
 
 #[derive(Debug, Clone)]
 pub struct CSVInputConfig {
-    delimiter: Option<u8>,
-    has_header: YesNoAuto,
-    timestamp_config: TimestampConfig,
+    pub delimiter: Option<u8>,
+    pub has_header: YesNoAuto,
+    pub timestamp_config: TimestampConfig,
 }
 
 impl CSVInputConfig {
@@ -88,18 +88,6 @@ impl CSVInputConfig {
             has_header,
             timestamp_config,
         })
-    }
-
-    pub fn has_header(&self) -> YesNoAuto {
-        self.has_header
-    }
-
-    pub fn delimiter(&self) -> Option<u8> {
-        self.delimiter
-    }
-
-    pub fn timestamp_config(&self) -> &TimestampConfig {
-        &self.timestamp_config
     }
 }
 
