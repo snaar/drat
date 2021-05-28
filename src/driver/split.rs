@@ -1,5 +1,5 @@
-use crate::chopper::chopper::SplitHeaderSink;
 use crate::chopper::header_graph::HeaderCountTracker;
+use crate::chopper::sink::SplitHeaderSink;
 use crate::chopper::types::ChainId;
 
 pub struct Split {

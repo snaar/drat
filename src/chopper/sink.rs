@@ -2,13 +2,20 @@ use crate::chopper::header_graph::HeaderCountTracker;
 use crate::chopper::types::{ChainId, Header, Row};
 use crate::error::CliResult;
 
-pub trait ChopperDriver {
-    fn drive(&mut self) -> CliResult<()>;
+pub trait TypedHeaderSink<T, D: TypedDataSink<T>> {
+    fn process_header(self, header: &mut Header) -> CliResult<D>;
 }
 
-pub trait HeaderSink {
-    //TODO figure out how to do this via generics instead of opaque box
-    fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DataSink>>;
+pub trait TypedDataSink<T>: DataSink {
+    fn inner(self) -> T;
+}
+
+pub trait DynHeaderSink {
+    fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DynDataSink>>;
+}
+
+pub trait DynDataSink: DataSink {
+    fn boxed(self) -> Box<dyn DynDataSink>;
 }
 
 pub trait DataSink {
@@ -27,14 +34,12 @@ pub trait DataSink {
     fn flush(&mut self) -> CliResult<()> {
         Ok(())
     }
-
-    fn boxed(self) -> Box<dyn DataSink>;
 }
 
 pub trait MergeHeaderSink {
     fn check_header(&mut self, header: &Header) -> CliResult<()>;
     fn process_header(&mut self) -> Header;
-    fn get_data_sink(self: Box<Self>) -> CliResult<Box<dyn DataSink>>;
+    fn get_data_sink(self: Box<Self>) -> CliResult<Box<dyn DynDataSink>>;
     fn get_new_header_count_tracker(&self) -> HeaderCountTracker;
 }
 

@@ -1,4 +1,4 @@
-use crate::chopper::chopper::{DataSink, HeaderSink};
+use crate::chopper::sink::{DataSink, DynDataSink, DynHeaderSink};
 use crate::chopper::types::{Header, Row};
 use crate::error::CliResult;
 
@@ -16,8 +16,8 @@ impl VecSink {
     }
 }
 
-impl HeaderSink for VecSink {
-    fn process_header(mut self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DataSink>> {
+impl DynHeaderSink for VecSink {
+    fn process_header(mut self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DynDataSink>> {
         self.header = Some(header.clone());
         Ok(self)
     }
@@ -28,8 +28,10 @@ impl DataSink for VecSink {
         self.rows.append(io_rows);
         Ok(())
     }
+}
 
-    fn boxed(self) -> Box<dyn DataSink> {
+impl DynDataSink for VecSink {
+    fn boxed(self) -> Box<dyn DynDataSink> {
         Box::new(self)
     }
 }

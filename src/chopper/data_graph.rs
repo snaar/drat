@@ -1,9 +1,9 @@
-use crate::chopper::chopper::DataSink;
+use crate::chopper::sink::DynDataSink;
 use crate::chopper::types::{ChainId, NodeId};
 use crate::error::{CliResult, Error};
 
 pub enum DataNode {
-    DataSink(Box<dyn DataSink>),
+    DataSink(Box<dyn DynDataSink>),
     Merge(ChainId),
     Split(Vec<ChainId>),
 }

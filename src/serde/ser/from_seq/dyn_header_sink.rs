@@ -1,41 +1,52 @@
 use serde::ser::{Impossible, SerializeSeq};
 use serde::{Serialize, Serializer};
 
-use crate::chopper::sink::DataSink;
-use crate::chopper::types::Row;
+use crate::chopper::sink::{DynDataSink, DynHeaderSink};
+use crate::chopper::types::{Header, Row};
 use crate::serde::ser::error::SerError;
-use crate::serde::ser::from_seq::row::RowSerializer;
+use crate::serde::ser::from_seq::header::to_header;
+use crate::serde::ser::from_seq::row::to_row;
 
-pub fn to_data_sink<T, D>(
+pub fn to_dyn_header_sink<T>(
     value: &T,
     timestamp_field_index: usize,
-    data_sink: D,
-) -> Result<D, SerError>
+    header_sink: Box<dyn DynHeaderSink>,
+) -> Result<Box<dyn DynDataSink>, SerError>
 where
     T: Serialize + ?Sized,
-    D: DataSink,
 {
-    value.serialize(DataSinkSerializer::new(timestamp_field_index, data_sink))
+    value.serialize(DynHeaderSinkSerializer::new(
+        timestamp_field_index,
+        header_sink,
+    ))
 }
 
-pub struct DataSinkSerializer<D: DataSink> {
+enum SinkStage {
+    Header(Option<Box<dyn DynHeaderSink>>),
+    Data(Box<dyn DynDataSink>),
+}
+
+pub struct DynHeaderSinkSerializer {
     timestamp_field_index: usize,
-    data_sink: D,
-    row_vec: Vec<Row>,
+    sink: SinkStage,
+    row_buf: Vec<Row>,
 }
 
-impl<D: DataSink> DataSinkSerializer<D> {
-    pub fn new(timestamp_field_index: usize, data_sink: D) -> DataSinkSerializer<D> {
-        DataSinkSerializer {
+impl DynHeaderSinkSerializer {
+    pub fn new(
+        timestamp_field_index: usize,
+        header_sink: Box<dyn DynHeaderSink>,
+    ) -> DynHeaderSinkSerializer {
+        DynHeaderSinkSerializer {
             timestamp_field_index,
-            data_sink,
-            row_vec: Vec::new(),
+            sink: SinkStage::Header(Some(header_sink)),
+            row_buf: Vec::new(),
         }
     }
 }
 
-impl<D: DataSink> Serializer for DataSinkSerializer<D> {
-    type Ok = D;
+impl Serializer for DynHeaderSinkSerializer {
+    type Ok = Box<dyn DynDataSink>;
     type Error = SerError;
     type SerializeSeq = Self;
     type SerializeTuple = Impossible<Self::Ok, Self::Error>;
@@ -74,24 +85,43 @@ impl<D: DataSink> Serializer for DataSinkSerializer<D> {
     }
 }
 
-impl<D: DataSink> SerializeSeq for DataSinkSerializer<D> {
-    type Ok = D;
+impl SerializeSeq for DynHeaderSinkSerializer {
+    type Ok = Box<dyn DynDataSink>;
     type Error = SerError;
 
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
     where
         T: Serialize,
     {
-        let serializer = RowSerializer::new(self.timestamp_field_index);
-        let row = value.serialize(serializer)?;
-        self.row_vec.push(row);
-        self.data_sink.write_row(&mut self.row_vec)?;
-        self.row_vec.clear();
+        if let SinkStage::Header(header_sink) = &mut self.sink {
+            let header_sink = std::mem::take(header_sink).unwrap();
+            let mut header = to_header(value, self.timestamp_field_index)?;
+            let data_sink = header_sink.process_header(&mut header)?;
+            self.sink = SinkStage::Data(data_sink);
+        }
+
+        match &mut self.sink {
+            SinkStage::Data(data_sink) => {
+                self.row_buf
+                    .push(to_row(value, self.timestamp_field_index)?);
+                data_sink.write_row(&mut self.row_buf)?;
+                self.row_buf.clear();
+            }
+            SinkStage::Header(_) => {
+                panic!("header should have been processed already")
+            }
+        };
         Ok(())
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        Ok(self.data_sink)
+        Ok(match self.sink {
+            SinkStage::Header(header_sink) => {
+                let mut header = Header::new(Vec::new(), Vec::new());
+                header_sink.unwrap().process_header(&mut header)?
+            }
+            SinkStage::Data(data_sink) => data_sink,
+        })
     }
 }
 
@@ -99,14 +129,15 @@ impl<D: DataSink> SerializeSeq for DataSinkSerializer<D> {
 mod tests {
     use serde::Serialize;
 
-    use crate::serde::ser::from_seq::data_sink::to_data_sink;
+    use crate::chopper::types::{FieldType, Header, Row};
+    use crate::serde::ser::from_seq::dyn_header_sink::to_dyn_header_sink;
     use crate::serde::ser::from_seq::row::to_row;
-    use crate::write::vec_sink::VecSink;
+    use crate::write::asserting_sink::AssertingSink;
 
     #[test]
     fn test() {
         #[derive(Serialize)]
-        struct Row {
+        struct InputRow {
             a_bool: bool,
             a_byte: u8,
             a_byte_buf: Vec<u8>,
@@ -120,8 +151,8 @@ mod tests {
             a_string: String,
         }
 
-        let rows: Vec<Row> = vec![
-            Row {
+        let input_rows: Vec<InputRow> = vec![
+            InputRow {
                 a_bool: false,
                 a_byte: 5u8,
                 a_byte_buf: vec![b'a'],
@@ -134,7 +165,7 @@ mod tests {
                 a_short: 10i16,
                 a_string: "a".to_string(),
             },
-            Row {
+            InputRow {
                 a_bool: true,
                 a_byte: 15u8,
                 a_byte_buf: vec![b'b'],
@@ -147,7 +178,7 @@ mod tests {
                 a_short: 110i16,
                 a_string: "b".to_string(),
             },
-            Row {
+            InputRow {
                 a_bool: false,
                 a_byte: 25u8,
                 a_byte_buf: vec![b'c'],
@@ -162,11 +193,29 @@ mod tests {
             },
         ];
 
+        let expected_header = Header::new(
+            Header::generate_default_field_names(10),
+            vec![
+                FieldType::Boolean,
+                FieldType::Byte,
+                FieldType::ByteBuf,
+                FieldType::Char,
+                FieldType::Double,
+                FieldType::Float,
+                FieldType::Int,
+                FieldType::Long,
+                FieldType::Short,
+                FieldType::String,
+            ],
+        );
         let tfi = 7;
-        let sink = to_data_sink(&rows, tfi, VecSink::new()).unwrap();
-        assert_eq!(sink.rows.len(), 3);
-        assert_eq!(sink.rows[0], to_row(&rows[0], tfi).unwrap());
-        assert_eq!(sink.rows[1], to_row(&rows[1], tfi).unwrap());
-        assert_eq!(sink.rows[2], to_row(&rows[2], tfi).unwrap());
+        let expected_rows: Vec<Row> = vec![
+            to_row(&input_rows[0], tfi).unwrap(),
+            to_row(&input_rows[1], tfi).unwrap(),
+            to_row(&input_rows[2], tfi).unwrap(),
+        ];
+        let header_sink = AssertingSink::new(expected_header, expected_rows);
+        let mut data_sink = to_dyn_header_sink(&input_rows, tfi, Box::new(header_sink)).unwrap();
+        data_sink.flush().unwrap();
     }
 }

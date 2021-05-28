@@ -1,52 +1,55 @@
+use std::marker::PhantomData;
+
 use serde::ser::{Impossible, SerializeSeq};
 use serde::{Serialize, Serializer};
 
-use crate::chopper::chopper::{DataSink, HeaderSink};
+use crate::chopper::sink::{TypedDataSink, TypedHeaderSink};
 use crate::chopper::types::{Header, Row};
 use crate::serde::ser::error::SerError;
 use crate::serde::ser::from_seq::header::to_header;
 use crate::serde::ser::from_seq::row::to_row;
 
-pub fn to_header_sink<T>(
+pub fn to_typed_header_sink<T, W, D: TypedDataSink<W>, H: TypedHeaderSink<W, D>>(
     value: &T,
     timestamp_field_index: usize,
-    header_sink: Box<dyn HeaderSink>,
-) -> Result<Box<dyn DataSink>, SerError>
+    header_sink: H,
+) -> Result<D, SerError>
 where
     T: Serialize + ?Sized,
 {
-    value.serialize(HeaderSinkSerializer::new(
+    value.serialize(TypedHeaderSinkSerializer::new(
         timestamp_field_index,
         header_sink,
     ))
 }
 
-enum SinkStage {
-    Header(Option<Box<dyn HeaderSink>>),
-    Data(Box<dyn DataSink>),
+enum SinkStage<D, H> {
+    Header(Option<H>),
+    Data(D),
 }
 
-pub struct HeaderSinkSerializer {
+pub struct TypedHeaderSinkSerializer<W, D: TypedDataSink<W>, H: TypedHeaderSink<W, D>> {
     timestamp_field_index: usize,
-    sink: SinkStage,
+    sink: SinkStage<D, H>,
     row_buf: Vec<Row>,
+    phantom_w: PhantomData<W>,
 }
 
-impl HeaderSinkSerializer {
-    pub fn new(
-        timestamp_field_index: usize,
-        header_sink: Box<dyn HeaderSink>,
-    ) -> HeaderSinkSerializer {
-        HeaderSinkSerializer {
+impl<W, D: TypedDataSink<W>, H: TypedHeaderSink<W, D>> TypedHeaderSinkSerializer<W, D, H> {
+    pub fn new(timestamp_field_index: usize, header_sink: H) -> TypedHeaderSinkSerializer<W, D, H> {
+        TypedHeaderSinkSerializer {
             timestamp_field_index,
             sink: SinkStage::Header(Some(header_sink)),
             row_buf: Vec::new(),
+            phantom_w: PhantomData::default(),
         }
     }
 }
 
-impl Serializer for HeaderSinkSerializer {
-    type Ok = Box<dyn DataSink>;
+impl<W, D: TypedDataSink<W>, H: TypedHeaderSink<W, D>> Serializer
+    for TypedHeaderSinkSerializer<W, D, H>
+{
+    type Ok = D;
     type Error = SerError;
     type SerializeSeq = Self;
     type SerializeTuple = Impossible<Self::Ok, Self::Error>;
@@ -85,8 +88,10 @@ impl Serializer for HeaderSinkSerializer {
     }
 }
 
-impl SerializeSeq for HeaderSinkSerializer {
-    type Ok = Box<dyn DataSink>;
+impl<W, D: TypedDataSink<W>, H: TypedHeaderSink<W, D>> SerializeSeq
+    for TypedHeaderSinkSerializer<W, D, H>
+{
+    type Ok = D;
     type Error = SerError;
 
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
@@ -128,25 +133,36 @@ impl SerializeSeq for HeaderSinkSerializer {
 #[cfg(test)]
 mod tests {
     use serde::Serialize;
+    use serde_with::{serde_as, DisplayFromStr};
 
-    use crate::chopper::types::{FieldType, Header, Row};
-    use crate::serde::ser::from_seq::header_sink::to_header_sink;
-    use crate::serde::ser::from_seq::row::to_row;
-    use crate::write::asserting_sink::AssertingSink;
+    use crate::chopper::sink::TypedDataSink;
+    use crate::serde::ser::from_seq::typed_header_sink::to_typed_header_sink;
+    use crate::source::csv_configs::{CSVOutputConfig, TimestampStyle};
+    use crate::source::csv_timestamp::TimestampUnits;
+    use crate::util::tz::ChopperTz;
+    use crate::write::csv_sink::CSVSink;
 
     #[test]
     fn test() {
+        #[serde_as]
         #[derive(Serialize)]
         struct InputRow {
+            #[serde_as(as = "DisplayFromStr")]
             a_bool: bool,
+            #[serde_as(as = "DisplayFromStr")]
             a_byte: u8,
-            a_byte_buf: Vec<u8>,
+            #[serde_as(as = "DisplayFromStr")]
             a_char: char,
+            #[serde_as(as = "DisplayFromStr")]
             a_double: f64,
+            #[serde_as(as = "DisplayFromStr")]
             f_float: f32,
+            #[serde_as(as = "DisplayFromStr")]
             an_int: i32,
             timestamp: u64,
+            #[serde_as(as = "DisplayFromStr")]
             a_long: i64,
+            #[serde_as(as = "DisplayFromStr")]
             a_short: i16,
             a_string: String,
         }
@@ -155,7 +171,6 @@ mod tests {
             InputRow {
                 a_bool: false,
                 a_byte: 5u8,
-                a_byte_buf: vec![b'a'],
                 a_char: 'a',
                 a_double: 6.6f64,
                 f_float: 7.7f32,
@@ -168,7 +183,6 @@ mod tests {
             InputRow {
                 a_bool: true,
                 a_byte: 15u8,
-                a_byte_buf: vec![b'b'],
                 a_char: 'b',
                 a_double: 16.6f64,
                 f_float: 17.7f32,
@@ -181,7 +195,6 @@ mod tests {
             InputRow {
                 a_bool: false,
                 a_byte: 25u8,
-                a_byte_buf: vec![b'c'],
                 a_char: 'c',
                 a_double: 26.6f64,
                 f_float: 27.7f32,
@@ -193,29 +206,26 @@ mod tests {
             },
         ];
 
-        let expected_header = Header::new(
-            Header::generate_default_field_names(10),
-            vec![
-                FieldType::Boolean,
-                FieldType::Byte,
-                FieldType::ByteBuf,
-                FieldType::Char,
-                FieldType::Double,
-                FieldType::Float,
-                FieldType::Int,
-                FieldType::Long,
-                FieldType::Short,
-                FieldType::String,
-            ],
+        let expected_output = "\
+            timestamp,col_0,col_1,col_2,col_3,col_4,col_5,col_6,col_7,col_8\n\
+            123,false,5,a,6.6,7.7,8,9,10,a\n\
+            1123,true,15,b,16.6,17.7,18,19,110,b\n\
+            2123,false,25,c,26.6,27.7,28,29,210,c\n";
+
+        let tfi = 6;
+        let buf: Vec<u8> = Vec::new();
+        let csv_output_config = CSVOutputConfig::new(
+            ",",
+            true,
+            Some("timestamp".to_string()),
+            TimestampStyle::Epoch,
+            TimestampUnits::Nanos,
+            ChopperTz::new_always_fails(),
         );
-        let tfi = 7;
-        let expected_rows: Vec<Row> = vec![
-            to_row(&input_rows[0], tfi).unwrap(),
-            to_row(&input_rows[1], tfi).unwrap(),
-            to_row(&input_rows[2], tfi).unwrap(),
-        ];
-        let header_sink = AssertingSink::new(expected_header, expected_rows);
-        let mut data_sink = to_header_sink(&input_rows, tfi, Box::new(header_sink)).unwrap();
-        data_sink.flush().unwrap();
+        let header_sink = CSVSink::new(buf, csv_output_config).unwrap();
+        let data_sink = to_typed_header_sink(&input_rows, tfi, header_sink).unwrap();
+        let output = String::from_utf8(data_sink.inner()).unwrap();
+
+        assert_eq!(output, expected_output);
     }
 }

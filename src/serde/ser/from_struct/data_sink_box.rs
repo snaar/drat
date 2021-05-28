@@ -6,28 +6,28 @@ use crate::chopper::types::Row;
 use crate::serde::ser::error::SerError;
 use crate::serde::ser::from_struct::row::RowSerializer;
 
-pub fn to_data_sink<T, D, N>(
+pub fn to_data_sink_box<T, D, N>(
     value: &T,
     timestamp_field_name: N,
-    data_sink: D,
-) -> Result<D, SerError>
+    data_sink: Box<D>,
+) -> Result<Box<D>, SerError>
 where
     T: Serialize + ?Sized,
-    D: DataSink,
+    D: DataSink + ?Sized,
     N: AsRef<str>,
 {
-    value.serialize(DataSinkSerializer::new(timestamp_field_name, data_sink))
+    value.serialize(DataSinkBoxSerializer::new(timestamp_field_name, data_sink))
 }
 
-pub struct DataSinkSerializer<D: DataSink, N: AsRef<str>> {
+pub struct DataSinkBoxSerializer<D: DataSink + ?Sized, N: AsRef<str>> {
     timestamp_field_name: N,
-    data_sink: D,
+    data_sink: Box<D>,
     row_vec: Vec<Row>,
 }
 
-impl<D: DataSink, N: AsRef<str>> DataSinkSerializer<D, N> {
-    pub fn new(timestamp_field_name: N, data_sink: D) -> DataSinkSerializer<D, N> {
-        DataSinkSerializer {
+impl<D: DataSink + ?Sized, N: AsRef<str>> DataSinkBoxSerializer<D, N> {
+    pub fn new(timestamp_field_name: N, data_sink: Box<D>) -> DataSinkBoxSerializer<D, N> {
+        DataSinkBoxSerializer {
             timestamp_field_name,
             data_sink,
             row_vec: Vec::new(),
@@ -35,8 +35,8 @@ impl<D: DataSink, N: AsRef<str>> DataSinkSerializer<D, N> {
     }
 }
 
-impl<D: DataSink, N: AsRef<str>> Serializer for DataSinkSerializer<D, N> {
-    type Ok = D;
+impl<D: DataSink + ?Sized, N: AsRef<str>> Serializer for DataSinkBoxSerializer<D, N> {
+    type Ok = Box<D>;
     type Error = SerError;
     type SerializeSeq = Self;
     type SerializeTuple = Impossible<Self::Ok, Self::Error>;
@@ -75,8 +75,8 @@ impl<D: DataSink, N: AsRef<str>> Serializer for DataSinkSerializer<D, N> {
     }
 }
 
-impl<D: DataSink, N: AsRef<str>> SerializeSeq for DataSinkSerializer<D, N> {
-    type Ok = D;
+impl<D: DataSink + ?Sized, N: AsRef<str>> SerializeSeq for DataSinkBoxSerializer<D, N> {
+    type Ok = Box<D>;
     type Error = SerError;
 
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>
@@ -100,7 +100,7 @@ impl<D: DataSink, N: AsRef<str>> SerializeSeq for DataSinkSerializer<D, N> {
 mod tests {
     use serde::Serialize;
 
-    use crate::serde::ser::from_struct::data_sink::to_data_sink;
+    use crate::serde::ser::from_struct::data_sink_box::to_data_sink_box;
     use crate::serde::ser::from_struct::row::to_row;
     use crate::write::vec_sink::VecSink;
 
@@ -164,7 +164,7 @@ mod tests {
         ];
 
         let tfn = "timestamp";
-        let sink = to_data_sink(&rows, tfn, VecSink::new()).unwrap();
+        let sink = to_data_sink_box(&rows, tfn, Box::new(VecSink::new())).unwrap();
         assert_eq!(sink.rows.len(), 3);
         assert_eq!(sink.rows[0], to_row(&rows[0], tfn).unwrap());
         assert_eq!(sink.rows[1], to_row(&rows[1], tfn).unwrap());

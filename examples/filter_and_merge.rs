@@ -1,4 +1,4 @@
-use chopper::chopper::chopper::ChopperDriver;
+use chopper::chopper::driver::ChopperDriver;
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper::chopper::types::{self, FieldValue, Header};
 use chopper::driver::driver::Driver;

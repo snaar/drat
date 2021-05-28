@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use chrono_tz::Tz;
 use clap::{value_t, ArgMatches};
 
-use crate::chopper::chopper::ChopperDriver;
+use crate::chopper::driver::ChopperDriver;
 use crate::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use crate::chopper::types::{Header, TimestampRange};
 use crate::cli::util::YesNoAuto;

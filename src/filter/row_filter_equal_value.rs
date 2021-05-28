@@ -1,4 +1,4 @@
-use crate::chopper::chopper::{DataSink, HeaderSink};
+use crate::chopper::sink::{DataSink, DynDataSink, DynHeaderSink};
 use crate::chopper::types::{FieldValue, Header, Row};
 use crate::error::{CliResult, Error};
 
@@ -14,17 +14,17 @@ pub struct RowFilterEqualValue {
 }
 
 impl RowFilterEqualValue {
-    pub fn new(column_name: &str, value: FieldValue) -> Box<dyn HeaderSink> {
+    pub fn new(column_name: &str, value: FieldValue) -> Box<dyn DynHeaderSink> {
         let config = RowFilterEqualValueConfig {
             column_name: column_name.to_string(),
             value,
         };
-        Box::new(config) as Box<dyn HeaderSink>
+        Box::new(config) as Box<dyn DynHeaderSink>
     }
 }
 
-impl HeaderSink for RowFilterEqualValueConfig {
-    fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DataSink>> {
+impl DynHeaderSink for RowFilterEqualValueConfig {
+    fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DynDataSink>> {
         let field_names = header.field_names();
         for i in 0..field_names.len() {
             if field_names[i].eq_ignore_ascii_case(self.column_name.as_str()) {
@@ -59,8 +59,10 @@ impl DataSink for RowFilterEqualValue {
         }
         Ok(())
     }
+}
 
-    fn boxed(self) -> Box<dyn DataSink> {
+impl DynDataSink for RowFilterEqualValue {
+    fn boxed(self) -> Box<dyn DynDataSink> {
         Box::new(self)
     }
 }

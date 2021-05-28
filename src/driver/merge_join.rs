@@ -1,5 +1,5 @@
-use crate::chopper::chopper::{DataSink, MergeHeaderSink};
 use crate::chopper::header_graph::HeaderCountTracker;
+use crate::chopper::sink::{DataSink, DynDataSink, MergeHeaderSink};
 use crate::chopper::types::Header;
 use crate::error::{CliResult, Error};
 
@@ -44,7 +44,7 @@ impl MergeHeaderSink for MergeJoin {
         self.header.take().unwrap()
     }
 
-    fn get_data_sink(self: Box<Self>) -> CliResult<Box<dyn DataSink>> {
+    fn get_data_sink(self: Box<Self>) -> CliResult<Box<dyn DynDataSink>> {
         if self.header.is_some() {
             return Err(Error::from(
                 "MuxHeaderSink -- all the headers must be processed before returning DataSink",
@@ -60,8 +60,10 @@ impl MergeHeaderSink for MergeJoin {
     }
 }
 
-impl DataSink for MergeJoin {
-    fn boxed(self) -> Box<dyn DataSink> {
+impl DataSink for MergeJoin {}
+
+impl DynDataSink for MergeJoin {
+    fn boxed(self) -> Box<dyn DynDataSink> {
         Box::new(self)
     }
 }

@@ -1,7 +1,8 @@
 use chrono_tz::America::New_York;
 
-use chopper::chopper::chopper::{ChopperDriver, DataSink, HeaderSink};
+use chopper::chopper::driver::ChopperDriver;
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
+use chopper::chopper::sink::{DataSink, DynDataSink, DynHeaderSink};
 use chopper::chopper::types::{self, Header, Row};
 use chopper::driver::driver::Driver;
 use chopper::error::CliResult;
@@ -68,8 +69,8 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
 
 struct MultiRowFilter {}
 
-impl HeaderSink for MultiRowFilter {
-    fn process_header(self: Box<Self>, _header: &mut Header) -> CliResult<Box<dyn DataSink>> {
+impl DynHeaderSink for MultiRowFilter {
+    fn process_header(self: Box<Self>, _header: &mut Header) -> CliResult<Box<dyn DynDataSink>> {
         Ok(self)
     }
 }
@@ -81,8 +82,10 @@ impl DataSink for MultiRowFilter {
         io_rows.push(row);
         Ok(())
     }
+}
 
-    fn boxed(self) -> Box<dyn DataSink> {
+impl DynDataSink for MultiRowFilter {
+    fn boxed(self) -> Box<dyn DynDataSink> {
         Box::new(self)
     }
 }

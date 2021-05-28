@@ -1,4 +1,4 @@
-use crate::chopper::chopper::{DataSink, HeaderSink};
+use crate::chopper::sink::{DataSink, DynDataSink, DynHeaderSink};
 use crate::chopper::types::{Header, Row};
 use crate::error::{CliResult, Error};
 
@@ -11,17 +11,17 @@ pub struct ColumnFilterDelete {
 }
 
 impl ColumnFilterDelete {
-    pub fn new(column_name: &str) -> Box<dyn HeaderSink> {
+    pub fn new(column_name: &str) -> Box<dyn DynHeaderSink> {
         let config = ColumnFilterDeleteConfig {
             column_name: column_name.to_string(),
         };
-        Box::new(config) as Box<dyn HeaderSink>
+        Box::new(config) as Box<dyn DynHeaderSink>
     }
 }
 
-impl HeaderSink for ColumnFilterDeleteConfig {
+impl DynHeaderSink for ColumnFilterDeleteConfig {
     // TODO: figure out better way to remove elements
-    fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DataSink>> {
+    fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DynDataSink>> {
         let field_names = header.field_names();
         let mut i = 0;
         while i != field_names.len() {
@@ -48,8 +48,10 @@ impl DataSink for ColumnFilterDelete {
         row.field_values.remove(self.column_index);
         Ok(())
     }
+}
 
-    fn boxed(self) -> Box<dyn DataSink> {
+impl DynDataSink for ColumnFilterDelete {
+    fn boxed(self) -> Box<dyn DynDataSink> {
         Box::new(self)
     }
 }

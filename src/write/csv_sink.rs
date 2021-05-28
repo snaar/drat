@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use crate::chopper::chopper::{DataSink, HeaderSink};
+use crate::chopper::sink::{DataSink, DynDataSink, DynHeaderSink, TypedDataSink, TypedHeaderSink};
 use crate::chopper::types::{FieldValue, Header, Row};
 use crate::error::{CliResult, Error};
 use crate::source::csv_configs::{CSVOutputConfig, TimestampStyle};
@@ -40,8 +40,21 @@ impl<W: 'static + Write> CSVSink<W> {
     }
 }
 
-impl<W: 'static + Write> HeaderSink for CSVSink<W> {
-    fn process_header(mut self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DataSink>> {
+impl<W: 'static + Write> TypedHeaderSink<W, Self> for CSVSink<W> {
+    fn process_header(mut self, header: &mut Header) -> CliResult<Self> {
+        self.write_csv_header(header)?;
+        Ok(self)
+    }
+}
+
+impl<W: 'static + Write> TypedDataSink<W> for CSVSink<W> {
+    fn inner(self) -> W {
+        self.writer
+    }
+}
+
+impl<W: 'static + Write> DynHeaderSink for CSVSink<W> {
+    fn process_header(mut self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DynDataSink>> {
         self.write_csv_header(header)?;
         Ok(self.boxed())
     }
@@ -121,8 +134,10 @@ impl<W: 'static + Write> DataSink for CSVSink<W> {
         self.writer.flush()?;
         Ok(())
     }
+}
 
-    fn boxed(self) -> Box<dyn DataSink> {
+impl<W: 'static + Write> DynDataSink for CSVSink<W> {
+    fn boxed(self) -> Box<dyn DynDataSink> {
         Box::new(self)
     }
 }

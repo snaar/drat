@@ -1,5 +1,5 @@
-use crate::chopper::chopper::{HeaderSink, MergeHeaderSink, SplitHeaderSink};
 use crate::chopper::data_graph::{DataGraph, DataNode};
+use crate::chopper::sink::{DynHeaderSink, MergeHeaderSink, SplitHeaderSink};
 use crate::chopper::types::{ChainId, Header};
 use crate::error::{CliResult, Error};
 
@@ -8,7 +8,7 @@ pub struct HeaderCountTracker {
 }
 
 pub enum HeaderNode {
-    HeaderSink(Box<dyn HeaderSink>),
+    HeaderSink(Box<dyn DynHeaderSink>),
     MergeHeaderSink(Box<dyn MergeHeaderSink>, HeaderCountTracker),
     SplitHeaderSink(Box<dyn SplitHeaderSink>, HeaderCountTracker),
     Merge(ChainId),

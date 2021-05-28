@@ -1,5 +1,5 @@
-use crate::chopper::chopper::ChopperDriver;
 use crate::chopper::data_graph::{DataGraph, DataNode};
+use crate::chopper::driver::ChopperDriver;
 use crate::chopper::header_graph::HeaderGraph;
 use crate::chopper::types::{ChainId, Header, NodeId, Row, TimestampRange};
 use crate::driver::source_row_buffer::SourceRowBuffer;
