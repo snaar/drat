@@ -1,4 +1,4 @@
-use crate::chopper::sink::{DataSink, DynDataSink, DynHeaderSink};
+use crate::chopper::sink::{DataSink, DynHeaderSink};
 use crate::chopper::types::{Header, Row};
 use crate::error::CliResult;
 
@@ -19,9 +19,9 @@ impl AssertingSink {
 }
 
 impl DynHeaderSink for AssertingSink {
-    fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DynDataSink>> {
+    fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DataSink>> {
         assert_eq!(header, &self.header);
-        Ok(self.boxed())
+        Ok(Box::new(*self))
     }
 }
 
@@ -37,11 +37,5 @@ impl DataSink for AssertingSink {
     fn flush(&mut self) -> CliResult<()> {
         assert_eq!(self.rows.len(), self.current_row);
         Ok(())
-    }
-}
-
-impl DynDataSink for AssertingSink {
-    fn boxed(self) -> Box<dyn DynDataSink> {
-        Box::new(self)
     }
 }

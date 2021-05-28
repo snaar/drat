@@ -1,7 +1,7 @@
 use serde::ser::{Impossible, SerializeSeq};
 use serde::{Serialize, Serializer};
 
-use crate::chopper::sink::{DynDataSink, DynHeaderSink};
+use crate::chopper::sink::{DataSink, DynHeaderSink};
 use crate::chopper::types::{Header, Row};
 use crate::serde::ser::error::SerError;
 use crate::serde::ser::from_struct::header::to_header;
@@ -11,7 +11,7 @@ pub fn to_header_sink<T, N>(
     value: &T,
     timestamp_field_name: N,
     header_sink: Box<dyn DynHeaderSink>,
-) -> Result<Box<dyn DynDataSink>, SerError>
+) -> Result<Box<dyn DataSink>, SerError>
 where
     T: Serialize + ?Sized,
     N: AsRef<str>,
@@ -21,7 +21,7 @@ where
 
 enum SinkStage {
     Header(Option<Box<dyn DynHeaderSink>>),
-    Data(Box<dyn DynDataSink>),
+    Data(Box<dyn DataSink>),
 }
 
 pub struct HeaderSinkSerializer<N: AsRef<str>> {
@@ -44,7 +44,7 @@ impl<N: AsRef<str>> HeaderSinkSerializer<N> {
 }
 
 impl<N: AsRef<str>> Serializer for HeaderSinkSerializer<N> {
-    type Ok = Box<dyn DynDataSink>;
+    type Ok = Box<dyn DataSink>;
     type Error = SerError;
     type SerializeSeq = Self;
     type SerializeTuple = Impossible<Self::Ok, Self::Error>;
@@ -84,7 +84,7 @@ impl<N: AsRef<str>> Serializer for HeaderSinkSerializer<N> {
 }
 
 impl<N: AsRef<str>> SerializeSeq for HeaderSinkSerializer<N> {
-    type Ok = Box<dyn DynDataSink>;
+    type Ok = Box<dyn DataSink>;
     type Error = SerError;
 
     fn serialize_element<T: ?Sized>(&mut self, value: &T) -> Result<(), Self::Error>

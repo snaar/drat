@@ -1,4 +1,4 @@
-use crate::chopper::sink::{DataSink, DynDataSink, DynHeaderSink};
+use crate::chopper::sink::{DataSink, DynHeaderSink};
 use crate::chopper::types::{FieldValue, Header, Row};
 use crate::error::{CliResult, Error};
 
@@ -24,7 +24,7 @@ impl RowFilterEqualValue {
 }
 
 impl DynHeaderSink for RowFilterEqualValueConfig {
-    fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DynDataSink>> {
+    fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DataSink>> {
         let field_names = header.field_names();
         for i in 0..field_names.len() {
             if field_names[i].eq_ignore_ascii_case(self.column_name.as_str()) {
@@ -34,7 +34,7 @@ impl DynHeaderSink for RowFilterEqualValueConfig {
                     column_index: Some(i),
                     value: self.value,
                 };
-                return Ok(filter.boxed());
+                return Ok(Box::new(filter));
             }
         }
         Err(Error::from(format!(
@@ -58,11 +58,5 @@ impl DataSink for RowFilterEqualValue {
             None => return Err(Error::from("RowFilterEqualValue -- missing column index")),
         }
         Ok(())
-    }
-}
-
-impl DynDataSink for RowFilterEqualValue {
-    fn boxed(self) -> Box<dyn DynDataSink> {
-        Box::new(self)
     }
 }

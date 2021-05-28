@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use crate::chopper::sink::{DataSink, DynDataSink, DynHeaderSink};
+use crate::chopper::sink::{DataSink, DynHeaderSink};
 use crate::chopper::types::{FieldValue, Header, Row};
 use crate::error::{CliResult, Error};
 
@@ -26,7 +26,7 @@ impl RowFilterGreaterValue {
 }
 
 impl DynHeaderSink for RowFilterGreaterValueConfig {
-    fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DynDataSink>> {
+    fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DataSink>> {
         let field_names = header.field_names();
         for i in 0..field_names.len() {
             if field_names[i].eq_ignore_ascii_case(self.column_name.as_str()) {
@@ -36,7 +36,7 @@ impl DynHeaderSink for RowFilterGreaterValueConfig {
                     column_index: Some(i),
                     value: self.value,
                 };
-                return Ok(filter.boxed());
+                return Ok(Box::new(filter));
             }
         }
         Err(Error::from(format!(
@@ -60,11 +60,5 @@ impl DataSink for RowFilterGreaterValue {
             None => return Err(Error::from("RowFilterGreaterValue -- missing column index")),
         }
         Ok(())
-    }
-}
-
-impl DynDataSink for RowFilterGreaterValue {
-    fn boxed(self) -> Box<dyn DynDataSink> {
-        Box::new(self)
     }
 }

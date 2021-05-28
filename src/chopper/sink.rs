@@ -11,11 +11,7 @@ pub trait TypedDataSink<T>: DataSink {
 }
 
 pub trait DynHeaderSink {
-    fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DynDataSink>>;
-}
-
-pub trait DynDataSink: DataSink {
-    fn boxed(self) -> Box<dyn DynDataSink>;
+    fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DataSink>>;
 }
 
 pub trait DataSink {
@@ -39,7 +35,7 @@ pub trait DataSink {
 pub trait MergeHeaderSink {
     fn check_header(&mut self, header: &Header) -> CliResult<()>;
     fn process_header(&mut self) -> Header;
-    fn get_data_sink(self: Box<Self>) -> CliResult<Box<dyn DynDataSink>>;
+    fn get_data_sink(self: Box<Self>) -> CliResult<Box<dyn DataSink>>;
     fn get_new_header_count_tracker(&self) -> HeaderCountTracker;
 }
 
