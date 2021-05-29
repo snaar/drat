@@ -1,6 +1,6 @@
 use crate::chopper::header_graph::HeaderCountTracker;
 use crate::chopper::sink::{DataSink, MergeHeaderSink};
-use crate::chopper::types::Header;
+use crate::chopper::types::{Header, Row};
 use crate::error::{CliResult, Error};
 
 pub struct MergeJoin {
@@ -60,4 +60,9 @@ impl MergeHeaderSink for MergeJoin {
     }
 }
 
-impl DataSink for MergeJoin {}
+//TODO figure out if this even needs to be a DataSink
+impl DataSink for MergeJoin {
+    fn write_row(&mut self, _io_rows: &mut Vec<Row>) -> CliResult<()> {
+        Ok(())
+    }
+}

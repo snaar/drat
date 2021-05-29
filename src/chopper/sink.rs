@@ -18,10 +18,7 @@ pub trait DataSink {
     /// node in chain;
     /// data sink impl can mutate the given row for output or provide its own instead;
     /// default implementation simply leaves the input row unchanged
-    #[allow(unused_variables)]
-    fn write_row(&mut self, io_rows: &mut Vec<Row>) -> CliResult<()> {
-        Ok(())
-    }
+    fn write_row(&mut self, io_rows: &mut Vec<Row>) -> CliResult<()>;
 
     fn flush(&mut self) -> CliResult<()> {
         Ok(())
