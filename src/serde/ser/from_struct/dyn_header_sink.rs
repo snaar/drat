@@ -7,7 +7,7 @@ use crate::serde::ser::error::SerError;
 use crate::serde::ser::from_struct::header::to_header;
 use crate::serde::ser::from_struct::row::to_row;
 
-pub fn to_header_sink<T, N>(
+pub fn to_dyn_header_sink<T, N>(
     value: &T,
     timestamp_field_name: N,
     header_sink: Box<dyn DynHeaderSink>,
@@ -16,7 +16,10 @@ where
     T: Serialize + ?Sized,
     N: AsRef<str>,
 {
-    value.serialize(HeaderSinkSerializer::new(timestamp_field_name, header_sink))
+    value.serialize(DynHeaderSinkSerializer::new(
+        timestamp_field_name,
+        header_sink,
+    ))
 }
 
 enum SinkStage {
@@ -24,18 +27,18 @@ enum SinkStage {
     Data(Box<dyn DataSink>),
 }
 
-pub struct HeaderSinkSerializer<N: AsRef<str>> {
+pub struct DynHeaderSinkSerializer<N: AsRef<str>> {
     timestamp_field_name: N,
     sink: SinkStage,
     row_buf: Vec<Row>,
 }
 
-impl<N: AsRef<str>> HeaderSinkSerializer<N> {
+impl<N: AsRef<str>> DynHeaderSinkSerializer<N> {
     pub fn new(
         timestamp_field_name: N,
         header_sink: Box<dyn DynHeaderSink>,
-    ) -> HeaderSinkSerializer<N> {
-        HeaderSinkSerializer {
+    ) -> DynHeaderSinkSerializer<N> {
+        DynHeaderSinkSerializer {
             timestamp_field_name,
             sink: SinkStage::Header(Some(header_sink)),
             row_buf: Vec::new(),
@@ -43,7 +46,7 @@ impl<N: AsRef<str>> HeaderSinkSerializer<N> {
     }
 }
 
-impl<N: AsRef<str>> Serializer for HeaderSinkSerializer<N> {
+impl<N: AsRef<str>> Serializer for DynHeaderSinkSerializer<N> {
     type Ok = Box<dyn DataSink>;
     type Error = SerError;
     type SerializeSeq = Self;
@@ -83,7 +86,7 @@ impl<N: AsRef<str>> Serializer for HeaderSinkSerializer<N> {
     }
 }
 
-impl<N: AsRef<str>> SerializeSeq for HeaderSinkSerializer<N> {
+impl<N: AsRef<str>> SerializeSeq for DynHeaderSinkSerializer<N> {
     type Ok = Box<dyn DataSink>;
     type Error = SerError;
 
@@ -128,7 +131,7 @@ mod tests {
     use serde::Serialize;
 
     use crate::chopper::types::{FieldType, Header, Row};
-    use crate::serde::ser::from_struct::header_sink::to_header_sink;
+    use crate::serde::ser::from_struct::dyn_header_sink::to_dyn_header_sink;
     use crate::serde::ser::from_struct::row::to_row;
     use crate::write::asserting_sink::AssertingSink;
 
@@ -224,7 +227,7 @@ mod tests {
             to_row(&input_rows[2], tfn).unwrap(),
         ];
         let header_sink = AssertingSink::new(expected_header, expected_rows);
-        let mut data_sink = to_header_sink(&input_rows, tfn, Box::new(header_sink)).unwrap();
+        let mut data_sink = to_dyn_header_sink(&input_rows, tfn, Box::new(header_sink)).unwrap();
         data_sink.flush().unwrap();
     }
 }
