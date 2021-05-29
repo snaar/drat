@@ -1,15 +1,13 @@
-use std::marker::PhantomData;
-
 use serde::ser::{Impossible, SerializeSeq};
 use serde::{Serialize, Serializer};
 
-use crate::chopper::sink::{TypedDataSink, TypedHeaderSink};
+use crate::chopper::sink::{DataSink, TypedHeaderSink};
 use crate::chopper::types::{Header, Row};
 use crate::serde::ser::error::SerError;
 use crate::serde::ser::from_seq::header::to_header;
 use crate::serde::ser::from_seq::row::to_row;
 
-pub fn to_typed_header_sink<T, W, D: TypedDataSink<W>, H: TypedHeaderSink<W, D>>(
+pub fn to_typed_header_sink<T, D: DataSink, H: TypedHeaderSink<D>>(
     value: &T,
     timestamp_field_index: usize,
     header_sink: H,
@@ -28,27 +26,23 @@ enum SinkStage<D, H> {
     Data(D),
 }
 
-pub struct TypedHeaderSinkSerializer<W, D: TypedDataSink<W>, H: TypedHeaderSink<W, D>> {
+pub struct TypedHeaderSinkSerializer<D: DataSink, H: TypedHeaderSink<D>> {
     timestamp_field_index: usize,
     sink: SinkStage<D, H>,
     row_buf: Vec<Row>,
-    phantom_w: PhantomData<W>,
 }
 
-impl<W, D: TypedDataSink<W>, H: TypedHeaderSink<W, D>> TypedHeaderSinkSerializer<W, D, H> {
-    pub fn new(timestamp_field_index: usize, header_sink: H) -> TypedHeaderSinkSerializer<W, D, H> {
+impl<D: DataSink, H: TypedHeaderSink<D>> TypedHeaderSinkSerializer<D, H> {
+    pub fn new(timestamp_field_index: usize, header_sink: H) -> TypedHeaderSinkSerializer<D, H> {
         TypedHeaderSinkSerializer {
             timestamp_field_index,
             sink: SinkStage::Header(Some(header_sink)),
             row_buf: Vec::new(),
-            phantom_w: PhantomData::default(),
         }
     }
 }
 
-impl<W, D: TypedDataSink<W>, H: TypedHeaderSink<W, D>> Serializer
-    for TypedHeaderSinkSerializer<W, D, H>
-{
+impl<D: DataSink, H: TypedHeaderSink<D>> Serializer for TypedHeaderSinkSerializer<D, H> {
     type Ok = D;
     type Error = SerError;
     type SerializeSeq = Self;
@@ -88,9 +82,7 @@ impl<W, D: TypedDataSink<W>, H: TypedHeaderSink<W, D>> Serializer
     }
 }
 
-impl<W, D: TypedDataSink<W>, H: TypedHeaderSink<W, D>> SerializeSeq
-    for TypedHeaderSinkSerializer<W, D, H>
-{
+impl<D: DataSink, H: TypedHeaderSink<D>> SerializeSeq for TypedHeaderSinkSerializer<D, H> {
     type Ok = D;
     type Error = SerError;
 
@@ -135,7 +127,6 @@ mod tests {
     use serde::Serialize;
     use serde_with::{serde_as, DisplayFromStr};
 
-    use crate::chopper::sink::TypedDataSink;
     use crate::serde::ser::from_seq::typed_header_sink::to_typed_header_sink;
     use crate::source::csv_configs::{CSVOutputConfig, TimestampStyle};
     use crate::source::csv_timestamp::TimestampUnits;

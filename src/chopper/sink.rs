@@ -2,12 +2,8 @@ use crate::chopper::header_graph::HeaderCountTracker;
 use crate::chopper::types::{ChainId, Header, Row};
 use crate::error::CliResult;
 
-pub trait TypedHeaderSink<T, D: TypedDataSink<T>> {
+pub trait TypedHeaderSink<D: DataSink> {
     fn process_header(self, header: &mut Header) -> CliResult<D>;
-}
-
-pub trait TypedDataSink<T>: DataSink {
-    fn inner(self) -> T;
 }
 
 pub trait DynHeaderSink {

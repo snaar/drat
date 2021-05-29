@@ -1,15 +1,13 @@
-use std::marker::PhantomData;
-
 use serde::ser::{Impossible, SerializeSeq};
 use serde::{Serialize, Serializer};
 
-use crate::chopper::sink::{TypedDataSink, TypedHeaderSink};
+use crate::chopper::sink::{DataSink, TypedHeaderSink};
 use crate::chopper::types::{Header, Row};
 use crate::serde::ser::error::SerError;
 use crate::serde::ser::from_struct::header::to_header;
 use crate::serde::ser::from_struct::row::to_row;
 
-pub fn to_typed_header_sink<T, N, W, D: TypedDataSink<W>, H: TypedHeaderSink<W, D>>(
+pub fn to_typed_header_sink<T, N, D: DataSink, H: TypedHeaderSink<D>>(
     value: &T,
     timestamp_field_name: N,
     header_sink: H,
@@ -29,33 +27,24 @@ enum SinkStage<D, H> {
     Data(D),
 }
 
-pub struct TypedHeaderSinkSerializer<
-    N: AsRef<str>,
-    W,
-    D: TypedDataSink<W>,
-    H: TypedHeaderSink<W, D>,
-> {
+pub struct TypedHeaderSinkSerializer<N: AsRef<str>, D: DataSink, H: TypedHeaderSink<D>> {
     timestamp_field_name: N,
     sink: SinkStage<D, H>,
     row_buf: Vec<Row>,
-    phantom_w: PhantomData<W>,
 }
 
-impl<N: AsRef<str>, W, D: TypedDataSink<W>, H: TypedHeaderSink<W, D>>
-    TypedHeaderSinkSerializer<N, W, D, H>
-{
-    pub fn new(timestamp_field_name: N, header_sink: H) -> TypedHeaderSinkSerializer<N, W, D, H> {
+impl<N: AsRef<str>, D: DataSink, H: TypedHeaderSink<D>> TypedHeaderSinkSerializer<N, D, H> {
+    pub fn new(timestamp_field_name: N, header_sink: H) -> TypedHeaderSinkSerializer<N, D, H> {
         TypedHeaderSinkSerializer {
             timestamp_field_name,
             sink: SinkStage::Header(Some(header_sink)),
             row_buf: Vec::new(),
-            phantom_w: PhantomData::default(),
         }
     }
 }
 
-impl<N: AsRef<str>, W, D: TypedDataSink<W>, H: TypedHeaderSink<W, D>> Serializer
-    for TypedHeaderSinkSerializer<N, W, D, H>
+impl<N: AsRef<str>, D: DataSink, H: TypedHeaderSink<D>> Serializer
+    for TypedHeaderSinkSerializer<N, D, H>
 {
     type Ok = D;
     type Error = SerError;
@@ -96,8 +85,8 @@ impl<N: AsRef<str>, W, D: TypedDataSink<W>, H: TypedHeaderSink<W, D>> Serializer
     }
 }
 
-impl<N: AsRef<str>, W, D: TypedDataSink<W>, H: TypedHeaderSink<W, D>> SerializeSeq
-    for TypedHeaderSinkSerializer<N, W, D, H>
+impl<N: AsRef<str>, D: DataSink, H: TypedHeaderSink<D>> SerializeSeq
+    for TypedHeaderSinkSerializer<N, D, H>
 {
     type Ok = D;
     type Error = SerError;

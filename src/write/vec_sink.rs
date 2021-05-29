@@ -1,4 +1,4 @@
-use crate::chopper::sink::{DataSink, DynHeaderSink, TypedDataSink, TypedHeaderSink};
+use crate::chopper::sink::{DataSink, DynHeaderSink, TypedHeaderSink};
 use crate::chopper::types::{Header, Row};
 use crate::error::CliResult;
 
@@ -16,16 +16,10 @@ impl VecSink {
     }
 }
 
-impl TypedHeaderSink<Self, Self> for VecSink {
+impl TypedHeaderSink<Self> for VecSink {
     fn process_header(mut self, header: &mut Header) -> CliResult<Self> {
         self.header = Some(header.clone());
         Ok(self)
-    }
-}
-
-impl TypedDataSink<Self> for VecSink {
-    fn inner(self) -> VecSink {
-        self
     }
 }
 
