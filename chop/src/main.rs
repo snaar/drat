@@ -1,5 +1,12 @@
-use chopper::{chopper_cli::chopper_cli, error};
+use better_panic::Verbosity;
 
-fn main() {
-    error::handle_drive_error(chopper_cli(None, None, None));
+use chopper::chopper_cli::chopper_cli;
+use chopper::error::CliResult;
+
+fn main() -> CliResult<()> {
+    better_panic::Settings::default()
+        .verbosity(Verbosity::Full)
+        .install();
+
+    chopper_cli(None, None, None)
 }

@@ -16,7 +16,6 @@ exclude = [
 ]
 
 [dependencies]
-backtrace = "0.3"
 byteorder = "1.4"
 bzip2 = "0.4"
 chrono = "0.4"

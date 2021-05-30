@@ -37,10 +37,7 @@ fn create_datetime_range_formats() -> Vec<String> {
 pub fn parse_datetime_range_element(datetime: &str, timezone: &ChopperTz) -> CliResult<Nanos> {
     let is_datetime_all_digits = datetime.chars().all(|c| c.is_ascii_digit());
     if is_datetime_all_digits {
-        let n = match datetime.parse::<u64>() {
-            Ok(ts) => ts,
-            Err(err) => return Err(Error::Custom(err.to_string())),
-        };
+        let n = datetime.parse::<u64>()?;
         if RANGE_NANOS.contains(&n) {
             return Ok(n);
         }

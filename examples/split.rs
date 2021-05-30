@@ -2,20 +2,16 @@ use chopper::chopper::driver::ChopperDriver;
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper::chopper::types::{self, ChainId, Header};
 use chopper::driver::{driver::Driver, split::Split};
-use chopper::error::{self, CliResult};
+use chopper::error::CliResult;
 use chopper::input::input_factory::InputFactory;
 use chopper::source::source::Source;
 use chopper::write::factory;
 
-fn main() {
-    error::handle_drive_error(split());
+fn main() -> CliResult<()> {
+    setup_test_split_graph()?.drive()
 }
 
-fn split() -> CliResult<()> {
-    setup_test_graph()?.drive()
-}
-
-fn setup_test_graph() -> CliResult<Box<dyn ChopperDriver>> {
+fn setup_test_split_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let input = "./examples/files/hundred.dc";
     let inputs = vec![input];
     let output_1 = None;

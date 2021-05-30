@@ -5,7 +5,7 @@ use chrono::{DateTime, LocalResult, NaiveDateTime, TimeZone};
 use chrono_tz::Tz;
 
 use crate::error::CliResult;
-use crate::error::Error::Custom;
+use crate::error::Error::{TimeConversion, TimeZoneMissingForOutput, TimeZoneMissingForParsing};
 
 #[derive(Debug, Clone)]
 pub struct ChopperTz {
@@ -49,16 +49,11 @@ impl ChopperTz {
 
     pub fn from_local_datetime(&self, local: &NaiveDateTime) -> CliResult<DateTime<Tz>> {
         match self.timezone {
-            None => Err(Custom(format!(
-                "Timezone is needed to parse a date/time value of '{}'. None was provided. \
-                Either provide it by setting -z command line arg or by setting CHOPPER_TZ env var.",
-                local
-            ))),
+            None => Err(TimeZoneMissingForParsing(local.clone())),
             Some(timezone) => match timezone.from_local_datetime(local) {
-                LocalResult::None | LocalResult::Ambiguous(_, _) => Err(Custom(format!(
-                    "Converting '{}' in timezone '{}' to timestamp failed.",
-                    local, timezone
-                ))),
+                LocalResult::None | LocalResult::Ambiguous(_, _) => {
+                    Err(TimeConversion(local.clone(), timezone))
+                }
                 LocalResult::Single(t) => Ok(t),
             },
         }
@@ -66,12 +61,7 @@ impl ChopperTz {
 
     pub fn timestamp(&self, nanoseconds: u64) -> CliResult<DateTime<Tz>> {
         match self.timezone {
-            None => Err(Custom(format!(
-                "Timezone is needed to convert timestamp {} to a human-readable time for output. \
-                None was provided. Either provide it by setting -z command line arg or by setting \
-                CHOPPER_TZ env var or by using --epoch for raw timestamps.",
-                nanoseconds
-            ))),
+            None => Err(TimeZoneMissingForOutput(nanoseconds)),
             Some(timezone) => {
                 let secs = (nanoseconds / 1_000_000_000) as i64;
                 let nsecs = (nanoseconds % 1_000_000_000) as u32;

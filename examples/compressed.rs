@@ -2,7 +2,7 @@ use chopper::chopper::driver::ChopperDriver;
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper::chopper::types::{self, Header};
 use chopper::driver::driver::Driver;
-use chopper::error::{self, CliResult};
+use chopper::error::CliResult;
 use chopper::input::input_factory::InputFactory;
 use chopper::source::csv_configs::{
     CSVOutputConfig, TimestampColConfig, TimestampConfig, TimestampFmtConfig,
@@ -12,15 +12,11 @@ use chopper::source::source::Source;
 use chopper::util::tz::ChopperTz;
 use chopper::write::factory;
 
-fn main() {
-    error::handle_drive_error(compressed_example());
+fn main() -> CliResult<()> {
+    setup_compressed_example_graph()?.drive()
 }
 
-fn compressed_example() -> CliResult<()> {
-    setup_graph()?.drive()
-}
-
-fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
+fn setup_compressed_example_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let ts_config = TimestampConfig::new(
         TimestampColConfig::Index(0),
         TimestampFmtConfig::Auto,

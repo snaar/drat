@@ -89,10 +89,7 @@ pub fn get_timestamp(
 
     let timestamp = match timestamp_fmt {
         TimestampFmt::Units(units) => {
-            let timestamp: u64 = match timestamp.parse::<u64>() {
-                Ok(ts) => ts,
-                Err(err) => return Err(Error::Custom(err.to_string())),
-            };
+            let timestamp: u64 = timestamp.parse::<u64>()?;
             match units {
                 TimestampUnits::Seconds => timestamp * 1_000_000_000,
                 TimestampUnits::Millis => timestamp * 1_000_000,
@@ -358,10 +355,7 @@ fn get_timestamp_fmt_auto_with_index(
     }
 
     if timestamp.chars().all(|c| c.is_ascii_digit()) {
-        let n = match timestamp.parse::<u64>() {
-            Ok(ts) => ts,
-            Err(err) => return Err(Error::Custom(err.to_string())),
-        };
+        let n = timestamp.parse::<u64>()?;
         if RANGE_NANOS.contains(&n) {
             return Ok(TimestampFmt::Units(TimestampUnits::Nanos));
         }

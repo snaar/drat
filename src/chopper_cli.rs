@@ -9,7 +9,7 @@ use crate::chopper::types::{Header, TimestampRange};
 use crate::cli::util::YesNoAuto;
 use crate::cli_app::CliApp;
 use crate::driver::{driver::Driver, merge_join::MergeJoin};
-use crate::error::{self, CliResult};
+use crate::error::CliResult;
 use crate::input::input::{Input, InputFormat, InputType};
 use crate::input::input_factory::InputFactory;
 use crate::source::csv_configs::{
@@ -38,10 +38,6 @@ pub fn parse_cli_args(
     timezone_map: Option<HashMap<&str, Tz>>,
 ) -> CliResult<Box<dyn ChopperDriver>> {
     let matches = CliApp.create_cli_app().get_matches();
-
-    if matches.is_present("backtrace") {
-        error::turn_on_backtrace()
-    }
 
     let timezone = ChopperTz::new_from_cli_arg(matches.value_of("timezone"), timezone_map);
 

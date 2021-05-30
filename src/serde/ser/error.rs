@@ -33,7 +33,7 @@ pub enum SerError {
     #[error("timestamp field should be u64")]
     InvalidTimestampFieldType,
     #[error("CliError: {0}")]
-    CliError(crate::error::Error),
+    CliError(#[from] crate::error::Error),
 }
 
 impl SerError {
@@ -79,11 +79,5 @@ impl SerdeSerError for SerError {
         T: Display,
     {
         SerError::Serde(msg.to_string())
-    }
-}
-
-impl From<crate::error::Error> for SerError {
-    fn from(error: crate::error::Error) -> SerError {
-        SerError::CliError(error)
     }
 }

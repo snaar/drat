@@ -91,10 +91,7 @@ impl Header {
 
     pub fn get_field_index(&self, name: &str) -> CliResult<usize> {
         match self.field_names.iter().position(|s| s == name) {
-            None => Err(Error::Custom(format!(
-                "Failed to find column named '{}'.",
-                name
-            ))),
+            None => Err(Error::ColumnMissing(name.to_string())),
             Some(i) => Ok(i),
         }
     }

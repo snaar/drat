@@ -3,7 +3,7 @@ use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper::chopper::types::{self, FieldValue, Header};
 use chopper::driver::driver::Driver;
 use chopper::driver::merge_join::MergeJoin;
-use chopper::error::{self, CliResult};
+use chopper::error::CliResult;
 use chopper::filter::row_filter_equal_value::RowFilterEqualValue;
 use chopper::filter::row_filter_greater_value::RowFilterGreaterValue;
 use chopper::input::input_factory::InputFactory;
@@ -11,15 +11,11 @@ use chopper::source::csv_configs::CSVOutputConfig;
 use chopper::source::source::Source;
 use chopper::write::factory;
 
-fn main() {
-    error::handle_drive_error(filter_and_merge());
+fn main() -> CliResult<()> {
+    setup_filter_and_merge_graph()?.drive()
 }
 
-fn filter_and_merge() -> CliResult<()> {
-    setup_graph()?.drive()
-}
-
-fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
+fn setup_filter_and_merge_graph() -> CliResult<Box<dyn ChopperDriver>> {
     let input_1 = "./examples/files/million.dc";
     let input_2 = "./examples/files/million.dc";
     let inputs = vec![input_1, input_2];

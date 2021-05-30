@@ -1,68 +1,46 @@
-/* Some code in this file was adapted from public domain xsv project. */
-use std::fmt;
-use std::io;
-use std::process;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::{io, num};
 
-use chrono::ParseError;
-use clap;
-use csv;
+use chrono::NaiveDateTime;
+use chrono_tz::Tz;
+use thiserror::Error as ThisError;
 
-macro_rules! write_error {
-    ($($arg:tt)*) => ({
-        use std::io::{Write, stderr};
-        (writeln!(&mut stderr(), $($arg)*)).unwrap();
-    });
-}
+use crate::chopper::types::Nanos;
 
 pub type CliResult<T> = Result<T, Error>;
 
-#[derive(Debug)]
+#[derive(ThisError, Debug)]
 pub enum Error {
-    CliParsing(clap::Error),
+    #[error(transparent)]
+    CliParsing(#[from] clap::Error),
+    #[error(transparent)]
     Csv(csv::Error),
-    Io(io::Error),
-    TimeParsing(ParseError),
+    #[error(transparent)]
+    Io(#[from] io::Error),
+    #[error(transparent)]
+    TimeParsing(#[from] chrono::ParseError),
+    #[error(transparent)]
+    NumParseInt(#[from] num::ParseIntError),
+    #[error("Failed to find column named '{0}'.")]
+    ColumnMissing(String),
+    #[error(
+        "TimeZone is needed to parse a date/time value of '{0}'. None was provided. \
+        Either provide it by setting -z command line arg or by setting CHOPPER_TZ env var."
+    )]
+    TimeZoneMissingForParsing(NaiveDateTime),
+    #[error(
+        "Timezone is needed to convert timestamp {0} to a human-readable time for output. \
+        None was provided. Either provide it by setting -z command line arg or by setting \
+        CHOPPER_TZ env var or by using --epoch for raw timestamps."
+    )]
+    TimeZoneMissingForOutput(Nanos),
+    #[error("Converting '{0}' in timezone '{1}' to timestamp failed.")]
+    TimeConversion(NaiveDateTime, Tz),
+    #[error("Error: {0}")]
     Custom(String),
-}
-
-impl Error {
-    // print error and exit process
-    pub fn exit(&mut self) -> ! {
-        match &self {
-            Error::CliParsing(err) => err.exit(),
-            Error::Csv(err) => write_error!("{}", err),
-            Error::Io(ref err) if err.kind() == io::ErrorKind::BrokenPipe => {}
-            Error::Io(err) => write_error!("{}", err),
-            Error::TimeParsing(err) => write_error!("{}", err),
-            Error::Custom(s) => write_error!("Error: {}", s),
-        }
-        process::exit(1);
-    }
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &self {
-            Error::CliParsing(ref e) => e.fmt(f),
-            Error::Csv(ref e) => e.fmt(f),
-            Error::Io(ref e) => e.fmt(f),
-            Error::TimeParsing(ref e) => e.fmt(f),
-            Error::Custom(s) => f.write_str(format!("Error: {}", s).as_str()),
-        }
-    }
-}
-
-impl From<clap::Error> for Error {
-    fn from(err: clap::Error) -> Error {
-        print_backtrace();
-        Error::CliParsing(err)
-    }
 }
 
 impl From<csv::Error> for Error {
     fn from(err: csv::Error) -> Error {
-        print_backtrace();
         if !err.is_io_error() {
             return Error::Csv(err);
         }
@@ -73,63 +51,14 @@ impl From<csv::Error> for Error {
     }
 }
 
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Error {
-        print_backtrace();
-        Error::Io(err)
-    }
-}
-
-impl From<ParseError> for Error {
-    fn from(err: ParseError) -> Error {
-        print_backtrace();
-        Error::TimeParsing(err)
-    }
-}
-
 impl From<String> for Error {
     fn from(err: String) -> Error {
-        print_backtrace();
         Error::Custom(err)
     }
 }
 
 impl<'a> From<&'a str> for Error {
     fn from(err: &'a str) -> Error {
-        print_backtrace();
         Error::Custom(err.to_owned())
     }
-}
-
-pub fn handle_drive_error(cli_result: CliResult<()>) -> ! {
-    match cli_result {
-        Ok(()) => process::exit(0),
-        Err(e) => {
-            write_error!("");
-            match e {
-                Error::CliParsing(err) => write_error!("{}", err),
-                Error::Csv(err) => write_error!("{}", err),
-                Error::Io(ref err) if err.kind() == io::ErrorKind::BrokenPipe => {}
-                Error::Io(err) => write_error!("{}", err),
-                Error::TimeParsing(err) => write_error!("{}", err),
-                Error::Custom(s) => write_error!("Error: {} ", s),
-            }
-            process::exit(1)
-        }
-    }
-}
-
-static PRINT_BACKTRACE: AtomicBool = AtomicBool::new(false);
-
-pub fn turn_on_backtrace() {
-    PRINT_BACKTRACE.store(true, Ordering::Relaxed);
-}
-
-fn print_backtrace() {
-    if !PRINT_BACKTRACE.load(Ordering::Relaxed) {
-        return;
-    }
-    use backtrace::Backtrace;
-    let bt = Backtrace::new();
-    eprintln!("{:?}", bt);
 }

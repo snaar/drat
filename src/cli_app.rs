@@ -74,11 +74,6 @@ impl CliApp {
                     .value_name("time"),
             )
             .arg(
-                Arg::with_name("backtrace")
-                    .long("backtrace")
-                    .help("print backtrace"),
-            )
-            .arg(
                 Arg::with_name("csv_out_time_col_name")
                     .long("time-col-name")
                     .help("csv output only: name override for the auto-generated time column; \
