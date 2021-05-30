@@ -1,11 +1,11 @@
 use chrono_tz::America::New_York;
 
 use chopper::chopper::driver::ChopperDriver;
+use chopper::chopper::error::ChopperResult;
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper::chopper::sink::{DataSink, DynHeaderSink};
 use chopper::chopper::types::{self, Header, Row};
 use chopper::driver::driver::Driver;
-use chopper::error::CliResult;
 use chopper::input::input_factory::InputFactory;
 use chopper::source::csv_configs::{CSVOutputConfig, TimestampFmtConfig};
 use chopper::source::csv_configs::{TimestampColConfig, TimestampConfig};
@@ -25,11 +25,11 @@ fn test_multi_row_output() {
     .unwrap());
 }
 
-fn test() -> CliResult<()> {
+fn test() -> ChopperResult<()> {
     setup_graph()?.drive()
 }
 
-fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
+fn setup_graph() -> ChopperResult<Box<dyn ChopperDriver>> {
     let input = "./tests/input/time_city.csv";
     let inputs = vec![input];
     let output = "./tests/output/test_multi_row_output.csv";
@@ -70,13 +70,13 @@ fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
 struct MultiRowFilter {}
 
 impl DynHeaderSink for MultiRowFilter {
-    fn process_header(self: Box<Self>, _header: &mut Header) -> CliResult<Box<dyn DataSink>> {
+    fn process_header(self: Box<Self>, _header: &mut Header) -> ChopperResult<Box<dyn DataSink>> {
         Ok(self)
     }
 }
 
 impl DataSink for MultiRowFilter {
-    fn write_row(&mut self, io_rows: &mut Vec<Row>) -> CliResult<()> {
+    fn write_row(&mut self, io_rows: &mut Vec<Row>) -> ChopperResult<()> {
         let row = io_rows.get(0).unwrap().clone();
         io_rows.push(row.clone());
         io_rows.push(row);

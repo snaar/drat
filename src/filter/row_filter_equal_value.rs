@@ -1,6 +1,6 @@
+use crate::chopper::error::{ChopperResult, Error};
 use crate::chopper::sink::{DataSink, DynHeaderSink};
 use crate::chopper::types::{FieldValue, Header, Row};
-use crate::error::{CliResult, Error};
 
 pub struct RowFilterEqualValueConfig {
     column_name: String,
@@ -24,7 +24,7 @@ impl RowFilterEqualValue {
 }
 
 impl DynHeaderSink for RowFilterEqualValueConfig {
-    fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DataSink>> {
+    fn process_header(self: Box<Self>, header: &mut Header) -> ChopperResult<Box<dyn DataSink>> {
         let field_names = header.field_names();
         for i in 0..field_names.len() {
             if field_names[i].eq_ignore_ascii_case(self.column_name.as_str()) {
@@ -45,7 +45,7 @@ impl DynHeaderSink for RowFilterEqualValueConfig {
 }
 
 impl DataSink for RowFilterEqualValue {
-    fn write_row(&mut self, io_rows: &mut Vec<Row>) -> CliResult<()> {
+    fn write_row(&mut self, io_rows: &mut Vec<Row>) -> ChopperResult<()> {
         match self.column_index {
             Some(i) => {
                 let row = io_rows.get(0).unwrap();

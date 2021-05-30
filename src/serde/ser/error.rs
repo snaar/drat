@@ -32,8 +32,8 @@ pub enum SerError {
     InvalidTimestampFieldLocator,
     #[error("timestamp field should be u64")]
     InvalidTimestampFieldType,
-    #[error("CliError: {0}")]
-    CliError(#[from] crate::error::Error),
+    #[error("ChopperError: {0}")]
+    ChopperError(#[from] crate::chopper::error::Error),
 }
 
 impl SerError {

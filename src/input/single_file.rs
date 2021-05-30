@@ -1,10 +1,10 @@
 use std::io::Read;
 use std::path::Path;
 
+use crate::chopper::error::{ChopperResult, Error};
 use crate::decompress::decompress;
 use crate::decompress::decompress::DecompressionFormat;
 use crate::decompress::zip::{is_zip, new_reader_for_single_file_zip_archive};
-use crate::error::{CliResult, Error};
 use crate::input::input::InputFormat;
 use crate::source::source::Source;
 use crate::source::source_factory::SourceFactory;
@@ -50,7 +50,7 @@ impl SingleFileInputFactory {
         &mut self,
         path: &Path,
         input_format: &InputFormat,
-    ) -> CliResult<Option<Box<dyn Source>>> {
+    ) -> ChopperResult<Option<Box<dyn Source>>> {
         // see if this needs a seekable transport
         let seekable = self.seekable_transport_factory.create_seekable(path)?;
         if let Some(mut seekable) = seekable {
@@ -87,7 +87,7 @@ impl SingleFileInputFactory {
         previewer: ChopperBufPreviewer<Box<dyn Read>>,
         file_name: Option<String>,
         input_format: &InputFormat,
-    ) -> CliResult<Box<dyn Source>> {
+    ) -> ChopperResult<Box<dyn Source>> {
         let format = match input_format {
             InputFormat::Extension(extension) => {
                 let extension = if extension.starts_with(".") {
@@ -151,7 +151,7 @@ impl SingleFileInputFactory {
     fn decompress_using_format(
         previewer: ChopperBufPreviewer<Box<dyn Read>>,
         format: String,
-    ) -> CliResult<(
+    ) -> ChopperResult<(
         FormatAutodetectResult,
         ChopperBufPreviewer<Box<dyn Read>>,
         String,
@@ -167,7 +167,7 @@ impl SingleFileInputFactory {
 
     fn decompress_by_autodetecting_format(
         previewer: ChopperBufPreviewer<Box<dyn Read>>,
-    ) -> CliResult<(FormatAutodetectResult, ChopperBufPreviewer<Box<dyn Read>>)> {
+    ) -> ChopperResult<(FormatAutodetectResult, ChopperBufPreviewer<Box<dyn Read>>)> {
         match decompress::is_compressed_using_previewer(&previewer) {
             Some(decompression_format) => {
                 let new_previewer = Self::decompress(decompression_format, previewer)?;
@@ -180,7 +180,7 @@ impl SingleFileInputFactory {
     fn decompress(
         decompression_format: DecompressionFormat,
         previewer: ChopperBufPreviewer<Box<dyn Read>>,
-    ) -> CliResult<ChopperBufPreviewer<Box<dyn Read>>> {
+    ) -> ChopperResult<ChopperBufPreviewer<Box<dyn Read>>> {
         let new_reader = decompress::decompress(decompression_format, previewer)?;
         Ok(ChopperBufPreviewer::new(new_reader)?)
     }
@@ -189,7 +189,7 @@ impl SingleFileInputFactory {
         &mut self,
         previewer: ChopperBufPreviewer<Box<dyn Read>>,
         format: String,
-    ) -> CliResult<Box<dyn Source>> {
+    ) -> ChopperResult<Box<dyn Source>> {
         for sf in &mut self.source_factories {
             if sf.can_create_from_format(&format) {
                 return sf.create_source(previewer);
@@ -206,7 +206,7 @@ impl SingleFileInputFactory {
     fn create_source_by_autodetecting_format(
         &mut self,
         previewer: ChopperBufPreviewer<Box<dyn Read>>,
-    ) -> CliResult<Box<dyn Source>> {
+    ) -> ChopperResult<Box<dyn Source>> {
         for sf in &mut self.source_factories {
             if sf.can_create_from_previewer(&previewer) {
                 return sf.create_source(previewer);

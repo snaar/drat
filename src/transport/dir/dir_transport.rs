@@ -1,12 +1,12 @@
 use std::fmt;
 use std::path::{Path, PathBuf};
 
-use crate::error::CliResult;
+use crate::chopper::error::ChopperResult;
 
 pub trait DirTransport {
     fn can_handle(&self, path: &Path) -> bool;
     fn is_dir(&self, path: &Path) -> bool;
-    fn read_dir(&self, path: &Path) -> CliResult<Box<dyn Iterator<Item = PathBuf>>>;
+    fn read_dir(&self, path: &Path) -> ChopperResult<Box<dyn Iterator<Item = PathBuf>>>;
 
     fn box_clone(&self) -> Box<dyn DirTransport>;
     fn name(&self) -> &str;

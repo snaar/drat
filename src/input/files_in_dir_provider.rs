@@ -1,8 +1,8 @@
 use std::io::{Error, ErrorKind};
 use std::path::{Path, PathBuf};
 
-use crate::error::CliResult;
-use crate::error::Error::Io;
+use crate::chopper::error::ChopperResult;
+use crate::chopper::error::Error::Io;
 use crate::input::serial_multi_file_provider::SerialMultiFilePathProvider;
 use crate::transport::dir::dir_transport::DirTransport;
 
@@ -16,7 +16,7 @@ impl FilesInDirPathProvider {
     pub fn new(
         dir_transport: &Box<dyn DirTransport>,
         path: &Path,
-    ) -> CliResult<FilesInDirPathProvider> {
+    ) -> ChopperResult<FilesInDirPathProvider> {
         if !dir_transport.is_dir(path) {
             return Err(Io(Error::new(
                 ErrorKind::InvalidData,

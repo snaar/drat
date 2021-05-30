@@ -8,8 +8,8 @@ use lz_fear::LZ4FrameReader;
 use paku::lz4_jblock::Lz4JBlockReader;
 use paku::lzf::LzfReader;
 
+use crate::chopper::error::{ChopperResult, Error};
 use crate::decompress::zst::ZstReader;
-use crate::error::{CliResult, Error};
 use crate::util::reader::{ChopperBufPreviewer, ChopperBufReader};
 
 static GZ: &str = ".gz";
@@ -103,24 +103,24 @@ pub fn is_compressed_using_previewer(
 pub fn decompress(
     decompression_format: DecompressionFormat,
     previewer: ChopperBufPreviewer<Box<dyn Read>>,
-) -> CliResult<Box<dyn Read>> {
+) -> ChopperResult<Box<dyn Read>> {
     match decompression_format {
         DecompressionFormat::GZ => decompress_gz(previewer.get_reader()),
         DecompressionFormat::LZ4 => decompress_lz4(previewer),
         DecompressionFormat::LZF => decompress_lzf(previewer.get_reader()),
         DecompressionFormat::ZIP => {
-            CliResult::Err(Error::Io(io::Error::new(io::ErrorKind::Other, "zip format is not supported at this level, since it needs dedicated transport that supports seeking")))
+            ChopperResult::Err(Error::Io(io::Error::new(io::ErrorKind::Other, "zip format is not supported at this level, since it needs dedicated transport that supports seeking")))
         }
         DecompressionFormat::ZST => decompress_zst(previewer.get_reader()),
     }
 }
 
-fn decompress_gz(reader: ChopperBufReader<Box<dyn Read>>) -> CliResult<Box<dyn Read>> {
+fn decompress_gz(reader: ChopperBufReader<Box<dyn Read>>) -> ChopperResult<Box<dyn Read>> {
     let decoder = GzDecoder::new(reader);
     Ok(Box::new(decoder))
 }
 
-fn decompress_lz4(previewer: ChopperBufPreviewer<Box<dyn Read>>) -> CliResult<Box<dyn Read>> {
+fn decompress_lz4(previewer: ChopperBufPreviewer<Box<dyn Read>>) -> ChopperResult<Box<dyn Read>> {
     let buf = previewer.get_buf();
     if buf.len() >= 8 && &buf[..8] == b"LZ4Block" {
         decompress_lz4_jblock(previewer.get_reader())
@@ -129,27 +129,27 @@ fn decompress_lz4(previewer: ChopperBufPreviewer<Box<dyn Read>>) -> CliResult<Bo
     }
 }
 
-fn decompress_lz4_frame(reader: ChopperBufReader<Box<dyn Read>>) -> CliResult<Box<dyn Read>> {
+fn decompress_lz4_frame(reader: ChopperBufReader<Box<dyn Read>>) -> ChopperResult<Box<dyn Read>> {
     let frame_reader = match LZ4FrameReader::new(reader) {
         Ok(frame_reader) => frame_reader,
         Err(e) => {
-            return CliResult::Err(Error::Io(io::Error::new(io::ErrorKind::Other, e)));
+            return ChopperResult::Err(Error::Io(io::Error::new(io::ErrorKind::Other, e)));
         }
     };
     Ok(Box::new(frame_reader.into_read()))
 }
 
-fn decompress_lz4_jblock(reader: ChopperBufReader<Box<dyn Read>>) -> CliResult<Box<dyn Read>> {
+fn decompress_lz4_jblock(reader: ChopperBufReader<Box<dyn Read>>) -> ChopperResult<Box<dyn Read>> {
     let decoder = Lz4JBlockReader::new(reader, true, true);
     Ok(Box::new(decoder))
 }
 
-fn decompress_lzf(reader: ChopperBufReader<Box<dyn Read>>) -> CliResult<Box<dyn Read>> {
+fn decompress_lzf(reader: ChopperBufReader<Box<dyn Read>>) -> ChopperResult<Box<dyn Read>> {
     let decoder = LzfReader::new(reader);
     Ok(Box::new(decoder))
 }
 
-fn decompress_zst(reader: ChopperBufReader<Box<dyn Read>>) -> CliResult<Box<dyn Read>> {
+fn decompress_zst(reader: ChopperBufReader<Box<dyn Read>>) -> ChopperResult<Box<dyn Read>> {
     let decoder = ZstReader::new(reader)?;
     Ok(Box::new(decoder))
 }

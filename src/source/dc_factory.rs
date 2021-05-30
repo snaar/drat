@@ -2,7 +2,7 @@ use std::io::{BufReader, Read};
 
 use byteorder::{BigEndian, ReadBytesExt};
 
-use crate::error::CliResult;
+use crate::chopper::error::ChopperResult;
 use crate::source::source::Source;
 use crate::source::{dc_source::DCSource, source_factory::SourceFactory};
 use crate::util::dc_util;
@@ -44,7 +44,7 @@ impl SourceFactory for DCFactory {
     fn create_source(
         &mut self,
         previewer: ChopperBufPreviewer<Box<dyn Read>>,
-    ) -> CliResult<Box<dyn Source>> {
+    ) -> ChopperResult<Box<dyn Source>> {
         let reader = previewer.get_reader();
         Ok(Box::new(DCSource::new(reader)?))
     }

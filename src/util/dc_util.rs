@@ -4,8 +4,8 @@ use std::string::String;
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
+use crate::chopper::error::{ChopperResult, Error};
 use crate::chopper::types::FieldType;
-use crate::error::{CliResult, Error};
 
 pub const MAGIC_NUM: u64 = 0x44434154;
 pub const VERSION: u16 = 2;
@@ -68,7 +68,7 @@ pub struct FieldDescriptor {
 }
 
 impl FieldDescriptor {
-    pub fn new<R: BufRead>(mut reader: R) -> CliResult<Self> {
+    pub fn new<R: BufRead>(mut reader: R) -> ChopperResult<Self> {
         let name = Self::get_sized_string(&mut reader)?;
         let type_string = Self::get_sized_string(&mut reader)?;
 
@@ -103,7 +103,7 @@ impl FieldDescriptor {
         &self.display_hint
     }
 
-    fn get_sized_string<R: BufRead>(mut rdr: R) -> CliResult<String> {
+    fn get_sized_string<R: BufRead>(mut rdr: R) -> ChopperResult<String> {
         let size = rdr.read_u32::<BigEndian>()?;
         let mut string_bytes: Vec<u8> = Vec::with_capacity(size as usize);
         for _i in 0..size as usize {
@@ -113,14 +113,14 @@ impl FieldDescriptor {
     }
 }
 
-pub fn write_sized_string<W: Write>(writer: &mut W, string: &str) -> CliResult<()> {
+pub fn write_sized_string<W: Write>(writer: &mut W, string: &str) -> ChopperResult<()> {
     let bytes = string.as_bytes();
     writer.write_u32::<BigEndian>(bytes.len() as u32)?;
     writer.write_all(bytes)?;
     Ok(())
 }
 
-pub fn write_string_value<W: Write>(writer: &mut W, value: &str) -> CliResult<()> {
+pub fn write_string_value<W: Write>(writer: &mut W, value: &str) -> ChopperResult<()> {
     let bytes = value.as_bytes();
     match bytes.len() {
         x if x <= std::i16::MAX as usize => writer.write_i16::<BigEndian>(bytes.len() as i16)?,

@@ -1,6 +1,6 @@
 use std::io::Read;
 
-use crate::error::CliResult;
+use crate::chopper::error::ChopperResult;
 use crate::source::source::Source;
 use crate::util::reader::ChopperBufPreviewer;
 
@@ -10,7 +10,7 @@ pub trait SourceFactory {
     fn create_source(
         &mut self,
         previewer: ChopperBufPreviewer<Box<dyn Read>>,
-    ) -> CliResult<Box<dyn Source>>;
+    ) -> ChopperResult<Box<dyn Source>>;
 
     fn box_clone(&self) -> Box<dyn SourceFactory>;
 }

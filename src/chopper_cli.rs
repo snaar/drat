@@ -4,12 +4,12 @@ use chrono_tz::Tz;
 use clap::{value_t, ArgMatches};
 
 use crate::chopper::driver::ChopperDriver;
+use crate::chopper::error::ChopperResult;
 use crate::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use crate::chopper::types::{Header, TimestampRange};
 use crate::cli::util::YesNoAuto;
 use crate::cli_app::CliApp;
 use crate::driver::{driver::Driver, merge_join::MergeJoin};
-use crate::error::CliResult;
 use crate::input::input::{Input, InputFormat, InputType};
 use crate::input::input_factory::InputFactory;
 use crate::source::csv_configs::{
@@ -27,7 +27,7 @@ pub fn chopper_cli(
     streaming_transports: Option<Vec<Box<dyn StreamingTransport>>>,
     source_factories: Option<Vec<Box<dyn SourceFactory>>>,
     timezone_map: Option<HashMap<&str, Tz>>,
-) -> CliResult<()> {
+) -> ChopperResult<()> {
     let mut driver = parse_cli_args(streaming_transports, source_factories, timezone_map)?;
     driver.drive()
 }
@@ -36,7 +36,7 @@ pub fn parse_cli_args(
     streaming_transports: Option<Vec<Box<dyn StreamingTransport>>>,
     source_factories: Option<Vec<Box<dyn SourceFactory>>>,
     timezone_map: Option<HashMap<&str, Tz>>,
-) -> CliResult<Box<dyn ChopperDriver>> {
+) -> ChopperResult<Box<dyn ChopperDriver>> {
     let matches = CliApp.create_cli_app().get_matches();
 
     let timezone = ChopperTz::new_from_cli_arg(matches.value_of("timezone"), timezone_map);
@@ -112,7 +112,7 @@ fn setup_graph(
     timestamp_range: TimestampRange,
     csv_input_config: CSVInputConfig,
     csv_output_config: CSVOutputConfig,
-) -> CliResult<Box<dyn ChopperDriver>> {
+) -> ChopperResult<Box<dyn ChopperDriver>> {
     // get sources and headers
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
@@ -161,7 +161,10 @@ fn setup_graph(
     )?))
 }
 
-fn parse_csv_input_config(matches: &ArgMatches, timezone: ChopperTz) -> CliResult<CSVInputConfig> {
+fn parse_csv_input_config(
+    matches: &ArgMatches,
+    timezone: ChopperTz,
+) -> ChopperResult<CSVInputConfig> {
     let input_delimiter = matches.value_of("csv_in_delimiter");
     let has_header = value_t!(matches, "csv_in_has_header", YesNoAuto)?;
 

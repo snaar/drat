@@ -4,8 +4,10 @@ use std::env;
 use chrono::{DateTime, LocalResult, NaiveDateTime, TimeZone};
 use chrono_tz::Tz;
 
-use crate::error::CliResult;
-use crate::error::Error::{TimeConversion, TimeZoneMissingForOutput, TimeZoneMissingForParsing};
+use crate::chopper::error::ChopperResult;
+use crate::chopper::error::Error::{
+    TimeConversion, TimeZoneMissingForOutput, TimeZoneMissingForParsing,
+};
 
 #[derive(Debug, Clone)]
 pub struct ChopperTz {
@@ -47,7 +49,7 @@ impl ChopperTz {
         Some(timezone)
     }
 
-    pub fn from_local_datetime(&self, local: &NaiveDateTime) -> CliResult<DateTime<Tz>> {
+    pub fn from_local_datetime(&self, local: &NaiveDateTime) -> ChopperResult<DateTime<Tz>> {
         match self.timezone {
             None => Err(TimeZoneMissingForParsing(local.clone())),
             Some(timezone) => match timezone.from_local_datetime(local) {
@@ -59,7 +61,7 @@ impl ChopperTz {
         }
     }
 
-    pub fn timestamp(&self, nanoseconds: u64) -> CliResult<DateTime<Tz>> {
+    pub fn timestamp(&self, nanoseconds: u64) -> ChopperResult<DateTime<Tz>> {
         match self.timezone {
             None => Err(TimeZoneMissingForOutput(nanoseconds)),
             Some(timezone) => {

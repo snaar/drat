@@ -1,8 +1,8 @@
 use std::io;
 use std::path::Path;
 
+use crate::chopper::error::{ChopperResult, Error};
 use crate::chopper::types::{Header, Row};
-use crate::error::{CliResult, Error};
 use crate::input::input::InputFormat;
 use crate::input::serial_multi_file_provider::SerialMultiFilePathProvider;
 use crate::input::single_file::SingleFileInputFactory;
@@ -23,7 +23,7 @@ impl SerialMultiFileSource {
         mut path_provider: Box<dyn SerialMultiFilePathProvider>,
         input_format: InputFormat,
         external_common_header: Option<Header>,
-    ) -> CliResult<SerialMultiFileSource> {
+    ) -> ChopperResult<SerialMultiFileSource> {
         let (common_header, current_source, swap_map) = match path_provider.get_next_path() {
             None => (Header::new(Vec::new(), Vec::new()), None, Vec::new()),
             Some(first_path) => {
@@ -55,7 +55,7 @@ impl SerialMultiFileSource {
         })
     }
 
-    fn update_to_next_source(&mut self) -> CliResult<()> {
+    fn update_to_next_source(&mut self) -> ChopperResult<()> {
         let next_path = self.path_provider.get_next_path();
 
         let (next_source, next_swap_map) = match next_path {
@@ -84,7 +84,7 @@ impl SerialMultiFileSource {
         input_factory: &mut SingleFileInputFactory,
         path: &Path,
         input_format: &InputFormat,
-    ) -> CliResult<Box<dyn Source>> {
+    ) -> ChopperResult<Box<dyn Source>> {
         let source = input_factory.create_source_from_path(path, input_format)?;
         match source {
             None => {
@@ -100,7 +100,7 @@ impl SerialMultiFileSource {
     fn check_headers_match_and_return_swap_map(
         ref_header: &Header,
         new_header: &Header,
-    ) -> CliResult<Vec<usize>> {
+    ) -> ChopperResult<Vec<usize>> {
         if new_header.field_names().len() < ref_header.field_names().len() {
             return Err(Error::from(format!(
                 "next file in a multi-file input has less columns than expected; \
@@ -166,7 +166,7 @@ impl Source for SerialMultiFileSource {
         &self.common_header
     }
 
-    fn next_row(&mut self) -> CliResult<Option<Row>> {
+    fn next_row(&mut self) -> ChopperResult<Option<Row>> {
         loop {
             match &mut self.current_source {
                 None => return Ok(None),

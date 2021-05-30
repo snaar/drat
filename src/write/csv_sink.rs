@@ -1,8 +1,8 @@
 use std::io::Write;
 
+use crate::chopper::error::{ChopperResult, Error};
 use crate::chopper::sink::{DataSink, DynHeaderSink, TypedHeaderSink};
 use crate::chopper::types::{FieldValue, Header, Row};
-use crate::error::{CliResult, Error};
 use crate::source::csv_configs::{CSVOutputConfig, TimestampStyle};
 use crate::source::csv_timestamp::TimestampUnits;
 
@@ -12,14 +12,14 @@ pub struct CSVSink<W: 'static + Write> {
 }
 
 impl<W: 'static + Write> CSVSink<W> {
-    pub fn new(writer: W, csv_output_config: CSVOutputConfig) -> CliResult<Self> {
+    pub fn new(writer: W, csv_output_config: CSVOutputConfig) -> ChopperResult<Self> {
         Ok(CSVSink {
             writer,
             csv_output_config,
         })
     }
 
-    fn write_csv_header(&mut self, header: &mut Header) -> CliResult<()> {
+    fn write_csv_header(&mut self, header: &mut Header) -> ChopperResult<()> {
         let writer = &mut self.writer;
         let field_name = header.field_names().clone();
         let mut first = true;
@@ -45,21 +45,24 @@ impl<W: 'static + Write> CSVSink<W> {
 }
 
 impl<W: 'static + Write> TypedHeaderSink<Self> for CSVSink<W> {
-    fn process_header(mut self, header: &mut Header) -> CliResult<Self> {
+    fn process_header(mut self, header: &mut Header) -> ChopperResult<Self> {
         self.write_csv_header(header)?;
         Ok(self)
     }
 }
 
 impl<W: 'static + Write> DynHeaderSink for CSVSink<W> {
-    fn process_header(mut self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DataSink>> {
+    fn process_header(
+        mut self: Box<Self>,
+        header: &mut Header,
+    ) -> ChopperResult<Box<dyn DataSink>> {
         self.write_csv_header(header)?;
         Ok(Box::new(*self))
     }
 }
 
 impl<W: 'static + Write> DataSink for CSVSink<W> {
-    fn write_row(&mut self, io_rows: &mut Vec<Row>) -> CliResult<()> {
+    fn write_row(&mut self, io_rows: &mut Vec<Row>) -> ChopperResult<()> {
         let row = io_rows.get(0).unwrap();
 
         let mut first_col = true;
@@ -128,7 +131,7 @@ impl<W: 'static + Write> DataSink for CSVSink<W> {
         Ok(())
     }
 
-    fn flush(&mut self) -> CliResult<()> {
+    fn flush(&mut self) -> ChopperResult<()> {
         self.writer.flush()?;
         Ok(())
     }

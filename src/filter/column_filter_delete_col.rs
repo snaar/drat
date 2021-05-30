@@ -1,6 +1,6 @@
+use crate::chopper::error::{ChopperResult, Error};
 use crate::chopper::sink::{DataSink, DynHeaderSink};
 use crate::chopper::types::{Header, Row};
-use crate::error::{CliResult, Error};
 
 pub struct ColumnFilterDeleteConfig {
     column_name: String,
@@ -21,7 +21,7 @@ impl ColumnFilterDelete {
 
 impl DynHeaderSink for ColumnFilterDeleteConfig {
     // TODO: figure out better way to remove elements
-    fn process_header(self: Box<Self>, header: &mut Header) -> CliResult<Box<dyn DataSink>> {
+    fn process_header(self: Box<Self>, header: &mut Header) -> ChopperResult<Box<dyn DataSink>> {
         let field_names = header.field_names();
         let mut i = 0;
         while i != field_names.len() {
@@ -43,7 +43,7 @@ impl DynHeaderSink for ColumnFilterDeleteConfig {
 }
 
 impl DataSink for ColumnFilterDelete {
-    fn write_row(&mut self, io_rows: &mut Vec<Row>) -> CliResult<()> {
+    fn write_row(&mut self, io_rows: &mut Vec<Row>) -> ChopperResult<()> {
         let row = io_rows.get_mut(0).unwrap();
         row.field_values.remove(self.column_index);
         Ok(())

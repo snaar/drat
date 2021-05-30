@@ -1,5 +1,5 @@
+use crate::chopper::error::{ChopperResult, Error};
 use crate::chopper::sink::DynHeaderSink;
-use crate::error::{CliResult, Error};
 use crate::source::csv_configs::CSVOutputConfig;
 use crate::util::path::buf_writer_from_file_path;
 use crate::write::csv_sink;
@@ -8,7 +8,7 @@ use crate::write::dc_sink;
 pub fn new_header_sink(
     output: Option<&str>,
     csv_output_config: Option<CSVOutputConfig>,
-) -> CliResult<Box<dyn DynHeaderSink>> {
+) -> ChopperResult<Box<dyn DynHeaderSink>> {
     let csv_output_config = match csv_output_config {
         Some(c) => c,
         None => CSVOutputConfig::new_default(),

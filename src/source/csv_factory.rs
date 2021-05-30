@@ -1,6 +1,6 @@
 use std::io::Read;
 
-use crate::error::CliResult;
+use crate::chopper::error::ChopperResult;
 use crate::source::csv_input_config::CSVInputConfig;
 use crate::source::csv_source::CSVSource;
 use crate::source::source::Source;
@@ -34,7 +34,7 @@ impl SourceFactory for CSVFactory {
     fn create_source(
         &mut self,
         preview: ChopperBufPreviewer<Box<dyn Read>>,
-    ) -> CliResult<Box<dyn Source>> {
+    ) -> ChopperResult<Box<dyn Source>> {
         Ok(Box::new(CSVSource::new(preview, &self.csv_input_config)?))
     }
 

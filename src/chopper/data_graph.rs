@@ -1,6 +1,6 @@
+use crate::chopper::error::{ChopperResult, Error};
 use crate::chopper::sink::DataSink;
 use crate::chopper::types::{ChainId, NodeId};
-use crate::error::{CliResult, Error};
 
 pub enum DataNode {
     DataSink(Box<dyn DataSink>),
@@ -57,7 +57,7 @@ impl DataGraph {
         self.data_chains.get_mut(chain_id).unwrap().node(node_id)
     }
 
-    pub fn add_node(&mut self, node: DataNode, chain_id: ChainId) -> CliResult<()> {
+    pub fn add_node(&mut self, node: DataNode, chain_id: ChainId) -> ChopperResult<()> {
         match self.data_chains.get_mut(chain_id) {
             Some(c) => c.nodes.push(node),
             None => {

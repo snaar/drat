@@ -6,7 +6,7 @@ use thiserror::Error as ThisError;
 
 use crate::chopper::types::Nanos;
 
-pub type CliResult<T> = Result<T, Error>;
+pub type ChopperResult<T> = Result<T, Error>;
 
 #[derive(ThisError, Debug)]
 pub enum Error {

@@ -1,11 +1,11 @@
 use std::fmt;
 
+use crate::chopper::error::ChopperResult;
 use crate::chopper::types::{Header, Row};
-use crate::error::CliResult;
 
 pub trait Source {
     fn header(&self) -> &Header;
-    fn next_row(&mut self) -> CliResult<Option<Row>>;
+    fn next_row(&mut self) -> ChopperResult<Option<Row>>;
 }
 
 impl<S: Source + ?Sized> Source for Box<S> {
@@ -15,7 +15,7 @@ impl<S: Source + ?Sized> Source for Box<S> {
     }
 
     #[inline]
-    fn next_row(&mut self) -> CliResult<Option<Row>> {
+    fn next_row(&mut self) -> ChopperResult<Option<Row>> {
         S::next_row(self)
     }
 }

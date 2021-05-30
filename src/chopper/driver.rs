@@ -1,5 +1,5 @@
-use crate::error::CliResult;
+use crate::chopper::error::ChopperResult;
 
 pub trait ChopperDriver {
-    fn drive(&mut self) -> CliResult<()>;
+    fn drive(&mut self) -> ChopperResult<()>;
 }

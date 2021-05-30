@@ -1,8 +1,9 @@
-use crate::chopper::types::FieldType;
-use crate::error::{CliResult, Error};
 use std::collections::HashMap;
 
-pub fn parse_into_delimiter(str: &str) -> CliResult<u8> {
+use crate::chopper::error::{ChopperResult, Error};
+use crate::chopper::types::FieldType;
+
+pub fn parse_into_delimiter(str: &str) -> ChopperResult<u8> {
     /* Code in this function was adapted from public domain xsv project. */
     match &*str {
         r"\t" => Ok(b'\t'),

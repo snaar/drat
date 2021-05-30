@@ -1,10 +1,10 @@
 use chrono_tz::America::New_York;
 
 use chopper::chopper::driver::ChopperDriver;
+use chopper::chopper::error::ChopperResult;
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper::chopper::types::{FieldValue, Header, TimestampRange};
 use chopper::driver::driver::Driver;
-use chopper::error::CliResult;
 use chopper::filter::column_filter_delete_col::ColumnFilterDelete;
 use chopper::filter::row_filter_equal_value::RowFilterEqualValue;
 use chopper::filter::row_filter_greater_value::RowFilterGreaterValue;
@@ -27,11 +27,11 @@ fn test_filters() {
     .unwrap());
 }
 
-fn test() -> CliResult<()> {
+fn test() -> ChopperResult<()> {
     setup_graph()?.drive()
 }
 
-fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
+fn setup_graph() -> ChopperResult<Box<dyn ChopperDriver>> {
     let input = "./tests/input/time_city.csv";
     let inputs = vec![input];
     let output = "./tests/output/test_filters.csv";

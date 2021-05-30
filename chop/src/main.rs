@@ -1,9 +1,9 @@
 use better_panic::Verbosity;
 
+use chopper::chopper::error::ChopperResult;
 use chopper::chopper_cli::chopper_cli;
-use chopper::error::CliResult;
 
-fn main() -> CliResult<()> {
+fn main() -> ChopperResult<()> {
     better_panic::Settings::default()
         .verbosity(Verbosity::Full)
         .install();

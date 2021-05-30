@@ -1,5 +1,5 @@
+use crate::chopper::error::ChopperResult;
 use crate::cli::util::YesNoAuto;
-use crate::error::CliResult;
 use crate::source::csv_configs::TimestampConfig;
 use crate::util::csv_util;
 
@@ -21,7 +21,7 @@ impl CSVInputConfig {
         }
     }
 
-    pub fn with_delimiter(mut self, delimiter: Option<&str>) -> CliResult<Self> {
+    pub fn with_delimiter(mut self, delimiter: Option<&str>) -> ChopperResult<Self> {
         self.delimiter = match delimiter {
             None => None,
             Some(x) => Some(csv_util::parse_into_delimiter(x)?),

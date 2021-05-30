@@ -1,7 +1,7 @@
 use crate::chopper::data_graph::{DataGraph, DataNode};
+use crate::chopper::error::{ChopperResult, Error};
 use crate::chopper::sink::{DynHeaderSink, MergeHeaderSink, SplitHeaderSink};
 use crate::chopper::types::{ChainId, Header};
-use crate::error::{CliResult, Error};
 
 pub struct HeaderCountTracker {
     pub unprocessed_count: usize,
@@ -49,7 +49,7 @@ impl HeaderGraph {
         self.header_chains.get_mut(chain_id)
     }
 
-    pub fn process_header(mut self, mut header: Vec<Header>) -> CliResult<DataGraph> {
+    pub fn process_header(mut self, mut header: Vec<Header>) -> ChopperResult<DataGraph> {
         // initialize an empty data_graph
         let mut data_graph = DataGraph::new(self.header_chains.len());
 
@@ -64,7 +64,7 @@ impl HeaderGraph {
         data_graph: &mut DataGraph,
         chain_id: ChainId,
         header: &mut Header,
-    ) -> CliResult<Self> {
+    ) -> ChopperResult<Self> {
         let chain: &mut HeaderChain = self.header_chains.get_mut(chain_id).unwrap();
         // check the first node of the chain.
         if let HeaderNode::MergeHeaderSink(..) = chain.get_mut_nodes().get_mut(0).unwrap() {
@@ -88,7 +88,7 @@ impl HeaderGraph {
         data_graph: &mut DataGraph,
         chain_id: ChainId,
         header: &mut Header,
-    ) -> CliResult<Self> {
+    ) -> ChopperResult<Self> {
         let chain = self.swap_remove(chain_id);
         // process header for all the nodes in the chain, and get DataSinks
         for node in chain.nodes {
@@ -130,7 +130,7 @@ impl HeaderGraph {
         data_graph: &mut DataGraph,
         chain_id: ChainId,
         header: &mut Header,
-    ) -> CliResult<Self> {
+    ) -> ChopperResult<Self> {
         let node: &mut HeaderNode = match self.get_mut_chain(chain_id) {
             Some(c) => c.get_mut_nodes().get_mut(0).unwrap(),
             None => {

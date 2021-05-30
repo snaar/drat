@@ -4,8 +4,8 @@ use std::str;
 
 use byteorder::{BigEndian, ReadBytesExt};
 
+use crate::chopper::error::{ChopperResult, Error};
 use crate::chopper::types::{FieldType, FieldValue, Header, Row};
-use crate::error::{CliResult, Error};
 use crate::source::source::Source;
 use crate::util::dc_util;
 
@@ -24,7 +24,7 @@ pub struct DCSource<R: Read> {
 }
 
 impl<R: Read> DCSource<R> {
-    pub fn new(reader: R) -> CliResult<Self> {
+    pub fn new(reader: R) -> ChopperResult<Self> {
         let mut reader = BufReader::new(reader);
 
         let magic_num = reader.read_u64::<BigEndian>()?;
@@ -94,7 +94,7 @@ impl<R: Read> DCSource<R> {
         })
     }
 
-    fn next_row(&mut self) -> CliResult<Option<Row>> {
+    fn next_row(&mut self) -> ChopperResult<Option<Row>> {
         match self.reader.read_u64::<BigEndian>() {
             Ok(i) => self.current_row.timestamp = i,
             Err(_e) => return Ok(None),
@@ -159,7 +159,7 @@ impl<R: Read> DCSource<R> {
         Ok(Some(self.current_row.clone()))
     }
 
-    fn read_string(reader: &mut BufReader<R>) -> CliResult<String> {
+    fn read_string(reader: &mut BufReader<R>) -> ChopperResult<String> {
         let data_size_short = reader.read_i16::<BigEndian>()?;
         let data_size = match data_size_short {
             -1 => reader.read_u32::<BigEndian>()?,
@@ -184,7 +184,7 @@ impl<R: Read> Source for DCSource<R> {
         &self.header
     }
 
-    fn next_row(&mut self) -> CliResult<Option<Row>> {
+    fn next_row(&mut self) -> ChopperResult<Option<Row>> {
         self.next_row()
     }
 }

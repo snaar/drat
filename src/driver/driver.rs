@@ -1,9 +1,9 @@
 use crate::chopper::data_graph::{DataGraph, DataNode};
 use crate::chopper::driver::ChopperDriver;
+use crate::chopper::error::{ChopperResult, Error};
 use crate::chopper::header_graph::HeaderGraph;
 use crate::chopper::types::{ChainId, Header, NodeId, Row, TimestampRange};
 use crate::driver::source_row_buffer::SourceRowBuffer;
-use crate::error::{CliResult, Error};
 use crate::source::source::Source;
 
 pub struct Driver {
@@ -18,7 +18,7 @@ impl Driver {
         header_graph: HeaderGraph,
         timestamp_range: TimestampRange,
         headers: Vec<Header>,
-    ) -> CliResult<Self> {
+    ) -> ChopperResult<Self> {
         if sources.len() > header_graph.len() {
             return Err(Error::from(
                 "Driver -- not enough header chains for sources. \
@@ -33,7 +33,7 @@ impl Driver {
         })
     }
 
-    fn drive(&mut self) -> CliResult<()> {
+    fn drive(&mut self) -> ChopperResult<()> {
         let mut row_buffers = self.get_row_buffers()?;
 
         // sort and output
@@ -61,7 +61,7 @@ impl Driver {
         Ok(())
     }
 
-    fn get_row_buffers(&mut self) -> CliResult<Vec<SourceRowBuffer>> {
+    fn get_row_buffers(&mut self) -> ChopperResult<Vec<SourceRowBuffer>> {
         let mut row_buffers: Vec<SourceRowBuffer> = Vec::with_capacity(self.sources.len());
         for i in 0..self.sources.len() {
             let source = self.sources.pop().unwrap();
@@ -80,7 +80,7 @@ impl Driver {
         min.0
     }
 
-    fn process_row(&mut self, chain_id: ChainId, node_id: NodeId, row: Row) -> CliResult<()> {
+    fn process_row(&mut self, chain_id: ChainId, node_id: NodeId, row: Row) -> ChopperResult<()> {
         // support data sinks returning more than one row
         let mut rows: Vec<Row> = vec![row];
 
@@ -117,7 +117,7 @@ impl Driver {
         Ok(())
     }
 
-    fn flush(&mut self, chain_id: ChainId, node_id: NodeId) -> CliResult<()> {
+    fn flush(&mut self, chain_id: ChainId, node_id: NodeId) -> ChopperResult<()> {
         let chain_node_count = self.data_graph.get_chain_node_count(chain_id);
         for node_id in node_id..chain_node_count {
             match self.data_graph.get_chain_node_mut(chain_id, node_id) {
@@ -142,7 +142,7 @@ impl Driver {
 }
 
 impl ChopperDriver for Driver {
-    fn drive(&mut self) -> CliResult<()> {
+    fn drive(&mut self) -> ChopperResult<()> {
         self.drive()
     }
 }

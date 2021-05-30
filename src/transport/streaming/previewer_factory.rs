@@ -1,7 +1,7 @@
 use std::io::Read;
 use std::path::Path;
 
-use crate::error::CliResult;
+use crate::chopper::error::ChopperResult;
 use crate::transport::streaming::streaming_transport::StreamingTransport;
 use crate::util::reader::ChopperBufPreviewer;
 
@@ -18,7 +18,7 @@ impl PreviewerTransportFactory {
     pub fn create_previewer(
         &mut self,
         path: &Path,
-    ) -> CliResult<Option<ChopperBufPreviewer<Box<dyn Read>>>> {
+    ) -> ChopperResult<Option<ChopperBufPreviewer<Box<dyn Read>>>> {
         let mut reader: Option<Box<dyn Read>> = None;
         for factory in &mut self.transports.iter() {
             match factory.can_open(path) {

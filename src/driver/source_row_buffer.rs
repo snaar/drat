@@ -1,5 +1,5 @@
+use crate::chopper::error::ChopperResult;
 use crate::chopper::types::{ChainId, Nanos, Row, TimestampRange};
-use crate::error::CliResult;
 use crate::source::source::Source;
 
 pub struct SourceRowBuffer {
@@ -14,7 +14,7 @@ impl SourceRowBuffer {
         mut source: Box<dyn Source>,
         chain_id: ChainId,
         timestamp_range: &TimestampRange,
-    ) -> CliResult<Self> {
+    ) -> ChopperResult<Self> {
         let mut row = match_next_row(&mut source, timestamp_range)?;
         let timestamp = match &mut row {
             Some(r) => r.timestamp,
@@ -45,7 +45,7 @@ impl SourceRowBuffer {
         self.row = Some(next_row);
     }
 
-    pub fn has_next(&mut self, timestamp_range: &TimestampRange) -> CliResult<bool> {
+    pub fn has_next(&mut self, timestamp_range: &TimestampRange) -> ChopperResult<bool> {
         let next_row = match_next_row(&mut self.source, &timestamp_range)?;
         match next_row {
             Some(r) => {
@@ -77,7 +77,7 @@ fn filter_data_range(timestamp_range: &TimestampRange, timestamp: Nanos) -> Acti
 fn match_next_row(
     source: &mut Box<dyn Source>,
     timestamp_range: &TimestampRange,
-) -> CliResult<Option<Row>> {
+) -> ChopperResult<Option<Row>> {
     let mut next_row: Option<Row> = None;
     loop {
         match source.next_row()? {

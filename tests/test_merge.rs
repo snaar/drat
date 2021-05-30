@@ -1,11 +1,11 @@
 use chrono_tz::America::New_York;
 
 use chopper::chopper::driver::ChopperDriver;
+use chopper::chopper::error::ChopperResult;
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper::chopper::types::{self, Header};
 use chopper::driver::driver::Driver;
 use chopper::driver::merge_join::MergeJoin;
-use chopper::error::CliResult;
 use chopper::input::input_factory::InputFactory;
 use chopper::source::csv_configs::{CSVOutputConfig, TimestampFmtConfig};
 use chopper::source::csv_configs::{TimestampColConfig, TimestampConfig};
@@ -25,11 +25,11 @@ fn test_merge() {
     .unwrap());
 }
 
-fn test() -> CliResult<()> {
+fn test() -> ChopperResult<()> {
     setup_graph()?.drive()
 }
 
-fn setup_graph() -> CliResult<Box<dyn ChopperDriver>> {
+fn setup_graph() -> ChopperResult<Box<dyn ChopperDriver>> {
     let input_1 = "./tests/input/time_city.csv";
     let input_2 = "./tests/input/time_city.csv";
     let inputs = vec![input_1, input_2];

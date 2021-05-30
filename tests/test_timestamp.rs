@@ -1,10 +1,10 @@
 use chrono_tz::America::New_York;
 
 use chopper::chopper::driver::ChopperDriver;
+use chopper::chopper::error::ChopperResult;
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper::chopper::types::{self, Header};
 use chopper::driver::driver::Driver;
-use chopper::error::CliResult;
 use chopper::input::input_factory::InputFactory;
 use chopper::source::csv_configs::{CSVOutputConfig, TimestampFmtConfig};
 use chopper::source::csv_configs::{TimestampColConfig, TimestampConfig};
@@ -41,7 +41,7 @@ fn test_timestamp() {
     assert!(are_contents_same(output, "./tests/reference/test_timestamp_2.csv").unwrap());
 }
 
-fn test(inputs: Vec<&str>, output: &str, ts_config: TimestampConfig) -> CliResult<()> {
+fn test(inputs: Vec<&str>, output: &str, ts_config: TimestampConfig) -> ChopperResult<()> {
     setup_graph(inputs, output, ts_config)?.drive()
 }
 
@@ -49,7 +49,7 @@ fn setup_graph(
     inputs: Vec<&str>,
     output: &str,
     ts_config: TimestampConfig,
-) -> CliResult<Box<dyn ChopperDriver>> {
+) -> ChopperResult<Box<dyn ChopperDriver>> {
     let csv_input_config = CSVInputConfig::new(ts_config);
     let mut input_factory = InputFactory::new(csv_input_config, None, None)?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();

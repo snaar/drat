@@ -3,9 +3,9 @@ use std::mem;
 
 use csv::{self, Trim};
 
+use crate::chopper::error::ChopperResult;
 use crate::chopper::types::{FieldType, FieldValue, Header, Row};
 use crate::cli::util::YesNoAuto;
-use crate::error::CliResult;
 use crate::source::csv_input_config::CSVInputConfig;
 use crate::source::csv_timestamp::{self, TimestampCol, TimestampFmt};
 use crate::source::source::Source;
@@ -30,7 +30,7 @@ impl<R: Read> CSVSource<R> {
     pub fn new(
         previewer: ChopperBufPreviewer<R>,
         csv_input_config: &CSVInputConfig,
-    ) -> CliResult<Self> {
+    ) -> ChopperResult<Self> {
         let (line1, line2) = match previewer.get_lines() {
             None => (None, None),
             Some(lines) => (lines.get(0), lines.get(1)),
@@ -125,7 +125,7 @@ impl<R: Read> CSVSource<R> {
         Ok(csv_reader)
     }
 
-    fn update_row(&mut self, next_record: csv::StringRecord) -> CliResult<()> {
+    fn update_row(&mut self, next_record: csv::StringRecord) -> ChopperResult<()> {
         if self.hide_timestamp_column {
             match self.timestamp_col {
                 TimestampCol::Index(ts) => {
@@ -168,7 +168,7 @@ impl<R: Read> CSVSource<R> {
         Ok(())
     }
 
-    fn next_row(&mut self) -> CliResult<Option<Row>> {
+    fn next_row(&mut self) -> ChopperResult<Option<Row>> {
         if !self.has_next_row {
             return Ok(None);
         }
@@ -187,7 +187,7 @@ impl<R: Read> Source for CSVSource<R> {
         &self.header
     }
 
-    fn next_row(&mut self) -> CliResult<Option<Row>> {
+    fn next_row(&mut self) -> ChopperResult<Option<Row>> {
         self.next_row()
     }
 }

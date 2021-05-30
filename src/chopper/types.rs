@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::error::{CliResult, Error};
+use crate::chopper::error::{ChopperResult, Error};
 use crate::util::timestamp_util;
 use crate::util::tz::ChopperTz;
 
@@ -21,7 +21,11 @@ pub static TIMESTAMP_RANGE_ALL: TimestampRange = TimestampRange {
 };
 
 impl TimestampRange {
-    pub fn new(begin: Option<&str>, end: Option<&str>, timezone: &ChopperTz) -> CliResult<Self> {
+    pub fn new(
+        begin: Option<&str>,
+        end: Option<&str>,
+        timezone: &ChopperTz,
+    ) -> ChopperResult<Self> {
         let begin = match begin {
             Some(t) => Some(timestamp_util::parse_datetime_range_element(t, timezone)?),
             None => None,
@@ -89,7 +93,7 @@ impl Header {
         &mut self.field_types
     }
 
-    pub fn get_field_index(&self, name: &str) -> CliResult<usize> {
+    pub fn get_field_index(&self, name: &str) -> ChopperResult<usize> {
         match self.field_names.iter().position(|s| s == name) {
             None => Err(Error::ColumnMissing(name.to_string())),
             Some(i) => Ok(i),

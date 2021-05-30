@@ -1,7 +1,7 @@
 use std::io;
 use std::path::Path;
 
-use crate::error::{CliResult, Error};
+use crate::chopper::error::{ChopperResult, Error};
 use crate::input::files_in_dir_provider::FilesInDirPathProvider;
 use crate::input::input::{Input, InputFormat, InputType};
 use crate::input::single_file::SingleFileInputFactory;
@@ -31,7 +31,7 @@ impl InputFactory {
     pub fn new_without_csv(
         user_source_factories: Option<Vec<Box<dyn SourceFactory>>>,
         user_streaming_transports: Option<Vec<Box<dyn StreamingTransport>>>,
-    ) -> CliResult<Self> {
+    ) -> ChopperResult<Self> {
         Self::new_with_optional_csv(None, user_source_factories, user_streaming_transports)
     }
 
@@ -39,7 +39,7 @@ impl InputFactory {
         csv_input_config: CSVInputConfig,
         user_source_factories: Option<Vec<Box<dyn SourceFactory>>>,
         user_streaming_transports: Option<Vec<Box<dyn StreamingTransport>>>,
-    ) -> CliResult<Self> {
+    ) -> ChopperResult<Self> {
         Self::new_with_optional_csv(
             Some(csv_input_config),
             user_source_factories,
@@ -51,7 +51,7 @@ impl InputFactory {
         csv_input_config: Option<CSVInputConfig>,
         user_source_factories: Option<Vec<Box<dyn SourceFactory>>>,
         user_streaming_transports: Option<Vec<Box<dyn StreamingTransport>>>,
-    ) -> CliResult<Self> {
+    ) -> ChopperResult<Self> {
         // streaming transports and the previewer factory for them
         let mut default_streaming_transports = create_default_streaming_transports();
         let streaming_transports: Vec<Box<dyn StreamingTransport>> = match user_streaming_transports
@@ -95,14 +95,14 @@ impl InputFactory {
 }
 
 impl InputFactory {
-    pub fn create_source_from_path(&mut self, path: &str) -> CliResult<Box<dyn Source>> {
+    pub fn create_source_from_path(&mut self, path: &str) -> ChopperResult<Box<dyn Source>> {
         self.create_source_from_input(&Input {
             input: InputType::Path(path.to_owned()),
             format: InputFormat::Auto,
         })
     }
 
-    pub fn create_source_from_input(&mut self, input: &Input) -> CliResult<Box<dyn Source>> {
+    pub fn create_source_from_input(&mut self, input: &Input) -> ChopperResult<Box<dyn Source>> {
         // first get stdin out of the way, since it doesn't need a transport
         let path = match &input.input {
             InputType::Path(path) => path,

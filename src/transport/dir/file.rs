@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use crate::error::CliResult;
+use crate::chopper::error::ChopperResult;
 use crate::transport::dir::dir_transport::DirTransport;
 
 #[derive(Clone)]
@@ -15,7 +15,7 @@ impl DirTransport for DirFileTransport {
         path.is_dir()
     }
 
-    fn read_dir(&self, path: &Path) -> CliResult<Box<dyn Iterator<Item = PathBuf>>> {
+    fn read_dir(&self, path: &Path) -> ChopperResult<Box<dyn Iterator<Item = PathBuf>>> {
         match path.read_dir() {
             Ok(dir_entry_iter) => {
                 let path_iter = dir_entry_iter.filter_map(|entry| Some(entry.ok()?.path()));

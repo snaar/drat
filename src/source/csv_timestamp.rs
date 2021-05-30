@@ -2,8 +2,8 @@ use std::ops::Range;
 
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
 
+use crate::chopper::error::{ChopperResult, Error};
 use crate::chopper::types::{Header, Nanos};
-use crate::error::{CliResult, Error};
 use crate::source::csv_configs::{DateColIdx, TimeColIdx, TimestampColConfig, TimestampFmtConfig};
 use crate::util::tz::ChopperTz;
 
@@ -84,7 +84,7 @@ pub fn get_timestamp(
     timestamp_col: &TimestampCol,
     timestamp_fmt: &TimestampFmt,
     timezone: &ChopperTz,
-) -> CliResult<Nanos> {
+) -> ChopperResult<Nanos> {
     let timestamp = get_timestamp_string(record, timestamp_col);
 
     let timestamp = match timestamp_fmt {
@@ -123,7 +123,7 @@ pub fn get_timestamp_col_and_fmt(
     timestamp_col_config: &TimestampColConfig,
     timestamp_fmt_config: &TimestampFmtConfig,
     timezone: &ChopperTz,
-) -> CliResult<(TimestampCol, TimestampFmt)> {
+) -> ChopperResult<(TimestampCol, TimestampFmt)> {
     let (timestamp_col, units_hint) = get_timestamp_col(&header, timestamp_col_config)?;
 
     let timestamp_fmt = match timestamp_fmt_config {
@@ -148,7 +148,7 @@ fn get_timestamp_fmt_from_user_spec(
     timestamp_col: &TimestampCol,
     format: String,
     timezone: &ChopperTz,
-) -> CliResult<TimestampFmt> {
+) -> ChopperResult<TimestampFmt> {
     let timestamp = get_timestamp_string(first_row, timestamp_col);
 
     if let Ok(_) = DateTime::parse_from_str(&timestamp, &format) {
@@ -187,7 +187,7 @@ fn get_timestamp_string(record: &csv::StringRecord, timestamp_col: &TimestampCol
 fn get_timestamp_col(
     header: &Header,
     timestamp_col_config: &TimestampColConfig,
-) -> CliResult<(TimestampCol, Option<TimestampUnits>)> {
+) -> ChopperResult<(TimestampCol, Option<TimestampUnits>)> {
     let (timestamp_col, units_hint) = match timestamp_col_config {
         TimestampColConfig::Auto => {
             // these are listed here in relative priority order as a reference
@@ -308,7 +308,7 @@ fn get_timestamp_fmt_auto(
     timezone: &ChopperTz,
     first_row: &csv::StringRecord,
     units_hint: Option<TimestampUnits>,
-) -> CliResult<TimestampFmt> {
+) -> ChopperResult<TimestampFmt> {
     match timestamp_col {
         TimestampCol::Index(t) => {
             get_timestamp_fmt_auto_with_index(*t, timezone, first_row, units_hint)
@@ -324,7 +324,7 @@ fn get_timestamp_fmt_auto_with_index(
     timezone: &ChopperTz,
     first_row: &csv::StringRecord,
     units_hint: Option<TimestampUnits>,
-) -> CliResult<TimestampFmt> {
+) -> ChopperResult<TimestampFmt> {
     if let Some(units) = units_hint {
         return Ok(TimestampFmt::Units(units));
     }
@@ -380,7 +380,7 @@ fn get_timestamp_fmt_auto_with_datetimeindex(
     time_idx: usize,
     timezone: &ChopperTz,
     first_row: &csv::StringRecord,
-) -> CliResult<TimestampFmt> {
+) -> ChopperResult<TimestampFmt> {
     let date = first_row.get(date_idx).unwrap();
     let time = first_row.get(time_idx).unwrap();
 

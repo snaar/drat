@@ -1,7 +1,7 @@
 use chrono::{DateTime, NaiveDateTime};
 
+use crate::chopper::error::{ChopperResult, Error};
 use crate::chopper::types::Nanos;
-use crate::error::{CliResult, Error};
 use crate::source::csv_timestamp::{RANGE_MICROS, RANGE_MILLIS, RANGE_NANOS, RANGE_SECONDS};
 use crate::util::tz::ChopperTz;
 
@@ -34,7 +34,7 @@ fn create_datetime_range_formats() -> Vec<String> {
     formats
 }
 
-pub fn parse_datetime_range_element(datetime: &str, timezone: &ChopperTz) -> CliResult<Nanos> {
+pub fn parse_datetime_range_element(datetime: &str, timezone: &ChopperTz) -> ChopperResult<Nanos> {
     let is_datetime_all_digits = datetime.chars().all(|c| c.is_ascii_digit());
     if is_datetime_all_digits {
         let n = datetime.parse::<u64>()?;
@@ -90,9 +90,10 @@ pub fn parse_datetime_range_element(datetime: &str, timezone: &ChopperTz) -> Cli
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use chrono_tz::America::New_York;
     use chrono_tz::Etc::UTC;
+
+    use super::*;
 
     #[test]
     fn test_parse_timestamp_range() {
