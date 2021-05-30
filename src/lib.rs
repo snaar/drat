@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate lazy_static;
-
 pub mod chopper;
 pub mod chopper_cli;
 pub mod cli;

@@ -3,6 +3,7 @@ use std::io::{BufRead, Write};
 use std::string::String;
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
+use lazy_static::lazy_static;
 
 use crate::chopper::error::{ChopperResult, Error};
 use crate::chopper::types::FieldType;
