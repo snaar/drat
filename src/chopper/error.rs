@@ -15,7 +15,7 @@ pub enum Error {
     #[error(transparent)]
     Csv(csv::Error),
     #[error(transparent)]
-    Io(#[from] io::Error),
+    Io(#[from] io::Error), //TODO there is some code that uses this instead of a more specific error
     #[error(transparent)]
     TimeParsing(#[from] chrono::ParseError),
     #[error(transparent)]
