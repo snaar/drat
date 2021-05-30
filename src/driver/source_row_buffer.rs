@@ -28,7 +28,7 @@ impl SourceRowBuffer {
         })
     }
 
-    pub fn timestamp(&self) -> u64 {
+    pub fn timestamp(&self) -> Nanos {
         self.timestamp
     }
 

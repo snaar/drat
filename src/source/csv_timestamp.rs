@@ -87,9 +87,9 @@ pub fn get_timestamp(
 ) -> ChopperResult<Nanos> {
     let timestamp = get_timestamp_string(record, timestamp_col);
 
-    let timestamp = match timestamp_fmt {
+    let timestamp: Nanos = match timestamp_fmt {
         TimestampFmt::Units(units) => {
-            let timestamp: u64 = timestamp.parse::<u64>()?;
+            let timestamp = timestamp.parse::<Nanos>()?;
             match units {
                 TimestampUnits::Seconds => timestamp * 1_000_000_000,
                 TimestampUnits::Millis => timestamp * 1_000_000,
@@ -98,20 +98,20 @@ pub fn get_timestamp(
             }
         }
         TimestampFmt::DateTimeIncludesTz(format) => {
-            DateTime::parse_from_str(&timestamp, format)?.timestamp_nanos() as u64
+            DateTime::parse_from_str(&timestamp, format)?.timestamp_nanos() as Nanos
         }
         TimestampFmt::DateTimeNeedsExternalTz(format) => {
             let naive_date_time = NaiveDateTime::parse_from_str(&timestamp, format)?;
             timezone
                 .from_local_datetime(&naive_date_time)?
-                .timestamp_nanos() as u64
+                .timestamp_nanos() as Nanos
         }
         TimestampFmt::DateNeedsExternalTz(format) => {
             let naive_date = NaiveDate::parse_from_str(&timestamp, format)?;
             let naive_date_time = naive_date.and_hms(0, 0, 0);
             timezone
                 .from_local_datetime(&naive_date_time)?
-                .timestamp_nanos() as u64
+                .timestamp_nanos() as Nanos
         }
     };
     Ok(timestamp)
