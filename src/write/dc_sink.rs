@@ -58,7 +58,7 @@ impl<W: 'static + Write> DCSink<W> {
             ));
         }
         for i in 0..field_types.len() {
-            dc_util::write_sized_string(&mut dc_sink.writer, &field_names[i])?;
+            dc_util::write_u32_sized_string(&mut dc_sink.writer, &field_names[i])?;
             DCSink::write_field_type(dc_sink, &field_types[i])?;
             DCSink::write_display_hint(dc_sink, dc_util::DisplayHint::None)?;
         }
@@ -84,9 +84,10 @@ impl<W: 'static + Write> DCSink<W> {
             FieldType::Long => field_string_map.get(&FieldType::Long),
             FieldType::Short => field_string_map.get(&FieldType::Short),
             FieldType::String => field_string_map.get(&FieldType::String),
+            FieldType::MultiDimDoubleArray => field_string_map.get(&FieldType::MultiDimDoubleArray),
         };
         match type_string {
-            Some(t) => dc_util::write_sized_string(&mut dc_sink.writer, t)?,
+            Some(t) => dc_util::write_u32_sized_string(&mut dc_sink.writer, t)?,
             None => return Err(Error::from("DCSink -- field type missing")),
         }
         Ok(())
@@ -156,22 +157,21 @@ impl<W: 'static + Write> DataSink for DCSink<W> {
         // write row values
         for value in field_values {
             match value {
-                FieldValue::Boolean(_x) => {
-                    return Err(Error::from("DCSink -- boolean field type is not supported"))
-                }
+                FieldValue::Boolean(x) => self.writer.write_u8(if *x { 1 } else { 0 })?,
                 FieldValue::Byte(x) => self.writer.write_u8(*x)?,
-                FieldValue::ByteBuf(_x) => {
-                    return Err(Error::from(
-                        "DCSink -- ByteBuffer field type is not supported",
-                    ))
-                }
+                FieldValue::ByteBuf(x) => dc_util::write_sized_byte_buf(&mut self.writer, x)?,
                 FieldValue::Char(x) => self.writer.write_u16::<BigEndian>(*x)?,
                 FieldValue::Double(x) => self.writer.write_f64::<BigEndian>(*x)?,
                 FieldValue::Float(x) => self.writer.write_f32::<BigEndian>(*x)?,
                 FieldValue::Int(x) => self.writer.write_i32::<BigEndian>(*x)?,
                 FieldValue::Long(x) => self.writer.write_i64::<BigEndian>(*x)?,
                 FieldValue::Short(x) => self.writer.write_i16::<BigEndian>(*x)?,
-                FieldValue::String(x) => dc_util::write_string_value(&mut self.writer, &x)?,
+                FieldValue::String(x) => {
+                    dc_util::write_sized_byte_buf(&mut self.writer, x.as_bytes())?
+                }
+                FieldValue::MultiDimDoubleArray(x) => {
+                    dc_util::write_multi_dim_double_array(&mut self.writer, x)?
+                }
                 FieldValue::None => continue,
             };
         }

@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use crate::chopper::error::{ChopperResult, Error};
+use crate::chopper::error::ChopperResult;
 use crate::chopper::sink::{DataSink, DynHeaderSink, TypedHeaderSink};
 use crate::chopper::types::{FieldValue, Header, Row};
 use crate::source::csv_configs::{CSVOutputConfig, TimestampStyle};
@@ -102,17 +102,11 @@ impl<W: 'static + Write> DataSink for CSVSink<W> {
             }
 
             match value {
-                FieldValue::Boolean(_x) => {
-                    return Err(Error::from(
-                        "CSVSink -- boolean field type is not supported",
-                    ))
+                FieldValue::Boolean(x) => {
+                    write!(self.writer, "{}", if *x { "true" } else { "false" })?
                 }
                 FieldValue::Byte(x) => write!(self.writer, "{}", x)?,
-                FieldValue::ByteBuf(_x) => {
-                    return Err(Error::from(
-                        "CSVSink -- ByteBuffer field type is not supported",
-                    ))
-                }
+                FieldValue::ByteBuf(x) => write!(self.writer, "ByteBuf[len={}]", x.len())?,
                 FieldValue::Char(x) => write!(self.writer, "{}", x)?,
                 FieldValue::Double(x) => {
                     dtoa::write(&mut self.writer, *x)?;
@@ -124,6 +118,15 @@ impl<W: 'static + Write> DataSink for CSVSink<W> {
                 FieldValue::Long(x) => write!(self.writer, "{}", x)?,
                 FieldValue::Short(x) => write!(self.writer, "{}", x)?,
                 FieldValue::String(x) => write!(self.writer, "{}", x)?,
+                FieldValue::MultiDimDoubleArray(x) => {
+                    let dim_str = x
+                        .shape()
+                        .iter()
+                        .map(|d| d.to_string())
+                        .collect::<Vec<String>>()
+                        .join("x");
+                    write!(self.writer, "MultiDimDoubleArray[{}]", dim_str)?
+                }
                 FieldValue::None => (),
             };
         }

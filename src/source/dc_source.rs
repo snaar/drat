@@ -1,9 +1,11 @@
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::io::{self, BufReader, Read};
 use std::str;
 
 use byteorder::{BigEndian, ReadBytesExt};
 use lazy_static::lazy_static;
+use ndarray::{prelude::*, StrideShape};
 
 use crate::chopper::error::{ChopperResult, Error};
 use crate::chopper::types::{FieldType, FieldValue, Header, Row};
@@ -115,16 +117,10 @@ impl<R: Read> DCSource<R> {
                     if current_bitset & 1 == 0 {
                         // not null
                         match self.header.field_types()[field_index] {
-                            FieldType::Boolean => {
-                                return Err(Error::from(
-                                    "DCReader -- boolean field type is not supported",
-                                ))
-                            }
+                            FieldType::Boolean => FieldValue::Boolean(self.reader.read_u8()? != 0),
                             FieldType::Byte => FieldValue::Byte(self.reader.read_u8()?),
                             FieldType::ByteBuf => {
-                                return Err(Error::from(
-                                    "DCReader -- ByteBuffer field type is not supported",
-                                ))
+                                FieldValue::ByteBuf(Self::read_byte_buf(&mut self.reader)?)
                             }
                             FieldType::Char => {
                                 FieldValue::Char(self.reader.read_u16::<BigEndian>()?)
@@ -143,8 +139,11 @@ impl<R: Read> DCSource<R> {
                                 FieldValue::Short(self.reader.read_i16::<BigEndian>()?)
                             }
                             FieldType::String => {
-                                FieldValue::String(Self::read_string(&mut self.reader)?.to_owned())
+                                FieldValue::String(Self::read_string(&mut self.reader)?)
                             }
+                            FieldType::MultiDimDoubleArray => FieldValue::MultiDimDoubleArray(
+                                Self::read_multi_dim_double_array(&mut self.reader)?,
+                            ),
                         }
                     } else {
                         FieldValue::None
@@ -160,17 +159,52 @@ impl<R: Read> DCSource<R> {
         Ok(Some(self.current_row.clone()))
     }
 
-    fn read_string(reader: &mut BufReader<R>) -> ChopperResult<String> {
+    fn read_encoded_size(reader: &mut BufReader<R>) -> ChopperResult<u32> {
         let data_size_short = reader.read_i16::<BigEndian>()?;
-        let data_size = match data_size_short {
-            -1 => reader.read_u32::<BigEndian>()?,
-            _ => data_size_short as u32,
-        };
-        let mut string: Vec<u8> = vec![0; data_size as usize];
-        let string = string.as_mut_slice();
-        reader.read_exact(string)?;
+        Ok(match data_size_short {
+            -1 => u32::try_from(reader.read_i32::<BigEndian>()?)?,
+            _ => data_size_short as u16 as u32, // that's right, we want to convert to unsigned without sign extension
+        })
+    }
 
-        Ok(str::from_utf8_mut(string).unwrap().to_string())
+    fn read_byte_buf(reader: &mut BufReader<R>) -> ChopperResult<Vec<u8>> {
+        let data_size = Self::read_encoded_size(reader)?;
+        let mut buf: Vec<u8> = vec![0; data_size as usize];
+        reader.read_exact(&mut buf)?;
+        Ok(buf)
+    }
+
+    fn read_string(reader: &mut BufReader<R>) -> ChopperResult<String> {
+        let buf = Self::read_byte_buf(reader)?;
+        Ok(String::from_utf8(buf)?)
+    }
+
+    fn read_multi_dim_double_array(reader: &mut BufReader<R>) -> ChopperResult<ArrayD<f64>> {
+        // how many dimensions
+        let dim_count = Self::read_encoded_size(reader)?;
+
+        // now size of every dimension
+        let mut shape: Vec<usize> = Vec::new();
+        let mut has_a_zero_dim = false;
+        for _ in 0..dim_count {
+            let dim = Self::read_encoded_size(reader)? as usize;
+            has_a_zero_dim |= dim == 0;
+            shape.push(dim);
+        }
+
+        Ok(if has_a_zero_dim {
+            // there are either zero dimensions or at least one is zero;
+            // ndarray treats this shape as scalar so put a NaN in there
+            ArrayD::from_elem(shape, f64::NAN)
+        } else {
+            // we have at least one dimension, and all dimensions are non-zero
+            let shape: StrideShape<IxDyn> = shape.into();
+            let mut values: Vec<f64> = Vec::new();
+            for _ in 0..shape.size() {
+                values.push(reader.read_f64::<BigEndian>()?);
+            }
+            ArrayD::from_shape_vec(shape, values)?
+        })
     }
 }
 

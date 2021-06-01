@@ -1,9 +1,11 @@
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::io::{BufRead, Write};
 use std::string::String;
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use lazy_static::lazy_static;
+use ndarray::ArrayD;
 
 use crate::chopper::error::{ChopperResult, Error};
 use crate::chopper::types::FieldType;
@@ -44,6 +46,7 @@ pub fn create_field_string_map_name() -> HashMap<&'static str, FieldType> {
     map.insert("J", FieldType::Long);
     map.insert("S", FieldType::Short);
     map.insert("Ljava.lang.String;", FieldType::String);
+    map.insert("MultiDimDoubleArray", FieldType::MultiDimDoubleArray);
     map
 }
 
@@ -114,22 +117,45 @@ impl FieldDescriptor {
     }
 }
 
-pub fn write_sized_string<W: Write>(writer: &mut W, string: &str) -> ChopperResult<()> {
+pub fn write_u32_sized_string<W: Write>(writer: &mut W, string: &str) -> ChopperResult<()> {
     let bytes = string.as_bytes();
     writer.write_u32::<BigEndian>(bytes.len() as u32)?;
     writer.write_all(bytes)?;
     Ok(())
 }
 
-pub fn write_string_value<W: Write>(writer: &mut W, value: &str) -> ChopperResult<()> {
-    let bytes = value.as_bytes();
-    match bytes.len() {
-        x if x <= std::i16::MAX as usize => writer.write_i16::<BigEndian>(bytes.len() as i16)?,
+pub fn write_u16u32_size<W: Write>(writer: &mut W, size: usize) -> ChopperResult<()> {
+    match size {
+        x if x <= i16::MAX as usize => writer.write_u16::<BigEndian>(size as u16)?,
         _ => {
             writer.write_i16::<BigEndian>(-1)?;
-            writer.write_u32::<BigEndian>(bytes.len() as u32)?;
+            writer.write_u32::<BigEndian>(u32::try_from(size)?)?;
         }
     }
-    writer.write_all(bytes)?;
+    Ok(())
+}
+
+pub fn write_sized_byte_buf<W: Write>(writer: &mut W, buf: &[u8]) -> ChopperResult<()> {
+    write_u16u32_size(writer, buf.len())?;
+    writer.write_all(buf)?;
+    Ok(())
+}
+
+pub fn write_multi_dim_double_array<W: Write>(
+    writer: &mut W,
+    array: &ArrayD<f64>,
+) -> ChopperResult<()> {
+    let shape = array.shape();
+    write_u16u32_size(writer, shape.len())?;
+    for d in shape {
+        write_u16u32_size(writer, *d)?;
+    }
+
+    if !shape.is_empty() {
+        for f in array.iter() {
+            writer.write_f64::<BigEndian>(*f)?;
+        }
+    }
+
     Ok(())
 }

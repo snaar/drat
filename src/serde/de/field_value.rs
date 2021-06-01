@@ -46,6 +46,9 @@ impl<'de: 'a, 'a> Deserializer<'de> for FieldValueDeserializer<'a> {
             FieldValue::Long(v) => visitor.visit_i64(*v),
             FieldValue::Short(v) => visitor.visit_i16(*v),
             FieldValue::String(v) => visitor.visit_str(v), //TODO visit_borrowed_str
+            FieldValue::MultiDimDoubleArray(_) => Err(DeError::UnsupportedFieldType(
+                "MultiDimDoubleArray".to_string(),
+            )),
             FieldValue::None => visitor.visit_none(),
         }
     }

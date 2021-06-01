@@ -1,4 +1,7 @@
+use std::cmp::Ordering;
 use std::fmt;
+
+use ndarray::ArrayD;
 
 use crate::chopper::error::{ChopperResult, Error};
 use crate::util::timestamp_util;
@@ -101,7 +104,7 @@ impl Header {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum FieldValue {
     Boolean(bool),
     Byte(u8),
@@ -113,7 +116,93 @@ pub enum FieldValue {
     Long(i64),
     Short(i16),
     String(String),
+    MultiDimDoubleArray(ArrayD<f64>),
     None,
+}
+
+impl PartialOrd for FieldValue {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match self {
+            FieldValue::Boolean(v) => {
+                if let FieldValue::Boolean(o) = other {
+                    v.partial_cmp(o)
+                } else {
+                    None
+                }
+            }
+            FieldValue::Byte(v) => {
+                if let FieldValue::Byte(o) = other {
+                    v.partial_cmp(o)
+                } else {
+                    None
+                }
+            }
+            FieldValue::ByteBuf(v) => {
+                if let FieldValue::ByteBuf(o) = other {
+                    v.partial_cmp(o)
+                } else {
+                    None
+                }
+            }
+            FieldValue::Char(v) => {
+                if let FieldValue::Char(o) = other {
+                    v.partial_cmp(o)
+                } else {
+                    None
+                }
+            }
+            FieldValue::Double(v) => {
+                if let FieldValue::Double(o) = other {
+                    v.partial_cmp(o)
+                } else {
+                    None
+                }
+            }
+            FieldValue::Float(v) => {
+                if let FieldValue::Float(o) = other {
+                    v.partial_cmp(o)
+                } else {
+                    None
+                }
+            }
+            FieldValue::Int(v) => {
+                if let FieldValue::Int(o) = other {
+                    v.partial_cmp(o)
+                } else {
+                    None
+                }
+            }
+            FieldValue::Long(v) => {
+                if let FieldValue::Long(o) = other {
+                    v.partial_cmp(o)
+                } else {
+                    None
+                }
+            }
+            FieldValue::Short(v) => {
+                if let FieldValue::Short(o) = other {
+                    v.partial_cmp(o)
+                } else {
+                    None
+                }
+            }
+            FieldValue::String(v) => {
+                if let FieldValue::String(o) = other {
+                    v.partial_cmp(o)
+                } else {
+                    None
+                }
+            }
+            FieldValue::MultiDimDoubleArray(_) => None,
+            FieldValue::None => {
+                if &FieldValue::None == other {
+                    Some(Ordering::Equal)
+                } else {
+                    None
+                }
+            }
+        }
+    }
 }
 
 impl fmt::Display for FieldValue {
@@ -121,7 +210,7 @@ impl fmt::Display for FieldValue {
         match &self {
             FieldValue::Boolean(x) => f.write_str(format!("bool[{}]", x).as_str()),
             FieldValue::Byte(x) => f.write_str(format!("byte[{}]", x).as_str()),
-            FieldValue::ByteBuf(x) => f.write_str(format!("buf[len={}]", x.len()).as_str()),
+            FieldValue::ByteBuf(x) => f.write_str(format!("ByteBuf[len={}]", x.len()).as_str()),
             FieldValue::Char(x) => f.write_str(format!("char[{}]", x).as_str()),
             FieldValue::Double(x) => f.write_str(format!("double[{}]", x).as_str()),
             FieldValue::Float(x) => f.write_str(format!("float[{}]", x).as_str()),
@@ -129,6 +218,18 @@ impl fmt::Display for FieldValue {
             FieldValue::Long(x) => f.write_str(format!("long[{}]", x).as_str()),
             FieldValue::Short(x) => f.write_str(format!("short[{}]", x).as_str()),
             FieldValue::String(x) => f.write_str(format!("string[{}]", x.as_str()).as_str()),
+            FieldValue::MultiDimDoubleArray(x) => {
+                f.write_str("MultiDimDoubleArray[")?;
+                f.write_str(
+                    &x.shape()
+                        .iter()
+                        .map(|d| d.to_string())
+                        .collect::<Vec<String>>()
+                        .join("x"),
+                )?;
+                f.write_str("]")?;
+                Ok(())
+            }
             FieldValue::None => f.write_str("none[]"),
         }
     }
@@ -146,6 +247,7 @@ pub enum FieldType {
     Long,
     Short,
     String,
+    MultiDimDoubleArray,
 }
 
 #[derive(Clone, Debug, PartialEq)]

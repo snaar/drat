@@ -104,6 +104,7 @@ fn type_upconvert(field_type: FieldType) -> FieldType {
             FieldType::Long
         }
         FieldType::Float | FieldType::Double => FieldType::Double,
+        FieldType::MultiDimDoubleArray => FieldType::String,
     }
 }
 

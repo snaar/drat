@@ -7,6 +7,8 @@ use thiserror::Error as ThisError;
 pub enum DeError {
     #[error("serde error: {0}")]
     Serde(String),
+    #[error("field type {0} is unsupported")]
+    UnsupportedFieldType(String),
 }
 
 impl SerdeDeError for DeError {

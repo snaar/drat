@@ -1,4 +1,4 @@
-use std::{io, num};
+use std::{io, num, string};
 
 use chrono::NaiveDateTime;
 use chrono_tz::Tz;
@@ -20,6 +20,12 @@ pub enum Error {
     TimeParsing(#[from] chrono::ParseError),
     #[error(transparent)]
     NumParseInt(#[from] num::ParseIntError),
+    #[error(transparent)]
+    TryFromIntError(#[from] num::TryFromIntError),
+    #[error(transparent)]
+    FromUtf8Error(#[from] string::FromUtf8Error),
+    #[error(transparent)]
+    ShapeError(#[from] ndarray::ShapeError),
     #[error("Failed to find column named '{0}'.")]
     ColumnMissing(String),
     #[error(
