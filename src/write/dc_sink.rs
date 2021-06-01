@@ -20,36 +20,36 @@ impl<W: 'static + Write> DCSink<W> {
         })
     }
 
-    fn write_header(mut dc_sink: &mut DCSink<W>, header: &mut Header) -> ChopperResult<()> {
-        DCSink::write_magic(&mut dc_sink)?;
-        DCSink::write_version(&mut dc_sink)?;
-        DCSink::write_empty_user_data(&mut dc_sink)?;
-        DCSink::write_field_descriptors(&mut dc_sink, header)?;
+    fn write_header(&mut self, header: &mut Header) -> ChopperResult<()> {
+        self.write_magic()?;
+        self.write_version()?;
+        self.write_empty_user_data()?;
+        self.write_field_descriptors(header)?;
         Ok(())
     }
 
-    fn write_magic(dc_sink: &mut DCSink<W>) -> ChopperResult<()> {
-        dc_sink.writer.write_u64::<BigEndian>(dc_util::MAGIC_NUM)?;
+    fn write_magic(&mut self) -> ChopperResult<()> {
+        self.writer.write_u64::<BigEndian>(dc_util::MAGIC_NUM)?;
         Ok(())
     }
 
-    fn write_version(dc_sink: &mut DCSink<W>) -> ChopperResult<()> {
-        dc_sink.writer.write_u16::<BigEndian>(dc_util::VERSION)?;
+    fn write_version(&mut self) -> ChopperResult<()> {
+        self.writer.write_u16::<BigEndian>(dc_util::VERSION)?;
         Ok(())
     }
 
-    fn write_empty_user_data(dc_sink: &mut DCSink<W>) -> ChopperResult<()> {
-        dc_sink.writer.write_u32::<BigEndian>(0)?;
+    fn write_empty_user_data(&mut self) -> ChopperResult<()> {
+        self.writer.write_u32::<BigEndian>(0)?;
         Ok(())
     }
 
-    fn write_field_descriptors(dc_sink: &mut DCSink<W>, header: &mut Header) -> ChopperResult<()> {
+    fn write_field_descriptors(&mut self, header: &mut Header) -> ChopperResult<()> {
         let field_types = header.field_types();
         let field_names = header.field_names();
         let field_count = field_types.len();
 
         // write field count
-        dc_sink.writer.write_u32::<BigEndian>(field_count as u32)?;
+        self.writer.write_u32::<BigEndian>(field_count as u32)?;
 
         // write field names and types as SizedStrings
         if field_names.len() != field_types.len() {
@@ -58,45 +58,24 @@ impl<W: 'static + Write> DCSink<W> {
             ));
         }
         for i in 0..field_types.len() {
-            dc_util::write_u32_sized_string(&mut dc_sink.writer, &field_names[i])?;
-            DCSink::write_field_type(dc_sink, &field_types[i])?;
-            DCSink::write_display_hint(dc_sink, dc_util::DisplayHint::None)?;
+            dc_util::write_u32_sized_string(&mut self.writer, &field_names[i])?;
+            self.write_field_type(&field_types[i])?;
+            self.write_display_hint(dc_util::DisplayHint::None)?;
         }
         Ok(())
     }
 
-    fn write_field_type(dc_sink: &mut DCSink<W>, field_type: &FieldType) -> ChopperResult<()> {
+    fn write_field_type(&mut self, field_type: &FieldType) -> ChopperResult<()> {
         let field_string_map = &dc_util::FIELD_STRING_MAP_TYPE;
-        let type_string = match field_type {
-            FieldType::Boolean => {
-                return Err(Error::from("DCSink -- boolean field type is not supported"))
-            }
-            FieldType::Byte => field_string_map.get(&FieldType::Byte),
-            FieldType::ByteBuf => {
-                return Err(Error::from(
-                    "DCSink -- ByteBuffer field type is not supported",
-                ))
-            }
-            FieldType::Char => field_string_map.get(&FieldType::Char),
-            FieldType::Double => field_string_map.get(&FieldType::Double),
-            FieldType::Float => field_string_map.get(&FieldType::Float),
-            FieldType::Int => field_string_map.get(&FieldType::Int),
-            FieldType::Long => field_string_map.get(&FieldType::Long),
-            FieldType::Short => field_string_map.get(&FieldType::Short),
-            FieldType::String => field_string_map.get(&FieldType::String),
-            FieldType::MultiDimDoubleArray => field_string_map.get(&FieldType::MultiDimDoubleArray),
-        };
+        let type_string = field_string_map.get(field_type);
         match type_string {
-            Some(t) => dc_util::write_u32_sized_string(&mut dc_sink.writer, t)?,
+            Some(t) => dc_util::write_u32_sized_string(&mut self.writer, t)?,
             None => return Err(Error::from("DCSink -- field type missing")),
         }
         Ok(())
     }
 
-    fn write_display_hint(
-        dc_sink: &mut DCSink<W>,
-        display_hint: dc_util::DisplayHint,
-    ) -> ChopperResult<()> {
+    fn write_display_hint(&mut self, display_hint: dc_util::DisplayHint) -> ChopperResult<()> {
         let hint: i32 = match display_hint {
             dc_util::DisplayHint::Timestamp => 0,
             dc_util::DisplayHint::ArrayInt => 1,
@@ -107,7 +86,7 @@ impl<W: 'static + Write> DCSink<W> {
             dc_util::DisplayHint::MatrixDouble2D => 6,
             dc_util::DisplayHint::None => -1,
         };
-        dc_sink.writer.write_i32::<BigEndian>(hint)?;
+        self.writer.write_i32::<BigEndian>(hint)?;
         Ok(())
     }
 }
@@ -117,7 +96,7 @@ impl<W: 'static + Write> DynHeaderSink for DCSink<W> {
         mut self: Box<Self>,
         header: &mut Header,
     ) -> ChopperResult<Box<dyn DataSink>> {
-        Self::write_header(&mut self, header)?;
+        self.write_header(header)?;
         let bitset_bytes = dc_util::get_bitset_bytes(header.field_types().len() - 1);
         self.bitset_bytes = bitset_bytes;
         Ok(Box::new(*self))
