@@ -3,7 +3,7 @@ use std::io::Write;
 use byteorder::{BigEndian, WriteBytesExt};
 
 use crate::chopper::error::{ChopperResult, Error};
-use crate::chopper::sink::{DataSink, DynHeaderSink};
+use crate::chopper::sink::{DataSink, DynHeaderSink, TypedHeaderSink};
 use crate::chopper::types::{FieldType, FieldValue, Header, Row};
 use crate::util::dc_util;
 
@@ -91,15 +91,18 @@ impl<W: 'static + Write> DCSink<W> {
     }
 }
 
-impl<W: 'static + Write> DynHeaderSink for DCSink<W> {
-    fn process_header(
-        mut self: Box<Self>,
-        header: &mut Header,
-    ) -> ChopperResult<Box<dyn DataSink>> {
+impl<W: 'static + Write> TypedHeaderSink<Self> for DCSink<W> {
+    fn process_header(mut self, header: &mut Header) -> ChopperResult<Self> {
         self.write_header(header)?;
         let bitset_bytes = dc_util::get_bitset_bytes(header.field_types().len() - 1);
         self.bitset_bytes = bitset_bytes;
-        Ok(Box::new(*self))
+        Ok(self)
+    }
+}
+
+impl<W: 'static + Write> DynHeaderSink for DCSink<W> {
+    fn process_header(self: Box<Self>, header: &mut Header) -> ChopperResult<Box<dyn DataSink>> {
+        Ok(Box::new(TypedHeaderSink::process_header(*self, header)?))
     }
 }
 
