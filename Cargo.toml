@@ -1,6 +1,6 @@
 [package]
 name = "chopper"
-version = "0.0.5"
+version = "0.1.0"
 authors = ["Xinyun Wu <xin@snaar.net>", "Serguei Narojnyi <snaar@snaar.net>"]
 edition = "2018"
 repository = "https://github.com/octoske/chopper"
@@ -29,7 +29,7 @@ flate2 = "1.0"
 lazy_static = "1.4"
 lz-fear = "0.1"
 ndarray = "0.15"
-paku = "0.0.1"
+paku = "0.0.2"
 ruzstd = "0.2"
 serde = "1.0"
 thiserror = "1.0"
