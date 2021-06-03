@@ -39,21 +39,21 @@ impl DCFactory {
     }
 
     pub fn create_default_field_name_to_type_map() -> HashMap<String, FieldType> {
-        let mut map = HashMap::new();
-        map.insert("Z".to_string(), FieldType::Boolean);
-        map.insert("B".to_string(), FieldType::Byte);
-        map.insert("Ljava.lang.ByteBuffer;".to_string(), FieldType::ByteBuf);
-        map.insert("C".to_string(), FieldType::Char);
-        map.insert("D".to_string(), FieldType::Double);
-        map.insert("F".to_string(), FieldType::Float);
-        map.insert("I".to_string(), FieldType::Int);
-        map.insert("J".to_string(), FieldType::Long);
-        map.insert("S".to_string(), FieldType::Short);
-        map.insert("Ljava.lang.String;".to_string(), FieldType::String);
-        map.insert(
-            "MultiDimDoubleArray".to_string(),
-            FieldType::MultiDimDoubleArray,
-        );
-        map
+        [
+            ("Z", FieldType::Boolean),
+            ("B", FieldType::Byte),
+            ("Ljava.lang.ByteBuffer;", FieldType::ByteBuf),
+            ("C", FieldType::Char),
+            ("D", FieldType::Double),
+            ("F", FieldType::Float),
+            ("I", FieldType::Int),
+            ("J", FieldType::Long),
+            ("S", FieldType::Short),
+            ("Ljava.lang.String;", FieldType::String),
+            ("MultiDimDoubleArray", FieldType::MultiDimDoubleArray),
+        ]
+        .iter()
+        .map(|(field_name, field_type)| (field_name.to_string(), field_type.clone()))
+        .collect()
     }
 }
