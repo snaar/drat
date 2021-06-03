@@ -5,14 +5,15 @@ use chopper::chopper::error::ChopperResult;
 use chopper::chopper::header_graph::{HeaderChain, HeaderGraph, HeaderNode};
 use chopper::chopper::types::{self, Header};
 use chopper::driver::driver::Driver;
-use chopper::input::input_factory::InputFactory;
-use chopper::source::csv_configs::{CSVOutputConfig, TimestampFmtConfig};
-use chopper::source::csv_configs::{TimestampColConfig, TimestampConfig};
+use chopper::input::input_factory::InputFactoryBuilder;
 use chopper::source::csv_input_config::CSVInputConfig;
+use chopper::source::csv_timestamp_config::{
+    TimestampColConfig, TimestampConfig, TimestampFmtConfig,
+};
 use chopper::source::source::Source;
 use chopper::util::file::are_contents_same;
 use chopper::util::tz::ChopperTz;
-use chopper::write::factory;
+use chopper::write::factory::OutputFactory;
 
 #[test]
 fn test_multi_file() {
@@ -39,7 +40,9 @@ fn setup_graph(
     ts_config: TimestampConfig,
 ) -> ChopperResult<Box<dyn ChopperDriver>> {
     let csv_input_config = CSVInputConfig::new(ts_config);
-    let mut input_factory = InputFactory::new(csv_input_config, None, None)?;
+    let mut input_factory = InputFactoryBuilder::new()
+        .with_csv_input_config(csv_input_config)
+        .build()?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {
@@ -48,8 +51,7 @@ fn setup_graph(
         sources.push(source);
     }
 
-    let csv_output_config = CSVOutputConfig::new_default();
-    let header_sink = factory::new_header_sink(Some(output), Some(csv_output_config))?;
+    let header_sink = OutputFactory::new().new_header_sink(Some(output))?;
     let node_output = HeaderNode::HeaderSink(header_sink);
     let chain = HeaderChain::new(vec![node_output]);
 

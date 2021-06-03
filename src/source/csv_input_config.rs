@@ -1,6 +1,6 @@
 use crate::chopper::error::ChopperResult;
 use crate::cli::util::YesNoAuto;
-use crate::source::csv_configs::TimestampConfig;
+use crate::source::csv_timestamp_config::TimestampConfig;
 use crate::util::csv_util;
 
 #[derive(Debug, Clone)]

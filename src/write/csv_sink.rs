@@ -3,8 +3,8 @@ use std::io::Write;
 use crate::chopper::error::ChopperResult;
 use crate::chopper::sink::{DataSink, DynHeaderSink, TypedHeaderSink};
 use crate::chopper::types::{FieldValue, Header, Row};
-use crate::source::csv_configs::{CSVOutputConfig, TimestampStyle};
-use crate::source::csv_timestamp::TimestampUnits;
+use crate::util::timestamp_units::TimestampUnits;
+use crate::write::csv_output_config::{CSVOutputConfig, TimestampStyle};
 
 pub struct CSVSink<W: 'static + Write> {
     writer: W,

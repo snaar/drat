@@ -1,66 +1,12 @@
-use crate::source::csv_timestamp::TimestampUnits;
+use crate::util::timestamp_units::TimestampUnits;
 use crate::util::tz::ChopperTz;
 
 pub static OUTPUT_DELIMITER_DEFAULT: &str = ",";
-pub static TIMESTAMP_COL_DATE_DEFAULT: usize = 0;
-
-pub type DateColIdx = usize;
-pub type TimeColIdx = usize;
-
-#[derive(Debug, Clone)]
-pub enum TimestampFmtConfig {
-    Auto,
-    Epoch(TimestampUnits),
-    Explicit(String),
-    DateTimeExplicit(String, String),
-}
-
-#[derive(Debug, Clone)]
-pub enum TimestampColConfig {
-    Auto,
-    Index(usize),
-    DateTimeIndex(DateColIdx, TimeColIdx),
-    Name(String),
-    DateTimeName(String, String),
-}
 
 #[derive(Clone, Copy)]
 pub enum TimestampStyle {
     Epoch,
     HumanReadable,
-}
-
-#[derive(Debug, Clone)]
-pub struct TimestampConfig {
-    timestamp_col: TimestampColConfig,
-    timestamp_fmt: TimestampFmtConfig,
-    timezone: ChopperTz,
-}
-
-impl TimestampConfig {
-    pub fn new(
-        timestamp_col: TimestampColConfig,
-        timestamp_fmt: TimestampFmtConfig,
-        timezone: ChopperTz,
-    ) -> Self {
-        TimestampConfig {
-            timestamp_col,
-            timestamp_fmt,
-            timezone,
-        }
-    }
-
-    pub fn timestamp_col(&self) -> &TimestampColConfig {
-        &self.timestamp_col
-    }
-
-    pub fn timestamp_fmt(&self) -> &TimestampFmtConfig {
-        &self.timestamp_fmt
-    }
-
-    pub fn timezone(&self) -> &ChopperTz {
-        &self.timezone
-    }
 }
 
 #[derive(Clone)]

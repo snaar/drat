@@ -128,9 +128,9 @@ mod tests {
     use serde_with::{serde_as, DisplayFromStr};
 
     use crate::serde::ser::from_seq::typed_header_sink::to_typed_header_sink;
-    use crate::source::csv_configs::{CSVOutputConfig, TimestampStyle};
-    use crate::source::csv_timestamp::TimestampUnits;
+    use crate::util::timestamp_units::TimestampUnits;
     use crate::util::tz::ChopperTz;
+    use crate::write::csv_output_config::{CSVOutputConfig, TimestampStyle};
     use crate::write::csv_sink::CSVSink;
 
     #[test]

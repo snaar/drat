@@ -41,6 +41,8 @@ pub enum Error {
     TimeZoneMissingForOutput(Nanos),
     #[error("Converting '{0}' in timezone '{1}' to timestamp failed.")]
     TimeConversion(NaiveDateTime, Tz),
+    #[error("DCFactory is required to handle DC files.")]
+    DCFactoryMissing,
     #[error("Error: {0}")]
     Custom(String),
 }

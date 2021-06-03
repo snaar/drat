@@ -9,7 +9,8 @@ use crate::source::csv_input_config::CSVInputConfig;
 use crate::source::multi_file_source::SerialMultiFileSource;
 use crate::source::source::Source;
 use crate::source::{
-    csv_factory::CSVFactory, dc_factory::DCFactory, source_factory::SourceFactory,
+    csv_source_factory::CSVSourceFactory, dc_source_factory::DCSourceFactory,
+    source_factory::SourceFactory,
 };
 use crate::transport::dir::dir_transport::DirTransport;
 use crate::transport::dir::file::DirFileTransport;
@@ -20,7 +21,61 @@ use crate::transport::streaming::file::FileTransport;
 use crate::transport::streaming::http::HttpTransport;
 use crate::transport::streaming::previewer_factory::PreviewerTransportFactory;
 use crate::transport::streaming::streaming_transport::StreamingTransport;
+use crate::util::dc_factory::DCFactory;
 use crate::util::reader::ChopperBufPreviewer;
+
+pub struct InputFactoryBuilder {
+    dc_factory: Option<DCFactory>,
+    csv_input_config: Option<CSVInputConfig>,
+    user_source_factories: Option<Vec<Box<dyn SourceFactory>>>,
+    user_streaming_transports: Option<Vec<Box<dyn StreamingTransport>>>,
+}
+
+impl InputFactoryBuilder {
+    pub fn new() -> InputFactoryBuilder {
+        InputFactoryBuilder {
+            dc_factory: None,
+            csv_input_config: None,
+            user_source_factories: None,
+            user_streaming_transports: None,
+        }
+    }
+
+    pub fn with_dc_factory(mut self, dc_factory: Option<DCFactory>) -> Self {
+        self.dc_factory = dc_factory;
+        self
+    }
+
+    pub fn with_csv_input_config(mut self, csv_input_config: CSVInputConfig) -> Self {
+        self.csv_input_config = Some(csv_input_config);
+        self
+    }
+
+    pub fn with_user_source_factories(
+        mut self,
+        user_source_factories: Option<Vec<Box<dyn SourceFactory>>>,
+    ) -> Self {
+        self.user_source_factories = user_source_factories;
+        self
+    }
+
+    pub fn with_user_streaming_transports(
+        mut self,
+        user_streaming_transports: Option<Vec<Box<dyn StreamingTransport>>>,
+    ) -> Self {
+        self.user_streaming_transports = user_streaming_transports;
+        self
+    }
+
+    pub fn build(self) -> ChopperResult<InputFactory> {
+        InputFactory::new(
+            self.dc_factory,
+            self.csv_input_config,
+            self.user_source_factories,
+            self.user_streaming_transports,
+        )
+    }
+}
 
 pub struct InputFactory {
     dir_transports: Vec<Box<dyn DirTransport>>,
@@ -28,26 +83,8 @@ pub struct InputFactory {
 }
 
 impl InputFactory {
-    pub fn new_without_csv(
-        user_source_factories: Option<Vec<Box<dyn SourceFactory>>>,
-        user_streaming_transports: Option<Vec<Box<dyn StreamingTransport>>>,
-    ) -> ChopperResult<Self> {
-        Self::new_with_optional_csv(None, user_source_factories, user_streaming_transports)
-    }
-
-    pub fn new(
-        csv_input_config: CSVInputConfig,
-        user_source_factories: Option<Vec<Box<dyn SourceFactory>>>,
-        user_streaming_transports: Option<Vec<Box<dyn StreamingTransport>>>,
-    ) -> ChopperResult<Self> {
-        Self::new_with_optional_csv(
-            Some(csv_input_config),
-            user_source_factories,
-            user_streaming_transports,
-        )
-    }
-
-    fn new_with_optional_csv(
+    fn new(
+        dc_factory: Option<DCFactory>,
         csv_input_config: Option<CSVInputConfig>,
         user_source_factories: Option<Vec<Box<dyn SourceFactory>>>,
         user_streaming_transports: Option<Vec<Box<dyn StreamingTransport>>>,
@@ -72,7 +109,8 @@ impl InputFactory {
         let dir_transports = create_default_dir_transports();
 
         // source factories
-        let mut default_source_factories = create_default_source_factories(csv_input_config);
+        let mut default_source_factories =
+            create_default_source_factories(dc_factory, csv_input_config);
         let source_factories = match user_source_factories {
             Some(mut s) => {
                 s.append(&mut default_source_factories);
@@ -92,9 +130,7 @@ impl InputFactory {
             single_file_input_factory,
         })
     }
-}
 
-impl InputFactory {
     pub fn create_source_from_path(&mut self, path: &str) -> ChopperResult<Box<dyn Source>> {
         self.create_source_from_input(&Input {
             input: InputType::Path(path.to_owned()),
@@ -149,25 +185,28 @@ impl InputFactory {
     }
 }
 
-pub fn create_default_source_factories(
+fn create_default_source_factories(
+    dc_factory: Option<DCFactory>,
     csv_input_config: Option<CSVInputConfig>,
 ) -> Vec<Box<dyn SourceFactory>> {
     let mut source_factories: Vec<Box<dyn SourceFactory>> = Vec::new();
     if let Some(csv_input_config) = csv_input_config {
-        source_factories.push(Box::new(CSVFactory::new(csv_input_config)));
+        source_factories.push(Box::new(CSVSourceFactory::new(csv_input_config)));
     }
-    source_factories.push(Box::new(DCFactory));
+    if let Some(dc_factory) = dc_factory {
+        source_factories.push(Box::new(DCSourceFactory::new(dc_factory)));
+    }
     source_factories
 }
 
-pub fn create_default_dir_transports() -> Vec<Box<dyn DirTransport>> {
+fn create_default_dir_transports() -> Vec<Box<dyn DirTransport>> {
     vec![Box::new(DirFileTransport)]
 }
 
-pub fn create_default_seekable_transports() -> Vec<Box<dyn SeekableTransport>> {
+fn create_default_seekable_transports() -> Vec<Box<dyn SeekableTransport>> {
     vec![Box::new(SeekableFileTransport)]
 }
 
-pub fn create_default_streaming_transports() -> Vec<Box<dyn StreamingTransport>> {
+fn create_default_streaming_transports() -> Vec<Box<dyn StreamingTransport>> {
     vec![Box::new(FileTransport), Box::new(HttpTransport)]
 }

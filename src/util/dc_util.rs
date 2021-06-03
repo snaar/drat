@@ -1,14 +1,11 @@
-use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::io::{BufRead, Write};
 use std::string::String;
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use lazy_static::lazy_static;
 use ndarray::ArrayD;
 
 use crate::chopper::error::{ChopperResult, Error};
-use crate::chopper::types::FieldType;
 
 pub const MAGIC_NUM: u64 = 0x44434154;
 pub const VERSION: u16 = 2;
@@ -26,43 +23,6 @@ pub enum DisplayHint {
 
 pub fn get_bitset_bytes(field_count: usize) -> usize {
     1 + ((field_count - 1) / 8)
-}
-
-// map for field types
-lazy_static! {
-    pub static ref FIELD_STRING_MAP_TYPE: HashMap<FieldType, &'static str> =
-        create_field_string_map_type();
-}
-
-pub fn create_field_string_map_name() -> HashMap<&'static str, FieldType> {
-    let mut map = HashMap::new();
-    map.insert("Z", FieldType::Boolean);
-    map.insert("B", FieldType::Byte);
-    map.insert("Ljava.lang.ByteBuffer;", FieldType::ByteBuf);
-    map.insert("C", FieldType::Char);
-    map.insert("D", FieldType::Double);
-    map.insert("F", FieldType::Float);
-    map.insert("I", FieldType::Int);
-    map.insert("J", FieldType::Long);
-    map.insert("S", FieldType::Short);
-    map.insert("Ljava.lang.String;", FieldType::String);
-    map.insert("MultiDimDoubleArray", FieldType::MultiDimDoubleArray);
-    map
-}
-
-pub fn create_field_string_map_type() -> HashMap<FieldType, &'static str> {
-    let mut map = HashMap::new();
-    map.insert(FieldType::Boolean, "Z");
-    map.insert(FieldType::Byte, "B");
-    map.insert(FieldType::ByteBuf, "Ljava.lang.ByteBuffer;");
-    map.insert(FieldType::Char, "C");
-    map.insert(FieldType::Double, "D");
-    map.insert(FieldType::Float, "F");
-    map.insert(FieldType::Int, "I");
-    map.insert(FieldType::Long, "J");
-    map.insert(FieldType::Short, "S");
-    map.insert(FieldType::String, "Ljava.lang.String;");
-    map
 }
 
 pub struct FieldDescriptor {

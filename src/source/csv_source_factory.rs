@@ -8,17 +8,17 @@ use crate::source::source_factory::SourceFactory;
 use crate::util::reader::ChopperBufPreviewer;
 
 #[derive(Clone)]
-pub struct CSVFactory {
+pub struct CSVSourceFactory {
     pub csv_input_config: CSVInputConfig,
 }
 
-impl CSVFactory {
+impl CSVSourceFactory {
     pub fn new(csv_input_config: CSVInputConfig) -> Self {
-        CSVFactory { csv_input_config }
+        CSVSourceFactory { csv_input_config }
     }
 }
 
-impl SourceFactory for CSVFactory {
+impl SourceFactory for CSVSourceFactory {
     fn can_create_from_format(&self, format: &String) -> bool {
         format.ends_with(".csv")
     }

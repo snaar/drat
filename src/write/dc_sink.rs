@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use std::io::Write;
+use std::rc::Rc;
 
 use byteorder::{BigEndian, WriteBytesExt};
 
@@ -10,13 +12,15 @@ use crate::util::dc_util;
 pub struct DCSink<W: 'static + Write> {
     writer: W,
     bitset_bytes: usize,
+    field_type_map: Rc<HashMap<FieldType, String>>,
 }
 
 impl<W: 'static + Write> DCSink<W> {
-    pub fn new(writer: W) -> ChopperResult<Self> {
+    pub fn new(writer: W, field_type_map: Rc<HashMap<FieldType, String>>) -> ChopperResult<Self> {
         Ok(DCSink {
             writer,
             bitset_bytes: 0,
+            field_type_map,
         })
     }
 
@@ -66,8 +70,7 @@ impl<W: 'static + Write> DCSink<W> {
     }
 
     fn write_field_type(&mut self, field_type: &FieldType) -> ChopperResult<()> {
-        let field_string_map = &dc_util::FIELD_STRING_MAP_TYPE;
-        let type_string = field_string_map.get(field_type);
+        let type_string = self.field_type_map.get(field_type);
         match type_string {
             Some(t) => dc_util::write_u32_sized_string(&mut self.writer, t)?,
             None => return Err(Error::from("DCSink -- field type missing")),

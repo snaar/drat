@@ -80,11 +80,13 @@ mod tests {
 
     use crate::cli::util::YesNoAuto;
     use crate::serde::de::source::from_source;
-    use crate::source::csv_configs::{TimestampColConfig, TimestampConfig, TimestampFmtConfig};
     use crate::source::csv_input_config::CSVInputConfig;
     use crate::source::csv_source::CSVSource;
-    use crate::source::csv_timestamp::TimestampUnits;
+    use crate::source::csv_timestamp_config::{
+        TimestampColConfig, TimestampConfig, TimestampFmtConfig,
+    };
     use crate::util::reader::ChopperBufPreviewer;
+    use crate::util::timestamp_units::TimestampUnits;
     use crate::util::tz::ChopperTz;
 
     #[test]

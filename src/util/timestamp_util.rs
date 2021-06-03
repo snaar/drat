@@ -1,14 +1,21 @@
+use std::ops::Range;
+
 use chrono::{DateTime, NaiveDateTime};
 use lazy_static::lazy_static;
 
 use crate::chopper::error::{ChopperResult, Error};
 use crate::chopper::types::Nanos;
-use crate::source::csv_timestamp::{RANGE_MICROS, RANGE_MILLIS, RANGE_NANOS, RANGE_SECONDS};
 use crate::util::tz::ChopperTz;
 
-pub static DEFAULT_MONTH: &str = "01";
-pub static DEFAULT_DAY: &str = "01";
-pub static DEFAULT_TIME: &str = "00:00:00";
+pub const DEFAULT_MONTH: &str = "01";
+pub const DEFAULT_DAY: &str = "01";
+pub const DEFAULT_TIME: &str = "00:00:00";
+
+// these limit autodetection to dates starting dec 1989 until 2033, which is mostly fine
+pub const RANGE_NANOS: Range<u64> = 630_000_000_000_000_000..2_000_000_000_000_000_000;
+pub const RANGE_MICROS: Range<u64> = 630_000_000_000_000..2_000_000_000_000_000;
+pub const RANGE_MILLIS: Range<u64> = 630_000_000_000..2_000_000_000_000;
+pub const RANGE_SECONDS: Range<u64> = 630_000_000..2_000_000_000;
 
 // %+ is the ISO 8601 / RFC 3339 format
 const DATETIME_RANGE_FORMATS_WITH_TZ: [&'static str; 1] = ["%+"];

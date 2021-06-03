@@ -1,10 +1,12 @@
-use std::ops::Range;
-
 use chrono::{DateTime, NaiveDate, NaiveDateTime};
 
 use crate::chopper::error::{ChopperResult, Error};
 use crate::chopper::types::{Header, Nanos};
-use crate::source::csv_configs::{DateColIdx, TimeColIdx, TimestampColConfig, TimestampFmtConfig};
+use crate::source::csv_timestamp_config::{
+    DateColIdx, TimeColIdx, TimestampColConfig, TimestampFmtConfig,
+};
+use crate::util::timestamp_units::{TimestampUnits, TIMESTAMP_UNITS};
+use crate::util::timestamp_util::{RANGE_MICROS, RANGE_MILLIS, RANGE_NANOS, RANGE_SECONDS};
 use crate::util::tz::ChopperTz;
 
 // https://docs.rs/chrono/0.4/chrono/format/strftime/index.html
@@ -24,48 +26,6 @@ const DATETIME_FORMATS_WITHOUT_TZ: [&'static str; 4] = [
     "%Y%m%d#%-H:%M",
 ];
 const DATE_FORMATS_WITHOUT_TZ: [&'static str; 1] = ["%Y%m%d"];
-
-#[derive(Debug, Copy, Clone)]
-pub enum TimestampUnits {
-    Seconds,
-    Millis,
-    Micros,
-    Nanos,
-}
-
-impl TimestampUnits {
-    pub fn from_str(units: &str) -> TimestampUnits {
-        match units {
-            "s" => TimestampUnits::Seconds,
-            "ms" => TimestampUnits::Millis,
-            "us" => TimestampUnits::Micros,
-            "ns" => TimestampUnits::Nanos,
-            _ => panic!("unexpected timestamp units {}", units),
-        }
-    }
-
-    pub fn to_suffix_str(&self) -> &str {
-        match self {
-            TimestampUnits::Seconds => "Seconds",
-            TimestampUnits::Millis => "Millis",
-            TimestampUnits::Micros => "Micros",
-            TimestampUnits::Nanos => "Nanos",
-        }
-    }
-}
-
-const TIMESTAMP_UNITS: [(TimestampUnits, &'static str); 4] = [
-    (TimestampUnits::Seconds, "seconds"),
-    (TimestampUnits::Millis, "millis"),
-    (TimestampUnits::Micros, "micros"),
-    (TimestampUnits::Nanos, "nanos"),
-];
-
-// these limit autodetection to dates starting dec 1989 until 2033, which is mostly fine
-pub const RANGE_NANOS: Range<u64> = 630_000_000_000_000_000..2_000_000_000_000_000_000;
-pub const RANGE_MICROS: Range<u64> = 630_000_000_000_000..2_000_000_000_000_000;
-pub const RANGE_MILLIS: Range<u64> = 630_000_000_000..2_000_000_000_000;
-pub const RANGE_SECONDS: Range<u64> = 630_000_000..2_000_000_000;
 
 pub enum TimestampCol {
     Index(usize),

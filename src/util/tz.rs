@@ -17,7 +17,7 @@ pub struct ChopperTz {
 impl ChopperTz {
     pub fn new_from_cli_arg(
         cli_timezone_arg: Option<&str>,
-        timezone_map: Option<HashMap<&str, Tz>>,
+        timezone_map: Option<HashMap<String, Tz>>,
     ) -> ChopperTz {
         let timezone = Self::resolve_timezone(cli_timezone_arg, timezone_map);
         ChopperTz { timezone }
@@ -29,7 +29,7 @@ impl ChopperTz {
 
     fn resolve_timezone(
         cli_timezone_arg: Option<&str>,
-        timezone_map: Option<HashMap<&str, Tz>>,
+        timezone_map: Option<HashMap<String, Tz>>,
     ) -> Option<Tz> {
         let timezone_arg = match cli_timezone_arg {
             None => match env::var("CHOPPER_TZ") {

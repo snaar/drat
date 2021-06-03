@@ -11,31 +11,76 @@ use crate::cli::util::YesNoAuto;
 use crate::cli_app::CliApp;
 use crate::driver::{driver::Driver, merge_join::MergeJoin};
 use crate::input::input::{Input, InputFormat, InputType};
-use crate::input::input_factory::InputFactory;
-use crate::source::csv_configs::{
-    CSVOutputConfig, TimestampColConfig, TimestampConfig, TimestampFmtConfig, TimestampStyle,
-};
+use crate::input::input_factory::InputFactoryBuilder;
 use crate::source::csv_input_config::CSVInputConfig;
-use crate::source::csv_timestamp::TimestampUnits;
+use crate::source::csv_timestamp_config::{
+    TimestampColConfig, TimestampConfig, TimestampFmtConfig,
+};
 use crate::source::source::Source;
 use crate::source::source_factory::SourceFactory;
 use crate::transport::streaming::streaming_transport::StreamingTransport;
+use crate::util::dc_factory::DCFactory;
+use crate::util::timestamp_units::TimestampUnits;
 use crate::util::tz::ChopperTz;
-use crate::write::factory;
+use crate::write::csv_output_config::{CSVOutputConfig, TimestampStyle};
+use crate::write::factory::OutputFactory;
 
-pub fn chopper_cli(
+pub struct ChopperCli {
     streaming_transports: Option<Vec<Box<dyn StreamingTransport>>>,
     source_factories: Option<Vec<Box<dyn SourceFactory>>>,
-    timezone_map: Option<HashMap<&str, Tz>>,
-) -> ChopperResult<()> {
-    let mut driver = parse_cli_args(streaming_transports, source_factories, timezone_map)?;
-    driver.drive()
+    timezone_map: Option<HashMap<String, Tz>>,
+    dc_factory: Option<DCFactory>,
+}
+
+impl ChopperCli {
+    pub fn new() -> ChopperCli {
+        ChopperCli {
+            streaming_transports: None,
+            source_factories: None,
+            timezone_map: None,
+            dc_factory: None,
+        }
+    }
+
+    pub fn run(self) -> ChopperResult<()> {
+        let mut driver = parse_cli_args(
+            self.streaming_transports,
+            self.source_factories,
+            self.timezone_map,
+            self.dc_factory,
+        )?;
+        driver.drive()
+    }
+
+    pub fn with_streaming_transports(
+        mut self,
+        streaming_transports: Vec<Box<dyn StreamingTransport>>,
+    ) -> Self {
+        self.streaming_transports = Some(streaming_transports);
+        self
+    }
+
+    pub fn with_source_factories(mut self, source_factories: Vec<Box<dyn SourceFactory>>) -> Self {
+        self.source_factories = Some(source_factories);
+        self
+    }
+
+    pub fn with_timezone_map(mut self, timezone_map: HashMap<String, Tz>) -> Self {
+        self.timezone_map = Some(timezone_map);
+        self
+    }
+
+    pub fn with_dc_factory(mut self, dc_factory: DCFactory) -> Self {
+        self.dc_factory = Some(dc_factory);
+        self
+    }
 }
 
 pub fn parse_cli_args(
     streaming_transports: Option<Vec<Box<dyn StreamingTransport>>>,
     source_factories: Option<Vec<Box<dyn SourceFactory>>>,
-    timezone_map: Option<HashMap<&str, Tz>>,
+    timezone_map: Option<HashMap<String, Tz>>,
+    dc_factory: Option<DCFactory>,
 ) -> ChopperResult<Box<dyn ChopperDriver>> {
     let matches = CliApp.create_cli_app().get_matches();
 
@@ -101,6 +146,7 @@ pub fn parse_cli_args(
         timestamp_range,
         csv_input_config,
         csv_output_config,
+        dc_factory,
     )
 }
 
@@ -112,12 +158,17 @@ fn setup_graph(
     timestamp_range: TimestampRange,
     csv_input_config: CSVInputConfig,
     csv_output_config: CSVOutputConfig,
+    dc_factory: Option<DCFactory>,
 ) -> ChopperResult<Box<dyn ChopperDriver>> {
     // get sources and headers
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
-    let mut input_factory =
-        InputFactory::new(csv_input_config, source_factories, streaming_transports)?;
+    let mut input_factory = InputFactoryBuilder::new()
+        .with_csv_input_config(csv_input_config)
+        .with_user_source_factories(source_factories)
+        .with_user_streaming_transports(streaming_transports)
+        .with_dc_factory(dc_factory.clone())
+        .build()?;
 
     let mut header_nodes: Vec<HeaderNode> = Vec::new();
     let mut chains: Vec<HeaderChain> = Vec::new();
@@ -147,7 +198,10 @@ fn setup_graph(
         header_nodes.push(node_merge_sink);
     }
 
-    let header_sink = factory::new_header_sink(output, Some(csv_output_config))?;
+    let output_factory = OutputFactory::new()
+        .with_csv_output_config(csv_output_config)
+        .with_dc_factory(dc_factory);
+    let header_sink = output_factory.new_header_sink(output)?;
     let node_hs = HeaderNode::HeaderSink(header_sink);
     header_nodes.push(node_hs);
     chains.push(HeaderChain::new(header_nodes));

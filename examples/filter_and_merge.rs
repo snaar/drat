@@ -6,10 +6,9 @@ use chopper::driver::driver::Driver;
 use chopper::driver::merge_join::MergeJoin;
 use chopper::filter::row_filter_equal_value::RowFilterEqualValue;
 use chopper::filter::row_filter_greater_value::RowFilterGreaterValue;
-use chopper::input::input_factory::InputFactory;
-use chopper::source::csv_configs::CSVOutputConfig;
+use chopper::input::input_factory::InputFactoryBuilder;
 use chopper::source::source::Source;
-use chopper::write::factory;
+use chopper::write::factory::OutputFactory;
 
 fn main() -> ChopperResult<()> {
     setup_filter_and_merge_graph()?.drive()
@@ -26,7 +25,7 @@ fn setup_filter_and_merge_graph() -> ChopperResult<Box<dyn ChopperDriver>> {
     let value_2 = FieldValue::Double(50.0);
 
     // source reader and headers
-    let mut input_factory = InputFactory::new_without_csv(None, None)?;
+    let mut input_factory = InputFactoryBuilder::new().build()?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {
@@ -51,8 +50,7 @@ fn setup_filter_and_merge_graph() -> ChopperResult<Box<dyn ChopperDriver>> {
     let merge = MergeJoin::new(2)?;
     let header_count_tracker = merge.get_new_header_count_tracker();
     let node_merge_sink = HeaderNode::MergeHeaderSink(merge, header_count_tracker);
-    let csv_output_config = CSVOutputConfig::new_default();
-    let header_sink = factory::new_header_sink(output, Some(csv_output_config))?;
+    let header_sink = OutputFactory::new().new_header_sink(output)?;
     let node_output = HeaderNode::HeaderSink(header_sink);
     let chain_2 = HeaderChain::new(vec![node_merge_sink, node_output]);
 

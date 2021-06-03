@@ -4,14 +4,23 @@ use byteorder::{BigEndian, ReadBytesExt};
 
 use crate::chopper::error::ChopperResult;
 use crate::source::source::Source;
-use crate::source::{dc_source::DCSource, source_factory::SourceFactory};
+use crate::source::source_factory::SourceFactory;
+use crate::util::dc_factory::DCFactory;
 use crate::util::dc_util;
 use crate::util::reader::ChopperBufPreviewer;
 
 #[derive(Clone)]
-pub struct DCFactory;
+pub struct DCSourceFactory {
+    dc_factory: DCFactory,
+}
 
-impl SourceFactory for DCFactory {
+impl DCSourceFactory {
+    pub fn new(dc_factory: DCFactory) -> DCSourceFactory {
+        DCSourceFactory { dc_factory }
+    }
+}
+
+impl SourceFactory for DCSourceFactory {
     fn can_create_from_format(&self, format: &String) -> bool {
         format.ends_with(".dc")
     }
@@ -46,7 +55,7 @@ impl SourceFactory for DCFactory {
         previewer: ChopperBufPreviewer<Box<dyn Read>>,
     ) -> ChopperResult<Box<dyn Source>> {
         let reader = previewer.get_reader();
-        Ok(Box::new(DCSource::new(reader)?))
+        Ok(Box::new(self.dc_factory.new_source(reader)?))
     }
 
     fn box_clone(&self) -> Box<dyn SourceFactory> {

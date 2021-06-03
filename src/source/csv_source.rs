@@ -7,7 +7,7 @@ use crate::chopper::error::ChopperResult;
 use crate::chopper::types::{FieldType, FieldValue, Header, Row};
 use crate::cli::util::YesNoAuto;
 use crate::source::csv_input_config::CSVInputConfig;
-use crate::source::csv_timestamp::{self, TimestampCol, TimestampFmt};
+use crate::source::csv_timestamp_util::{self, TimestampCol, TimestampFmt};
 use crate::source::source::Source;
 use crate::util::csv_util;
 use crate::util::reader::{ChopperBufPreviewer, ChopperBufReader};
@@ -83,7 +83,7 @@ impl<R: Read> CSVSource<R> {
 
         let timestamp_config = &csv_input_config.timestamp_config;
         let timezone = timestamp_config.timezone();
-        let (timestamp_col, timestamp_fmt) = csv_timestamp::get_timestamp_col_and_fmt(
+        let (timestamp_col, timestamp_fmt) = csv_timestamp_util::get_timestamp_col_and_fmt(
             &header,
             &first_row,
             timestamp_config.timestamp_col(),
@@ -159,7 +159,7 @@ impl<R: Read> CSVSource<R> {
             }
         };
 
-        self.next_row.timestamp = csv_timestamp::get_timestamp(
+        self.next_row.timestamp = csv_timestamp_util::get_timestamp(
             &next_record,
             &self.timestamp_col,
             &self.timestamp_fmt,

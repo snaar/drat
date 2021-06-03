@@ -1,22 +1,15 @@
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::io::{self, BufReader, Read};
-use std::str;
+use std::rc::Rc;
 
 use byteorder::{BigEndian, ReadBytesExt};
-use lazy_static::lazy_static;
 use ndarray::{prelude::*, StrideShape};
 
 use crate::chopper::error::{ChopperResult, Error};
 use crate::chopper::types::{FieldType, FieldValue, Header, Row};
 use crate::source::source::Source;
 use crate::util::dc_util;
-
-// map for field types
-lazy_static! {
-    static ref FIELD_STRING_MAP_NAME: HashMap<&'static str, FieldType> =
-        dc_util::create_field_string_map_name();
-}
 
 pub struct DCSource<R: Read> {
     reader: BufReader<R>,
@@ -27,7 +20,10 @@ pub struct DCSource<R: Read> {
 }
 
 impl<R: Read> DCSource<R> {
-    pub fn new(reader: R) -> ChopperResult<Self> {
+    pub fn new(
+        reader: R,
+        field_name_to_type_map: Rc<HashMap<String, FieldType>>,
+    ) -> ChopperResult<Self> {
         let mut reader = BufReader::new(reader);
 
         let magic_num = reader.read_u64::<BigEndian>()?;
@@ -52,7 +48,6 @@ impl<R: Read> DCSource<R> {
             reader.read_u8()?;
         }
 
-        let map_field_string = &FIELD_STRING_MAP_NAME;
         let field_count = reader.read_u32::<BigEndian>()? as usize;
         let bitset_byte_count = dc_util::get_bitset_bytes(field_count);
         let bitset_bytes: Vec<u8> = vec![0 as u8; bitset_byte_count];
@@ -70,10 +65,9 @@ impl<R: Read> DCSource<R> {
             }
             field_names.push(name);
             field_types.push(
-                map_field_string
+                *field_name_to_type_map
                     .get(field_descriptor.get_type_string())
-                    .unwrap()
-                    .clone(),
+                    .unwrap(),
             );
             field_values.push(FieldValue::None);
         }
