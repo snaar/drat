@@ -6,17 +6,29 @@ use chopper::driver::{driver::Driver, split::Split};
 use chopper::input::input_factory::InputFactoryBuilder;
 use chopper::source::source::Source;
 use chopper::util::dc_factory::DCFactory;
+use chopper::util::file::are_contents_same;
 use chopper::write::factory::OutputFactory;
 
-fn main() -> ChopperResult<()> {
-    setup_test_split_graph()?.drive()
+#[test]
+fn test_split() {
+    setup_test_split_graph().unwrap().drive().unwrap();
+    assert!(are_contents_same(
+        "./tests/output/test_split_1.csv",
+        "./tests/reference/test_split_1.csv",
+    )
+    .unwrap());
+    assert!(are_contents_same(
+        "./tests/output/test_split_2.csv",
+        "./tests/reference/test_split_2.csv",
+    )
+    .unwrap());
 }
 
 fn setup_test_split_graph() -> ChopperResult<Box<dyn ChopperDriver>> {
-    let input = "./examples/files/hundred.dc";
+    let input = "./tests/input/hundred.dc";
     let inputs = vec![input];
-    let output_1 = None;
-    let output_2 = None;
+    let output_1 = Some("./tests/output/test_split_1.csv");
+    let output_2 = Some("./tests/output/test_split_2.csv");
 
     // source reader and headers
     let mut input_factory = InputFactoryBuilder::new()

@@ -9,17 +9,24 @@ use chopper::filter::row_filter_greater_value::RowFilterGreaterValue;
 use chopper::input::input_factory::InputFactoryBuilder;
 use chopper::source::source::Source;
 use chopper::util::dc_factory::DCFactory;
+use chopper::util::file::are_contents_same;
 use chopper::write::factory::OutputFactory;
 
-fn main() -> ChopperResult<()> {
-    setup_filter_and_merge_graph()?.drive()
+#[test]
+fn test_filter_and_merge() {
+    setup_filter_and_merge_graph().unwrap().drive().unwrap();
+    assert!(are_contents_same(
+        "./tests/output/test_filter_and_merge.csv",
+        "./tests/reference/test_filter_and_merge.csv",
+    )
+    .unwrap());
 }
 
 fn setup_filter_and_merge_graph() -> ChopperResult<Box<dyn ChopperDriver>> {
-    let input_1 = "./examples/files/hundred.dc";
-    let input_2 = "./examples/files/hundred.dc";
+    let input_1 = "./tests/input/hundred.dc";
+    let input_2 = "./tests/input/hundred.dc";
     let inputs = vec![input_1, input_2];
-    let output = None;
+    let output = Some("./tests/output/test_filter_and_merge.csv");
     let column_int = "an_int";
     let value_1 = FieldValue::Int(95);
     let column_double = "a_double";

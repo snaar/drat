@@ -9,23 +9,30 @@ use chopper::source::csv_timestamp_config::{
     TimestampColConfig, TimestampConfig, TimestampFmtConfig,
 };
 use chopper::source::source::Source;
+use chopper::util::file::are_contents_same;
 use chopper::util::tz::ChopperTz;
 use chopper::write::factory::OutputFactory;
 
-fn main() -> ChopperResult<()> {
-    setup_compressed_example_graph()?.drive()
+#[test]
+fn test_compressed() {
+    setup_compressed_test_graph().unwrap().drive().unwrap();
+    assert!(are_contents_same(
+        "./tests/output/test_compressed.csv",
+        "./tests/reference/test_compressed.csv",
+    )
+    .unwrap());
 }
 
-fn setup_compressed_example_graph() -> ChopperResult<Box<dyn ChopperDriver>> {
+fn setup_compressed_test_graph() -> ChopperResult<Box<dyn ChopperDriver>> {
     let ts_config = TimestampConfig::new(
         TimestampColConfig::Index(0),
         TimestampFmtConfig::Auto,
         ChopperTz::new_from_str("America/New_York", None)?,
     );
     let csv_input_config = CSVInputConfig::new(ts_config);
-    let input = "./examples/files/uspop_time.csv.gz";
+    let input = "./tests/input/uspop_time.csv.gz";
     let inputs = vec![input];
-    let output = None;
+    let output = Some("./tests/output/test_compressed.csv");
 
     let mut input_factory = InputFactoryBuilder::new()
         .with_csv_input_config(csv_input_config)
