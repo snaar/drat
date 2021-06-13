@@ -20,7 +20,7 @@ fn setup_compressed_example_graph() -> ChopperResult<Box<dyn ChopperDriver>> {
     let ts_config = TimestampConfig::new(
         TimestampColConfig::Index(0),
         TimestampFmtConfig::Auto,
-        ChopperTz::new_always_fails(),
+        ChopperTz::new_from_str("America/New_York", None)?,
     );
     let csv_input_config = CSVInputConfig::new(ts_config);
     let input = "./examples/files/uspop_time.csv.gz";

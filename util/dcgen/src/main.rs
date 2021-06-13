@@ -1,6 +1,3 @@
-extern crate byteorder;
-extern crate clap;
-
 use byteorder::{BigEndian, WriteBytesExt};
 use clap::{App, Arg};
 use std::fs::File;
@@ -86,9 +83,9 @@ fn write_field_descriptor(
 
 fn write_field_type(out: &File, field_type: FieldType) {
     let type_string = match field_type {
-        FieldType::Double => "D",
-        FieldType::Int => "I",
-        FieldType::String => "Ljava.lang.String;",
+        FieldType::Double => "f64",
+        FieldType::Int => "i32",
+        FieldType::String => "utf8str",
     };
     write_sized_string(out, type_string);
 }

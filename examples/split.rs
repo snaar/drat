@@ -5,6 +5,7 @@ use chopper::chopper::types::{self, ChainId, Header};
 use chopper::driver::{driver::Driver, split::Split};
 use chopper::input::input_factory::InputFactoryBuilder;
 use chopper::source::source::Source;
+use chopper::util::dc_factory::DCFactory;
 use chopper::write::factory::OutputFactory;
 
 fn main() -> ChopperResult<()> {
@@ -18,7 +19,9 @@ fn setup_test_split_graph() -> ChopperResult<Box<dyn ChopperDriver>> {
     let output_2 = None;
 
     // source reader and headers
-    let mut input_factory = InputFactoryBuilder::new().build()?;
+    let mut input_factory = InputFactoryBuilder::new()
+        .with_dc_factory(Some(DCFactory::default()))
+        .build()?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {

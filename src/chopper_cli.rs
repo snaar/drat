@@ -84,7 +84,7 @@ pub fn parse_cli_args(
 ) -> ChopperResult<Box<dyn ChopperDriver>> {
     let matches = CliApp.create_cli_app().get_matches();
 
-    let timezone = ChopperTz::new_from_cli_arg(matches.value_of("timezone"), timezone_map);
+    let timezone = ChopperTz::new_from_cli_arg(matches.value_of("timezone"), timezone_map)?;
 
     let timestamp_range = TimestampRange::new(
         matches.value_of("begin"),

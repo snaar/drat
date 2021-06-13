@@ -40,17 +40,17 @@ impl DCFactory {
 
     pub fn create_default_field_name_to_type_map() -> HashMap<String, FieldType> {
         [
-            ("Z", FieldType::Boolean),
-            ("B", FieldType::Byte),
-            ("Ljava.lang.ByteBuffer;", FieldType::ByteBuf),
-            ("C", FieldType::Char),
-            ("D", FieldType::Double),
-            ("F", FieldType::Float),
-            ("I", FieldType::Int),
-            ("J", FieldType::Long),
-            ("S", FieldType::Short),
-            ("Ljava.lang.String;", FieldType::String),
-            ("MultiDimDoubleArray", FieldType::MultiDimDoubleArray),
+            ("bool", FieldType::Boolean),
+            ("u8", FieldType::Byte),
+            ("i16", FieldType::Short),
+            ("i32", FieldType::Int),
+            ("i64", FieldType::Long),
+            ("f32", FieldType::Float),
+            ("f64", FieldType::Double),
+            ("u16char", FieldType::Char),
+            ("utf8str", FieldType::String),
+            ("[u8]", FieldType::ByteBuf),
+            ("[f64]xD", FieldType::MultiDimDoubleArray),
         ]
         .iter()
         .map(|(field_name, field_type)| (field_name.to_string(), field_type.clone()))

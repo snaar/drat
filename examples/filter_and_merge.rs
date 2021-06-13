@@ -8,6 +8,7 @@ use chopper::filter::row_filter_equal_value::RowFilterEqualValue;
 use chopper::filter::row_filter_greater_value::RowFilterGreaterValue;
 use chopper::input::input_factory::InputFactoryBuilder;
 use chopper::source::source::Source;
+use chopper::util::dc_factory::DCFactory;
 use chopper::write::factory::OutputFactory;
 
 fn main() -> ChopperResult<()> {
@@ -15,17 +16,19 @@ fn main() -> ChopperResult<()> {
 }
 
 fn setup_filter_and_merge_graph() -> ChopperResult<Box<dyn ChopperDriver>> {
-    let input_1 = "./examples/files/million.dc";
-    let input_2 = "./examples/files/million.dc";
+    let input_1 = "./examples/files/hundred.dc";
+    let input_2 = "./examples/files/hundred.dc";
     let inputs = vec![input_1, input_2];
     let output = None;
     let column_int = "an_int";
-    let value_1 = FieldValue::Int(999950);
+    let value_1 = FieldValue::Int(95);
     let column_double = "a_double";
     let value_2 = FieldValue::Double(50.0);
 
     // source reader and headers
-    let mut input_factory = InputFactoryBuilder::new().build()?;
+    let mut input_factory = InputFactoryBuilder::new()
+        .with_dc_factory(Some(DCFactory::default()))
+        .build()?;
     let mut sources: Vec<Box<dyn Source>> = Vec::new();
     let mut headers: Vec<Header> = Vec::new();
     for i in inputs {

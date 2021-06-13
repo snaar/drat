@@ -18,35 +18,36 @@ impl ChopperTz {
     pub fn new_from_cli_arg(
         cli_timezone_arg: Option<&str>,
         timezone_map: Option<HashMap<String, Tz>>,
-    ) -> ChopperTz {
-        let timezone = Self::resolve_timezone(cli_timezone_arg, timezone_map);
-        ChopperTz { timezone }
+    ) -> ChopperResult<ChopperTz> {
+        let timezone_arg = match cli_timezone_arg {
+            None => match env::var("CHOPPER_TZ") {
+                Ok(s) => s,
+                Err(_) => return Ok(Self::new_always_fails()),
+            },
+            Some(s) => s.to_owned(),
+        };
+
+        Self::new_from_str(timezone_arg, timezone_map)
     }
 
     pub fn new_always_fails() -> ChopperTz {
         ChopperTz { timezone: None }
     }
 
-    fn resolve_timezone(
-        cli_timezone_arg: Option<&str>,
+    pub fn new_from_str<S: AsRef<str>>(
+        tz: S,
         timezone_map: Option<HashMap<String, Tz>>,
-    ) -> Option<Tz> {
-        let timezone_arg = match cli_timezone_arg {
-            None => match env::var("CHOPPER_TZ") {
-                Ok(s) => Some(s),
-                Err(_) => None,
-            },
-            Some(s) => Some(s.to_owned()),
-        }?;
-
+    ) -> ChopperResult<ChopperTz> {
         let timezone: Tz = match timezone_map {
-            None => timezone_arg.parse().unwrap(),
-            Some(map) => match map.get(timezone_arg.as_str()) {
-                None => timezone_arg.parse().unwrap(),
+            None => tz.as_ref().parse()?,
+            Some(map) => match map.get(tz.as_ref()) {
+                None => tz.as_ref().parse()?,
                 Some(s) => *s,
             },
         };
-        Some(timezone)
+        Ok(ChopperTz {
+            timezone: Some(timezone),
+        })
     }
 
     pub fn from_local_datetime(&self, local: &NaiveDateTime) -> ChopperResult<DateTime<Tz>> {
