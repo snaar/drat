@@ -8,9 +8,11 @@ use std::io::Write;
 
 fn main() {
     let matches = App::new("dcgen")
-        .arg(Arg::with_name("file")
-            .required(true)
-            .help("output file name"))
+        .arg(
+            Arg::with_name("file")
+                .required(true)
+                .help("output file name"),
+        )
         .get_matches();
 
     let file_name = matches.value_of("file").unwrap();
@@ -42,12 +44,18 @@ fn write_header(out: &File) {
     write_rows(&out);
 }
 
-fn write_magic(mut out: &File) { out.write_u64::<BigEndian>(0x44434154).unwrap(); }
-fn write_version(mut out: &File) { out.write_u16::<BigEndian>(2).unwrap(); }
+fn write_magic(mut out: &File) {
+    out.write_u64::<BigEndian>(0x44434154).unwrap();
+}
+
+fn write_version(mut out: &File) {
+    out.write_u16::<BigEndian>(2).unwrap();
+}
 
 fn write_user_header(mut out: &File) {
     let user_header = b"example";
-    out.write_u32::<BigEndian>(user_header.len() as u32).unwrap();
+    out.write_u32::<BigEndian>(user_header.len() as u32)
+        .unwrap();
     out.write(user_header).unwrap();
 }
 
@@ -56,11 +64,21 @@ fn write_field_descriptors(mut out: &File) {
     out.write_u32::<BigEndian>(field_count).unwrap();
     write_field_descriptor(out, "a_double", FieldType::Double, DisplayHint::None);
     write_field_descriptor(out, "an_int", FieldType::Int, DisplayHint::None);
-    write_field_descriptor(out, "an_int_timestamp", FieldType::Int, DisplayHint::Timestamp);
+    write_field_descriptor(
+        out,
+        "an_int_timestamp",
+        FieldType::Int,
+        DisplayHint::Timestamp,
+    );
     write_field_descriptor(out, "a_string", FieldType::String, DisplayHint::None);
 }
 
-fn write_field_descriptor(out: &File, field_name: &str, field_type: FieldType, display_hint: DisplayHint) {
+fn write_field_descriptor(
+    out: &File,
+    field_name: &str,
+    field_type: FieldType,
+    display_hint: DisplayHint,
+) {
     write_sized_string(out, field_name);
     write_field_type(out, field_type);
     write_field_display_hint(out, display_hint);
@@ -109,7 +127,7 @@ fn write_row(mut out: &File, timestamp: u64) {
 }
 
 fn write_row_bitfield_with_no_nulls(mut out: &File, field_count: u32) {
-    let bytes_needed: u32 = 1+((field_count-1)/8);
+    let bytes_needed: u32 = 1 + ((field_count - 1) / 8);
     let bitfield: Vec<u8> = vec![0; bytes_needed as usize];
     out.write(bitfield.as_ref()).unwrap();
 }

@@ -1,7 +1,11 @@
 [package]
 name = "dcgen"
 version = "0.1.0"
+edition = "2018"
 
 [dependencies]
-byteorder = "1"
-clap = "2"
+byteorder = "1.4"
+clap = "2.33"
+
+# need empty workspace because of https://github.com/rust-lang/cargo/issues/6745
+[workspace]
