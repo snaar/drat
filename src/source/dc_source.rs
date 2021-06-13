@@ -63,12 +63,20 @@ impl<R: Read> DCSource<R> {
             if name.is_empty() {
                 name = format!("col_{}", i);
             }
+            let field_type_name = field_descriptor.get_type_string();
+            let field_type = field_name_to_type_map.get(field_descriptor.get_type_string());
+            let field_type = match field_type {
+                None => {
+                    return Err(Error::from(format!(
+                        "DCReader -- unknown field type - {}",
+                        field_type_name
+                    )));
+                }
+                Some(field_type) => field_type,
+            };
+
             field_names.push(name);
-            field_types.push(
-                *field_name_to_type_map
-                    .get(field_descriptor.get_type_string())
-                    .unwrap(),
-            );
+            field_types.push(*field_type);
             field_values.push(FieldValue::None);
         }
 
